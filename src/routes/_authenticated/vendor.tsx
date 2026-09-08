@@ -94,7 +94,7 @@ function VendorPortal() {
   const [dishSaving, setDishSaving] = useState(false);
   const [dishOpen, setDishOpen] = useState(false);
 
-  const pending = orders.filter((o) => o.status === "PLACED").length;
+  const pending = orders.filter((o) => o.status === "ORDER_PLACED").length;
   useOrderBell(pending);
 
   useEffect(() => {
