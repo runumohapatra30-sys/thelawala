@@ -77,9 +77,49 @@ export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [from.lat, from.lng, to.lat, to.lng]);
 
+  // Live rider movement: glide the marker and redraw the remaining route.
   useEffect(() => {
-    if (rider && riderMarkerRef.current) riderMarkerRef.current.setLatLng([rider.lat, rider.lng]);
-  }, [rider?.lat, rider?.lng]);
+    if (!rider) return;
+    const map = mapRef.current;
+    const kit = leafletRef.current;
+    if (!map || !kit) return;
+
+    if (!riderMarkerRef.current) {
+      riderMarkerRef.current = kit.L.marker([rider.lat, rider.lng], { icon: kit.icon(riderIcon) }).addTo(map);
+    } else {
+      const start = riderMarkerRef.current.getLatLng();
+      const t0 = performance.now();
+      const step = (now: number) => {
+        const p = Math.min(1, (now - t0) / 900);
+        riderMarkerRef.current.setLatLng([
+          start.lat + (rider.lat - start.lat) * p,
+          start.lng + (rider.lng - start.lng) * p,
+        ]);
+        if (p < 1) animRef.current = requestAnimationFrame(step);
+      };
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+      animRef.current = requestAnimationFrame(step);
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const route = await fetchRoute({ lat: rider.lat, lng: rider.lng }, to);
+        if (cancelled || !lineRef.current) return;
+        lineRef.current.setLatLngs(route.coords);
+        etaRef.current?.(route.durationMin, route.distanceKm);
+        map.panTo([rider.lat, rider.lng], { animate: true, duration: 0.8 });
+      } catch {
+        /* keep last route */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rider?.lat, rider?.lng, to.lat, to.lng]);
 
   if (error) {
     return (
