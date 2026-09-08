@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
+import { cart } from "@/lib/cart";
 import { inr, STATUS_LABEL } from "@/lib/fees";
 import { useSession } from "@/lib/session";
 
@@ -25,7 +26,7 @@ type Row = {
   surge_fee: number; tip_amount: number; payment_mode: string; distance_km: number;
   created_at: string; vendor_id: string; address_line: string;
 };
-type OrderItem = { id: string; order_id: string; name: string; qty: number; price: number; photo_url: string | null };
+type OrderItem = { id: string; order_id: string; item_id: string | null; name: string; qty: number; price: number; mrp: number; photo_url: string | null };
 
 const PILL: Record<string, string> = {
   DELIVERED: "bg-primary/10 text-primary",
@@ -46,6 +47,49 @@ function Orders() {
   const [items, setItems] = useState<OrderItem[]>([]);
   const [stalls, setStalls] = useState<Record<string, string>>({});
   const [billFor, setBillFor] = useState<Row | null>(null);
+  const [rateFor, setRateFor] = useState<Row | null>(null);
+  const [rated, setRated] = useState<string[]>([]);
+  const [food, setFood] = useState(5);
+  const [delivery, setDelivery] = useState(5);
+  const [review, setReview] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
+
+  function orderAgain(o: Row) {
+    cart.clear();
+    let blocked = false;
+    for (const i of items.filter((x) => x.order_id === o.id)) {
+      for (let n = 0; n < i.qty; n++) {
+        const res = cart.add({
+          itemId: i.item_id ?? i.id,
+          vendorId: o.vendor_id,
+          name: i.name,
+          photo: i.photo_url,
+          unit: null,
+          price: Number(i.price),
+          mrp: Number(i.mrp ?? i.price),
+        });
+        if (!res.ok) blocked = true;
+      }
+    }
+    setMsg(blocked ? "Some items could not be added." : "Items added to your cart.");
+  }
+
+  async function saveRating() {
+    if (!user || !rateFor) return;
+    const { error } = await supabase.from("order_ratings").insert({
+      order_id: rateFor.id,
+      user_id: user.id,
+      vendor_id: rateFor.vendor_id,
+      food_stars: food,
+      delivery_stars: delivery,
+      review: review || null,
+    });
+    if (error) return setMsg("Could not save your rating.");
+    setRated((r) => [...r, rateFor.id]);
+    setRateFor(null);
+    setReview("");
+    setMsg("Thanks for rating your order!");
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -58,12 +102,14 @@ function Orders() {
       const list = (data ?? []) as Row[];
       setRows(list);
       if (list.length === 0) return;
-      const [{ data: its }, { data: vs }] = await Promise.all([
-        supabase.from("order_items").select("id,order_id,name,qty,price,photo_url").in("order_id", list.map((o) => o.id)),
+      const [{ data: its }, { data: vs }, { data: rt }] = await Promise.all([
+        supabase.from("order_items").select("id,order_id,item_id,name,qty,price,mrp,photo_url").in("order_id", list.map((o) => o.id)),
         supabase.from("vendors").select("id,stall_name").in("id", [...new Set(list.map((o) => o.vendor_id))]),
+        supabase.from("order_ratings").select("order_id").in("order_id", list.map((o) => o.id)),
       ]);
       setItems((its ?? []) as OrderItem[]);
       setStalls(Object.fromEntries((vs ?? []).map((v) => [v.id, v.stall_name])));
+      setRated((rt ?? []).map((r) => r.order_id));
     })();
   }, [user?.id]);
 
@@ -135,6 +181,27 @@ function Orders() {
                     Need help?
                   </Link>
                 </div>
+                <div className="grid grid-cols-2 gap-px border-t border-border bg-border">
+                  <button onClick={() => orderAgain(o)} className="press bg-card py-2.5 text-center text-[11px] font-black text-primary">
+                    Order again
+                  </button>
+                  {o.status === "DELIVERED" ? (
+                    rated.includes(o.id) ? (
+                      <span className="bg-card py-2.5 text-center text-[11px] font-black text-muted-foreground">Rated ★</span>
+                    ) : (
+                      <button
+                        onClick={() => { setRateFor(o); setFood(5); setDelivery(5); }}
+                        className="press bg-card py-2.5 text-center text-[11px] font-black"
+                      >
+                        Rate this order
+                      </button>
+                    )
+                  ) : (
+                    <span className="bg-card py-2.5 text-center text-[11px] font-black text-muted-foreground">
+                      {shortStatus(o.status)}
+                    </span>
+                  )}
+                </div>
               </article>
             );
           })
@@ -175,7 +242,54 @@ function Orders() {
           </div>
         </div>
       ) : null}
+
+      {rateFor ? (
+        <div className="fixed inset-0 z-50 flex items-end bg-black/40" onClick={() => setRateFor(null)}>
+          <div className="mx-auto w-full max-w-[480px] rounded-t-3xl bg-card p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border" />
+            <p className="text-sm font-black">Rate order #{rateFor.code}</p>
+            <Stars label="Food quality" value={food} onChange={setFood} />
+            <Stars label="Delivery partner" value={delivery} onChange={setDelivery} />
+            <textarea
+              rows={2}
+              value={review}
+              onChange={(e) => setReview(e.target.value)}
+              placeholder="Write a short review (optional)"
+              className="mt-3 w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
+            />
+            <button onClick={saveRating} className="press mt-3 w-full rounded-xl bg-primary py-3 text-sm font-black text-primary-foreground">
+              Submit rating
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {msg ? (
+        <div className="fixed inset-x-0 bottom-24 z-50 mx-auto w-full max-w-[440px] px-4" onClick={() => setMsg(null)}>
+          <div className="rounded-xl bg-foreground px-4 py-2.5 text-xs font-semibold text-background">{msg}</div>
+        </div>
+      ) : null}
     </Shell>
+  );
+}
+
+function Stars({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
+  return (
+    <div className="mt-3 flex items-center justify-between">
+      <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+      <span className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            aria-label={`${n} star`}
+            onClick={() => onChange(n)}
+            className={`text-xl ${n <= value ? "text-brand" : "text-border"}`}
+          >
+            ★
+          </button>
+        ))}
+      </span>
+    </div>
   );
 }
 

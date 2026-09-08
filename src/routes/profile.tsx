@@ -27,12 +27,18 @@ function Profile() {
   const [balance, setBalance] = useState(0);
   const [saved, setSaved] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [refCode, setRefCode] = useState("");
+  const [referredBy, setReferredBy] = useState<string | null>(null);
+  const [friendCode, setFriendCode] = useState("");
+  const [refMsg, setRefMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("full_name,mobile").eq("id", user.id).maybeSingle().then(({ data }) => {
+    supabase.from("profiles").select("full_name,mobile,referral_code,referred_by").eq("id", user.id).maybeSingle().then(({ data }) => {
       setName(data?.full_name ?? "");
       setMobile(data?.mobile ?? "");
+      setRefCode(data?.referral_code ?? "");
+      setReferredBy(data?.referred_by ?? null);
     });
     supabase.from("wallets").select("balance").eq("user_id", user.id).maybeSingle().then(({ data }) => {
       setBalance(Number(data?.balance ?? 0));
@@ -121,6 +127,56 @@ function Profile() {
           <a href="tel:9078492360" className="flex items-center justify-between px-3 py-3.5 text-sm font-bold text-primary">
             Call support · 9078492360 <Chevron />
           </a>
+        </div>
+
+        <div className="card-soft border border-border p-3">
+          <p className="text-sm font-bold">Refer a friend · earn ₹25</p>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="flex-1 rounded-xl border border-dashed border-primary px-3 py-2.5 text-sm font-black tracking-widest text-primary">
+              {refCode || "—"}
+            </span>
+            <button
+              onClick={async () => {
+                const text = `Order hot street food on ThelaWala! Use my code ${refCode} and we both get ₹25.`;
+                if (navigator.share) await navigator.share({ text }).catch(() => {});
+                else {
+                  await navigator.clipboard?.writeText(text);
+                  setRefMsg("Invite copied. Share it with your friends!");
+                }
+              }}
+              className="press shrink-0 rounded-xl bg-primary px-4 py-2.5 text-xs font-black text-primary-foreground"
+            >
+              Share
+            </button>
+          </div>
+          {referredBy ? (
+            <p className="mt-2 text-[11px] font-semibold text-primary">You already used a friend&apos;s code. 🎉</p>
+          ) : (
+            <div className="mt-2 flex gap-2">
+              <input
+                value={friendCode}
+                onChange={(e) => setFriendCode(e.target.value.toUpperCase())}
+                placeholder="Have a friend's code?"
+                className="min-w-0 flex-1 rounded-xl border border-border px-3 py-2.5 text-sm uppercase outline-none focus:border-primary"
+              />
+              <button
+                onClick={async () => {
+                  const { data, error } = await supabase.rpc("apply_referral", { _code: friendCode });
+                  if (error) return setRefMsg("Could not apply this code.");
+                  if (data === "OK") {
+                    setReferredBy("done");
+                    setBalance((b) => b + 25);
+                    setRefMsg("₹25 added to your wallet!");
+                  } else if (data === "ALREADY_USED") setRefMsg("You have already used a referral code.");
+                  else setRefMsg("This code is not valid.");
+                }}
+                className="press shrink-0 rounded-xl border border-primary px-4 text-xs font-black text-primary"
+              >
+                Apply
+              </button>
+            </div>
+          )}
+          {refMsg ? <p className="mt-1.5 text-[11px] font-semibold text-primary">{refMsg}</p> : null}
         </div>
 
         <div className="card-soft divide-y divide-border border border-border">

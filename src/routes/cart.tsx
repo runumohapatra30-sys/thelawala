@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { cart, cartTotals, useCart } from "@/lib/cart";
+import { couponDiscount, findCoupon, listCoupons, type Coupon } from "@/lib/coupons";
 import { computeBill, haversineKm, inr, type Settings } from "@/lib/fees";
 import { createPayuPayment } from "@/lib/payments.functions";
 import { useSession } from "@/lib/session";
@@ -39,6 +40,14 @@ function Cart() {
   const [err, setErr] = useState<string | null>(null);
   const [walletBalance, setWalletBalance] = useState(0);
   const [useWallet, setUseWallet] = useState(true);
+  const [codeInput, setCodeInput] = useState("");
+  const [coupon, setCoupon] = useState<Coupon | null>(null);
+  const [couponMsg, setCouponMsg] = useState<string | null>(null);
+  const [offers, setOffers] = useState<Coupon[]>([]);
+
+  useEffect(() => {
+    listCoupons().then((cs) => setOffers(cs.filter((c) => c.is_active).slice(0, 3)));
+  }, []);
 
   useEffect(() => {
     supabase.from("system_settings").select("*").maybeSingle().then(({ data }) => {
@@ -95,8 +104,21 @@ function Cart() {
 
   const distanceKm = vendor && coords ? haversineKm(coords, { lat: Number(vendor.lat), lng: Number(vendor.lng) }) : 0;
   const bill = settings ? computeBill({ settings, foodTotal, mrpTotal, distanceKm }) : null;
-  const walletUse = bill && useWallet ? Math.min(walletBalance, bill.grandTotal) : 0;
-  const payable = bill ? Math.round((bill.grandTotal - walletUse) * 100) / 100 : 0;
+  const couponOff = coupon ? couponDiscount(coupon, foodTotal) : 0;
+  const netTotal = bill ? Math.max(0, Math.round((bill.grandTotal - couponOff) * 100) / 100) : 0;
+  const walletUse = bill && useWallet ? Math.min(walletBalance, netTotal) : 0;
+  const payable = bill ? Math.round((netTotal - walletUse) * 100) / 100 : 0;
+
+  async function applyCoupon() {
+    setCouponMsg(null);
+    const res = await findCoupon(codeInput, foodTotal);
+    if (res.error || !res.coupon) {
+      setCoupon(null);
+      return setCouponMsg(res.error ?? "This coupon code is not valid.");
+    }
+    setCoupon(res.coupon);
+    setCouponMsg(`${res.coupon.code} applied · you save ${inr(couponDiscount(res.coupon, foodTotal))}`);
+  }
 
   if (lines.length === 0) {
     return (
@@ -147,7 +169,9 @@ function Cart() {
         handling_fee: bill.handlingFee,
         packing_fee: bill.packingFee,
         surge_fee: bill.surgeFee,
-        grand_total: bill.grandTotal,
+        grand_total: netTotal,
+        coupon_code: coupon?.code ?? null,
+        discount_amount: couponOff,
         wallet_paid: walletUse,
         payment_mode: payable === 0 ? "WALLET" : payment,
         payment_status: payable === 0 ? "PAID" : "PENDING",
@@ -174,6 +198,15 @@ function Cart() {
         photo_url: l.photo,
       })),
     );
+
+    if (coupon && couponOff > 0) {
+      await supabase.from("coupon_redemptions").insert({
+        coupon_id: coupon.id,
+        user_id: user.id,
+        order_id: order.id,
+        amount: couponOff,
+      });
+    }
 
     if (walletUse > 0) {
       const { error: wErr } = await supabase.rpc("wallet_debit", {
@@ -300,6 +333,44 @@ function Cart() {
         </div>
 
         <div className="card-soft border border-border p-3">
+          <p className="text-sm font-bold">Coupons &amp; offers</p>
+          <div className="mt-2 flex gap-2">
+            <input
+              value={codeInput}
+              onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+              placeholder="Enter coupon code"
+              className="min-w-0 flex-1 rounded-xl border border-border px-3 py-2.5 text-sm uppercase outline-none focus:border-primary"
+            />
+            {coupon ? (
+              <button
+                onClick={() => { setCoupon(null); setCodeInput(""); setCouponMsg(null); }}
+                className="press shrink-0 rounded-xl border border-border px-3 text-xs font-black"
+              >
+                Remove
+              </button>
+            ) : (
+              <button onClick={applyCoupon} className="press shrink-0 rounded-xl bg-primary px-4 text-xs font-black text-primary-foreground">
+                Apply
+              </button>
+            )}
+          </div>
+          {couponMsg ? (
+            <p className={`mt-1.5 text-[11px] font-semibold ${coupon ? "text-primary" : "text-destructive"}`}>{couponMsg}</p>
+          ) : null}
+          <div className="mt-2 flex flex-wrap gap-2">
+            {offers.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => { setCodeInput(c.code); setCoupon(null); setCouponMsg(null); }}
+                className="press rounded-full border border-dashed border-primary px-2.5 py-1 text-[11px] font-black text-primary"
+              >
+                {c.code} · {c.description}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="card-soft border border-border p-3">
           <p className="text-sm font-bold">Bill details</p>
           {bill ? (
             <dl className="mt-2 space-y-1.5 text-sm">
@@ -310,6 +381,7 @@ function Cart() {
               {bill.handlingFee ? <Row label="Handling fee" value={inr(bill.handlingFee)} /> : null}
               {bill.packingFee ? <Row label="Packing fee" value={inr(bill.packingFee)} /> : null}
               {bill.surgeFee ? <Row label="Surge fee" value={inr(bill.surgeFee)} /> : null}
+              {couponOff > 0 ? <Row label={`Coupon ${coupon?.code}`} value={`− ${inr(couponOff)}`} good /> : null}
               {walletUse > 0 ? <Row label="Paid from wallet" value={`− ${inr(walletUse)}`} good /> : null}
               <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold">
                 <span>To pay</span>
