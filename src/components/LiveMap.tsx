@@ -65,7 +65,14 @@ export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className 
         map.fitBounds(line.getBounds(), { padding: [30, 30] });
         etaRef.current?.(route.durationMin, route.distanceKm);
 
-        cleanup = () => map.remove();
+        setReady((n) => n + 1);
+        cleanup = () => {
+          mapRef.current = null;
+          leafletRef.current = null;
+          riderMarkerRef.current = null;
+          lineRef.current = null;
+          map.remove();
+        };
       } catch {
         if (!cancelled) setError("Map is offline right now. Route details are still shown below.");
       }
