@@ -127,7 +127,7 @@ export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className 
       if (animRef.current) cancelAnimationFrame(animRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rider?.lat, rider?.lng, to.lat, to.lng]);
+  }, [rider?.lat, rider?.lng, to.lat, to.lng, ready]);
 
   if (error) {
     return (
