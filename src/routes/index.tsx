@@ -1,216 +1,215 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Shell } from "@/components/Shell";
-import { CATEGORIES, PRODUCTS, SEARCH_HINTS, VENDORS } from "@/lib/data";
-import { ZONES } from "@/lib/geo";
-import { actions, inr, useApp } from "@/lib/store";
+import { supabase } from "@/integrations/supabase/client";
+import { cart, cartTotals, useCart } from "@/lib/cart";
+import { inr } from "@/lib/fees";
+import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Thaleewala — Street food in 15 minutes, Bhubaneswar" },
-      {
-        name: "description",
-        content:
-          "Order dahi bara, pakoda, rolls and kulhad chai from Bhubaneswar street stalls, delivered in 15 minutes.",
-      },
+      { name: "description", content: "Order bhata dali, dahi bara, rolls, chaat, biryani, momo and chai from Bhubaneswar street stalls, delivered in 15 minutes." },
       { property: "og:title", content: "Thaleewala — Street food in 15 minutes" },
-      {
-        property: "og:description",
-        content: "Hyper-local street food delivery across DumDuma, Khandagiri, AIIMS and Patrapada.",
-      },
+      { property: "og:description", content: "Hot food from your nearest thela, delivered fast across Bhubaneswar." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Home,
 });
 
+type Item = {
+  id: string;
+  vendor_id: string;
+  category_id: string | null;
+  name: string;
+  details: string | null;
+  photo_url: string | null;
+  unit: string | null;
+  price: number;
+  mrp: number;
+  in_stock: boolean;
+};
+type Category = { id: string; name: string; emoji: string | null };
+type Vendor = { id: string; stall_name: string; is_open: boolean };
+
 function Home() {
-  const [hint, setHint] = useState(0);
-  const [query, setQuery] = useState("");
-  const [cat, setCat] = useState<string | null>(null);
-  const [zonePicker, setZonePicker] = useState(false);
-  const zoneId = useApp((s) => s.zoneId);
-  const cart = useApp((s) => s.cart);
-  const banners = useApp((s) => s.banners);
-  const zone = ZONES.find((z) => z.id === zoneId)!;
+  const { user } = useSession();
+  const lines = useCart();
+  const { count, foodTotal } = cartTotals(lines);
+  const [items, setItems] = useState<Item[]>([]);
+  const [cats, setCats] = useState<Category[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [active, setActive] = useState<string | null>(null);
+  const [q, setQ] = useState("");
+  const [menu, setMenu] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
-    const t = setInterval(() => setHint((h) => (h + 1) % SEARCH_HINTS.length), 2600);
-    return () => clearInterval(t);
+    supabase.from("categories").select("id,name,emoji").order("sort_order").then(({ data }) => setCats(data ?? []));
+    supabase.from("vendors").select("id,stall_name,is_open").eq("status", "APPROVED").then(({ data }) => setVendors(data ?? []));
+    supabase
+      .from("menu_items")
+      .select("id,vendor_id,category_id,name,details,photo_url,unit,price,mrp,in_stock")
+      .order("created_at")
+      .then(({ data }) => setItems((data ?? []) as Item[]));
   }, []);
 
-  const items = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return PRODUCTS.filter((p) => {
-      const vendor = VENDORS.find((v) => v.id === p.vendorId);
-      const matchQ =
-        !q || p.name.toLowerCase().includes(q) || (vendor?.stallName.toLowerCase().includes(q) ?? false);
-      const matchC = !cat || p.category === cat;
-      return matchQ && matchC;
-    });
-  }, [query, cat]);
-
-  const count = cart.reduce((s, l) => s + l.qty, 0);
-  const total = cart.reduce(
-    (s, l) => s + l.qty * (PRODUCTS.find((p) => p.id === l.productId)?.price ?? 0),
-    0,
+  const vendorName = useMemo(
+    () => Object.fromEntries(vendors.map((v) => [v.id, v.stall_name])),
+    [vendors],
   );
+
+  const shown = items.filter(
+    (i) =>
+      (!active || i.category_id === active) &&
+      (!q || i.name.toLowerCase().includes(q.toLowerCase())),
+  );
+
+  function add(i: Item) {
+    const res = cart.add({
+      itemId: i.id,
+      vendorId: i.vendor_id,
+      name: i.name,
+      photo: i.photo_url,
+      unit: i.unit,
+      price: Number(i.price),
+      mrp: Number(i.mrp),
+    });
+    if (!res.ok) setToast(res.error);
+    else setToast(null);
+  }
 
   return (
     <Shell>
-      <header className="bg-primary px-4 pb-4 pt-5 text-primary-foreground">
-        <p className="text-xs font-semibold opacity-90">Thaleewala in</p>
-        <h1 className="text-3xl font-extrabold leading-tight">15 minutes</h1>
-        <button
-          onClick={() => setZonePicker((v) => !v)}
-          className="mt-1 flex items-center gap-1 text-sm font-medium"
-        >
-          <span className="font-bold">HOME</span> · {zone.name}, Bhubaneswar
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-            <path d="M7 10l5 5 5-5z" />
-          </svg>
-        </button>
-        {zonePicker ? (
-          <div className="mt-2 rounded-xl bg-card p-2 text-foreground">
-            {ZONES.map((z) => (
-              <button
-                key={z.id}
-                onClick={() => {
-                  actions.setZone(z.id);
-                  setZonePicker(false);
-                }}
-                className={`block w-full rounded-lg px-3 py-2 text-left text-sm ${
-                  z.id === zoneId ? "bg-muted font-bold text-primary" : ""
-                }`}
-              >
-                {z.name}
-              </button>
-            ))}
-            <p className="px-3 py-2 text-[11px] text-muted-foreground">
-              More Bhubaneswar zones open soon.
-            </p>
+      <header className="sticky top-0 z-30 bg-primary px-4 pb-3 pt-4 text-primary-foreground">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-lg font-extrabold leading-none">Thaleewala</p>
+            <p className="mt-1 text-xs opacity-90">Delivery in 15 minutes · Bhubaneswar</p>
           </div>
-        ) : null}
-        <div className="mt-3 flex items-center gap-2 rounded-xl bg-card px-3 py-2.5">
-          <svg viewBox="0 0 24 24" className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="7" />
-            <path d="M20 20l-3.5-3.5" strokeLinecap="round" />
-          </svg>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={SEARCH_HINTS[hint]}
-            aria-label="Search street food"
-            className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
-          />
+          <div className="flex items-center gap-2">
+            <Link
+              to={user ? "/profile" : "/auth"}
+              aria-label="Your account"
+              className="grid h-9 w-9 place-items-center rounded-full bg-white/20"
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <circle cx="12" cy="8" r="3.4" /><path d="M4.5 20a7.5 7.5 0 0115 0" strokeLinecap="round" />
+              </svg>
+            </Link>
+            <button
+              aria-label="More options"
+              onClick={() => setMenu((m) => !m)}
+              className="grid h-9 w-9 place-items-center rounded-full bg-white/20"
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
+                <circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" />
+              </svg>
+            </button>
+          </div>
         </div>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search dahi bara, roll, biryani…"
+          className="mt-3 w-full rounded-xl bg-card px-3 py-2.5 text-sm text-foreground outline-none"
+        />
       </header>
 
-      <section className="px-4 pt-4">
-        {banners.map((b) => (
-          <div key={b.id} className="mb-3 flex items-center justify-between rounded-2xl bg-accent px-4 py-3">
-            <div>
-              <p className="text-sm font-bold text-accent-foreground">{b.title}</p>
-              <p className="text-xs text-accent-foreground/80">{b.subtitle}</p>
-            </div>
-            {b.code ? (
-              <span className="rounded-lg bg-card px-2 py-1 text-xs font-bold text-primary">{b.code}</span>
-            ) : null}
-          </div>
-        ))}
-
-        <h2 className="mb-2 text-base font-bold">What's cooking nearby</h2>
-        <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
-          {CATEGORIES.map((c) => {
-            const active = cat === c.id;
-            return (
-              <button
-                key={c.id}
-                onClick={() => setCat(active ? null : c.id)}
-                className="w-[74px] shrink-0 text-center"
-              >
-                <span
-                  className={`block overflow-hidden rounded-2xl border-2 ${
-                    active ? "border-primary" : "border-transparent"
-                  }`}
-                  style={{ background: "var(--tile)" }}
-                >
-                  <img src={c.image} alt={c.label} className="h-[74px] w-full object-cover" loading="lazy" />
-                </span>
-                <span className="mt-1 block text-[11px] font-semibold leading-tight">{c.label}</span>
-              </button>
-            );
-          })}
+      {menu ? (
+        <div className="absolute right-3 z-40 mt-1 w-52 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+          {[
+            { to: "/orders", label: "Your orders" },
+            { to: "/profile", label: "Profile & wallet" },
+            { to: "/terms", label: "Terms & conditions" },
+            { to: "/vendor", label: "Stall partner portal" },
+            { to: "/rider", label: "Delivery partner portal" },
+            { to: "/admin", label: "Administration" },
+          ].map((m) => (
+            <Link key={m.to} to={m.to} onClick={() => setMenu(false)} className="block px-3 py-2.5 text-sm">
+              {m.label}
+            </Link>
+          ))}
+          <a href="tel:9078492360" className="block border-t border-border px-3 py-2.5 text-sm font-semibold text-primary">
+            Call care · 9078492360
+          </a>
         </div>
-      </section>
+      ) : null}
 
-      <section className="grid grid-cols-2 gap-3 px-4 pb-6 pt-5">
-        {items.map((p) => {
-          const vendor = VENDORS.find((v) => v.id === p.vendorId);
-          const line = cart.find((l) => l.productId === p.id);
+      <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 py-3">
+        <button
+          onClick={() => setActive(null)}
+          className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${!active ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+        >
+          All
+        </button>
+        {cats.map((c) => (
+          <button
+            key={c.id}
+            onClick={() => setActive(c.id)}
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${active === c.id ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+          >
+            {c.emoji} {c.name}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 px-4 pb-32">
+        {shown.map((i) => {
+          const line = lines.find((l) => l.itemId === i.id);
           return (
-            <article key={p.id} className="card-soft overflow-hidden border border-border">
-              <img src={p.image} alt={p.name} className="h-32 w-full object-cover" loading="lazy" />
-              <div className="p-2.5">
-                <p className="text-sm font-semibold leading-tight">{p.name}</p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">{vendor?.stallName}</p>
-                <p className="text-[11px] text-muted-foreground">{p.unit} · 10 min prep</p>
-                <div className="mt-2 flex items-center justify-between">
-                  <p className="text-sm font-bold">
-                    {inr(p.price)}{" "}
-                    <span className="text-[11px] font-normal text-muted-foreground line-through">{inr(p.mrp)}</span>
-                  </p>
-                  {line ? (
-                    <div className="flex items-center gap-2 rounded-lg bg-primary px-2 py-1 text-primary-foreground">
-                      <button aria-label={`Remove one ${p.name}`} onClick={() => actions.removeItem(p.id)} className="px-1 font-bold">
-                        −
-                      </button>
-                      <span className="text-xs font-bold">{line.qty}</span>
-                      <button aria-label={`Add one ${p.name}`} onClick={() => actions.addItem(p.id)} className="px-1 font-bold">
-                        +
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => actions.addItem(p.id)}
-                      className="rounded-lg border border-primary px-3 py-1 text-xs font-bold text-primary"
-                    >
-                      ADD
-                    </button>
-                  )}
-                </div>
+            <div key={i.id} className="card-soft border border-border p-2">
+              <div className="relative">
+                <img src={i.photo_url ?? "/food/food-tiffin.jpg"} alt={i.name} className="h-28 w-full rounded-xl object-cover" />
+                {!i.in_stock ? (
+                  <span className="absolute inset-0 grid place-items-center rounded-xl bg-black/55 text-xs font-bold text-white">
+                    Out of stock
+                  </span>
+                ) : null}
               </div>
-            </article>
+              <p className="mt-2 truncate text-sm font-bold">{i.name}</p>
+              <p className="truncate text-[11px] text-muted-foreground">{vendorName[i.vendor_id] ?? "Stall"} · {i.unit}</p>
+              <div className="mt-2 flex items-center justify-between">
+                <p className="text-sm font-bold">
+                  {inr(Number(i.price))}{" "}
+                  {Number(i.mrp) > Number(i.price) ? (
+                    <span className="text-[11px] font-normal text-muted-foreground line-through">{inr(Number(i.mrp))}</span>
+                  ) : null}
+                </p>
+                {!i.in_stock ? null : line ? (
+                  <div className="flex items-center gap-2 rounded-lg bg-primary px-2 py-1 text-primary-foreground">
+                    <button aria-label="Remove one" onClick={() => cart.remove(i.id)} className="px-1 font-bold">−</button>
+                    <span className="text-xs font-bold">{line.qty}</span>
+                    <button aria-label="Add one" onClick={() => add(i)} className="px-1 font-bold">+</button>
+                  </div>
+                ) : (
+                  <button onClick={() => add(i)} className="rounded-lg border border-primary px-3 py-1 text-xs font-bold text-primary">
+                    ADD
+                  </button>
+                )}
+              </div>
+            </div>
           );
         })}
-        {items.length === 0 ? (
-          <p className="col-span-2 py-10 text-center text-sm text-muted-foreground">
-            Nothing matched. Try “pakoda” or “chai”.
-          </p>
-        ) : null}
-      </section>
+      </div>
 
-      <section className="px-4 pb-8">
-        <div className="card-soft border border-border p-4">
-          <h3 className="text-sm font-bold">More on Thaleewala</h3>
-          <div className="mt-2 grid gap-2 text-sm">
-            <Link to="/vendor" className="rounded-xl bg-muted px-3 py-2.5 font-semibold">Partner with Us</Link>
-            <Link to="/rider" className="rounded-xl bg-muted px-3 py-2.5 font-semibold">Deliver with Thaleewala</Link>
-            <Link to="/admin" className="rounded-xl bg-muted px-3 py-2.5 font-semibold">Administration</Link>
-          </div>
+      {toast ? (
+        <div className="fixed inset-x-0 bottom-32 z-40 mx-auto w-full max-w-[440px] px-4">
+          <div className="rounded-xl bg-foreground px-4 py-2.5 text-xs font-semibold text-background">{toast}</div>
         </div>
-      </section>
+      ) : null}
 
-      {count > 0 ? (
+      {count ? (
         <div className="fixed inset-x-0 bottom-[62px] z-40 mx-auto w-full max-w-[480px] px-3">
           <Link
             to="/cart"
             className="flex items-center justify-between rounded-xl bg-primary px-4 py-3 text-primary-foreground shadow-lg"
           >
-            <span className="text-sm font-bold">
-              {count} item{count > 1 ? "s" : ""} · {inr(total)}
-            </span>
-            <span className="text-sm font-bold">VIEW CART ›</span>
+            <span className="text-sm font-bold">{count} item{count > 1 ? "s" : ""} · {inr(foodTotal)}</span>
+            <span className="text-sm font-bold">View cart ›</span>
           </Link>
         </div>
       ) : null}

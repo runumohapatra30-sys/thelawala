@@ -1,72 +1,186 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
-import { PRODUCTS } from "@/lib/data";
-import { ZONES } from "@/lib/geo";
-import { actions, computeBill, inr, useApp } from "@/lib/store";
+import { supabase } from "@/integrations/supabase/client";
+import { cart, cartTotals, useCart } from "@/lib/cart";
+import { computeBill, haversineKm, inr, type Settings } from "@/lib/fees";
+import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
     meta: [
-      { title: "Your cart — Thaleewala" },
-      { name: "description", content: "Review your street food order, bill and delivery address." },
-      { property: "og:title", content: "Your cart — Thaleewala" },
-      { property: "og:description", content: "Transparent bill with delivery, handling and charity split." },
+      { title: "Checkout — Thaleewala" },
+      { name: "description", content: "Add your name, mobile, pincode and address, choose cash or online payment and place your Thaleewala order." },
+      { property: "og:title", content: "Checkout — Thaleewala" },
+      { property: "og:description", content: "Transparent bill with distance-based delivery fee." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Cart,
 });
 
-const PAYMENTS = ["UPI", "Card", "Thaleewala Wallet", "Cash on Delivery"];
+const otp = () => String(Math.floor(100000 + Math.random() * 900000));
 
 function Cart() {
   const navigate = useNavigate();
-  const cart = useApp((s) => s.cart);
-  const zoneId = useApp((s) => s.zoneId);
-  const coupon = useApp((s) => s.coupon);
-  const zone = ZONES.find((z) => z.id === zoneId)!;
-  const [address, setAddress] = useState("1145 Raghunath Nagar, Baba Akhandalamani temple road");
-  const [payment, setPayment] = useState(PAYMENTS[0]!);
-  const [code, setCode] = useState("");
-  const [couponMsg, setCouponMsg] = useState<string | null>(null);
+  const { user } = useSession();
+  const lines = useCart();
+  const { foodTotal, mrpTotal } = cartTotals(lines);
 
-  const lines = cart.map((l) => {
-    const p = PRODUCTS.find((x) => x.id === l.productId)!;
-    return { ...p, qty: l.qty };
-  });
-  const bill = computeBill(lines, coupon?.percent ?? 0);
-  const serviceable = Boolean(zone);
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [vendor, setVendor] = useState<{ id: string; stall_name: string; lat: number; lng: number } | null>(null);
+  const [form, setForm] = useState({ full_name: "", mobile: "", pincode: "", line: "", landmark: "" });
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [payment, setPayment] = useState<"COD" | "ONLINE">("COD");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.from("system_settings").select("*").maybeSingle().then(({ data }) => {
+      setSettings(data as Settings | null);
+      if (data && !data.enable_cod) setPayment("ONLINE");
+    });
+  }, []);
+
+  useEffect(() => {
+    const vid = lines[0]?.vendorId;
+    if (!vid) return;
+    supabase.from("vendors").select("id,stall_name,lat,lng").eq("id", vid).maybeSingle().then(({ data }) => setVendor(data));
+  }, [lines[0]?.vendorId]);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("addresses")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("is_default", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        setForm({
+          full_name: data.full_name,
+          mobile: data.mobile,
+          pincode: data.pincode,
+          line: data.line,
+          landmark: data.landmark ?? "",
+        });
+        setCoords({ lat: Number(data.lat), lng: Number(data.lng) });
+      });
+  }, [user?.id]);
+
+  function locate() {
+    navigator.geolocation?.getCurrentPosition(
+      (p) => setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => setErr("Could not read your location. Please allow location access."),
+      { enableHighAccuracy: true },
+    );
+  }
+
+  const distanceKm = vendor && coords ? haversineKm(coords, { lat: Number(vendor.lat), lng: Number(vendor.lng) }) : 0;
+  const bill = settings ? computeBill({ settings, foodTotal, mrpTotal, distanceKm }) : null;
 
   if (lines.length === 0) {
     return (
       <Shell>
         <PortalHeader title="Your cart" />
-        <div className="px-4 py-20 text-center">
-          <p className="text-sm text-muted-foreground">Your cart is empty. Add something hot.</p>
-        </div>
+        <p className="px-4 py-20 text-center text-sm text-muted-foreground">Your cart is empty. Add something hot.</p>
       </Shell>
     );
   }
 
+  async function place() {
+    setErr(null);
+    if (!user) return navigate({ to: "/auth" });
+    if (!form.full_name || form.mobile.length < 10 || form.pincode.length < 6 || !form.line)
+      return setErr("Please fill name, 10-digit mobile, 6-digit pincode and full address.");
+    if (!coords) return setErr("Please set your delivery location on the map.");
+    if (!bill || !vendor) return;
+
+    setBusy(true);
+    await supabase.from("addresses").insert({
+      user_id: user.id,
+      full_name: form.full_name,
+      mobile: form.mobile,
+      pincode: form.pincode,
+      line: form.line,
+      landmark: form.landmark || null,
+      lat: coords.lat,
+      lng: coords.lng,
+      is_default: true,
+    });
+
+    const { data: order, error } = await supabase
+      .from("orders")
+      .insert({
+        code: `TW${Date.now().toString().slice(-7)}`,
+        user_id: user.id,
+        vendor_id: vendor.id,
+        customer_name: form.full_name,
+        customer_mobile: form.mobile,
+        address_line: form.landmark ? `${form.line}, ${form.landmark}` : form.line,
+        pincode: form.pincode,
+        drop_lat: coords.lat,
+        drop_lng: coords.lng,
+        distance_km: bill.distanceKm,
+        food_total: bill.foodTotal,
+        delivery_fee: bill.deliveryFee,
+        platform_fee: bill.platformFee,
+        handling_fee: bill.handlingFee,
+        packing_fee: bill.packingFee,
+        surge_fee: bill.surgeFee,
+        grand_total: bill.grandTotal,
+        payment_mode: payment,
+        payment_status: payment === "COD" ? "PENDING" : "PENDING",
+        pickup_otp: otp(),
+        delivery_otp: otp(),
+        status: "PLACED",
+      })
+      .select("id")
+      .single();
+
+    if (error || !order) {
+      setBusy(false);
+      return setErr(error?.message ?? "Could not place the order.");
+    }
+
+    await supabase.from("order_items").insert(
+      lines.map((l) => ({
+        order_id: order.id,
+        item_id: l.itemId,
+        name: l.name,
+        qty: l.qty,
+        price: l.price,
+        mrp: l.mrp,
+        photo_url: l.photo,
+      })),
+    );
+
+    cart.clear();
+    setBusy(false);
+    navigate({ to: "/orders/$id", params: { id: order.id }, search: { placed: 1 } });
+  }
+
   return (
     <Shell>
-      <PortalHeader title="Checkout" subtitle={`Delivering to ${zone.name}`} />
-      <div className="space-y-3 p-4">
+      <PortalHeader title="Checkout" subtitle={vendor?.stall_name ?? "Your order"} />
+      <div className="space-y-3 p-4 pb-32">
         <div className="card-soft border border-border p-3">
-          <p className="text-sm font-bold">Free delivery in 15 minutes</p>
-          <p className="text-xs text-muted-foreground">Shipment of {lines.length} items</p>
+          <p className="text-sm font-bold">Delivery in 15 minutes</p>
           <div className="mt-3 space-y-3">
             {lines.map((l) => (
-              <div key={l.id} className="flex items-center gap-3">
-                <img src={l.image} alt={l.name} className="h-14 w-14 rounded-xl object-cover" />
+              <div key={l.itemId} className="flex items-center gap-3">
+                <img src={l.photo ?? "/food/food-tiffin.jpg"} alt={l.name} className="h-14 w-14 rounded-xl object-cover" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{l.name}</p>
                   <p className="text-xs text-muted-foreground">{l.unit}</p>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg bg-primary px-2 py-1 text-primary-foreground">
-                  <button aria-label="Remove one" onClick={() => actions.removeItem(l.id)} className="px-1 font-bold">−</button>
+                  <button aria-label="Remove one" onClick={() => cart.remove(l.itemId)} className="px-1 font-bold">−</button>
                   <span className="text-xs font-bold">{l.qty}</span>
-                  <button aria-label="Add one" onClick={() => actions.addItem(l.id)} className="px-1 font-bold">+</button>
+                  <button aria-label="Add one" onClick={() => cart.add(l)} className="px-1 font-bold">+</button>
                 </div>
                 <p className="w-14 text-right text-sm font-bold">{inr(l.price * l.qty)}</p>
               </div>
@@ -74,92 +188,104 @@ function Cart() {
           </div>
         </div>
 
-        <div className="card-soft border border-border p-3">
-          <label className="block text-xs font-semibold text-muted-foreground">Delivery address</label>
-          <textarea
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            rows={2}
-            className="mt-1 w-full rounded-xl border border-border bg-card p-2.5 text-sm outline-none focus:border-primary"
-          />
-          {!serviceable ? (
-            <p className="mt-2 text-xs font-semibold text-destructive">
-              Sorry, Thaleewala is not available at this location yet.
+        <div className="card-soft space-y-2 border border-border p-3">
+          <p className="text-sm font-bold">Delivery details</p>
+          {([
+            ["full_name", "Full name", "text"],
+            ["mobile", "Mobile number", "tel"],
+            ["pincode", "Pincode", "tel"],
+            ["landmark", "Landmark (optional)", "text"],
+          ] as const).map(([k, label, type]) => (
+            <label key={k} className="block">
+              <span className="mb-1 block text-xs font-semibold text-muted-foreground">{label}</span>
+              <input
+                type={type}
+                value={form[k]}
+                onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+                className="w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
+              />
+            </label>
+          ))}
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-muted-foreground">Full address</span>
+            <textarea
+              rows={2}
+              value={form.line}
+              onChange={(e) => setForm({ ...form, line: e.target.value })}
+              className="w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
+            />
+          </label>
+          <button onClick={locate} className="w-full rounded-xl border border-primary py-2.5 text-sm font-bold text-primary">
+            {coords ? `Location set (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}) · Update` : "Use my current location"}
+          </button>
+          {coords && vendor ? (
+            <p className="text-xs text-muted-foreground">
+              {distanceKm} km from {vendor.stall_name}
             </p>
           ) : null}
         </div>
 
         <div className="card-soft border border-border p-3">
-          <p className="text-sm font-bold">Coupon</p>
-          <div className="mt-2 flex gap-2">
-            <input
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="FEST20"
-              className="flex-1 rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-            <button
-              onClick={() => {
-                const ok = actions.applyCoupon(code);
-                setCouponMsg(ok ? "Coupon applied" : "Invalid coupon code");
-              }}
-              className="rounded-xl border border-primary px-4 text-sm font-bold text-primary"
-            >
-              APPLY
-            </button>
-          </div>
-          {couponMsg ? <p className="mt-1 text-xs text-muted-foreground">{couponMsg}</p> : null}
-        </div>
-
-        <div className="card-soft border border-border p-3">
           <p className="text-sm font-bold">Bill details</p>
-          <dl className="mt-2 space-y-1.5 text-sm">
-            <Row label="Item total (MRP)" value={inr(bill.mrpTotal)} />
-            <Row label="Stall discount" value={`− ${inr(bill.discount)}`} good />
-            {bill.coupon ? <Row label={`Coupon ${coupon?.code}`} value={`− ${inr(bill.coupon)}`} good /> : null}
-            <Row label="Handling fee" value={inr(bill.handling)} />
-            {bill.surge ? <Row label="Small order fee" value={inr(bill.surge)} /> : null}
-            <Row label="Delivery fee" value={bill.delivery ? inr(bill.delivery) : "FREE"} />
-            <Row label="Charity contribution (2%)" value={inr(bill.charity)} />
-            <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold">
-              <span>To pay</span>
-              <span>{inr(bill.grand)}</span>
-            </div>
-          </dl>
+          {bill ? (
+            <dl className="mt-2 space-y-1.5 text-sm">
+              <Row label="Item total (MRP)" value={inr(bill.mrpTotal)} />
+              {bill.discount > 0 ? <Row label="Stall discount" value={`− ${inr(bill.discount)}`} good /> : null}
+              <Row label={`Delivery fee (${bill.distanceKm} km)`} value={bill.deliveryFee ? inr(bill.deliveryFee) : "FREE"} />
+              {bill.platformFee ? <Row label="Platform fee" value={inr(bill.platformFee)} /> : null}
+              {bill.handlingFee ? <Row label="Handling fee" value={inr(bill.handlingFee)} /> : null}
+              {bill.packingFee ? <Row label="Packing fee" value={inr(bill.packingFee)} /> : null}
+              {bill.surgeFee ? <Row label="Surge fee" value={inr(bill.surgeFee)} /> : null}
+              <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold">
+                <span>To pay</span>
+                <span>{inr(bill.grandTotal)}</span>
+              </div>
+            </dl>
+          ) : (
+            <p className="mt-2 text-xs text-muted-foreground">Loading charges…</p>
+          )}
         </div>
 
         <div className="card-soft border border-border p-3">
           <p className="text-sm font-bold">Payment method</p>
           <div className="mt-2 grid gap-2">
-            {PAYMENTS.map((m) => (
-              <button
-                key={m}
-                onClick={() => setPayment(m)}
-                className={`rounded-xl border px-3 py-2.5 text-left text-sm font-semibold ${
-                  payment === m ? "border-primary text-primary" : "border-border"
-                }`}
-              >
-                {m}
-              </button>
-            ))}
+            {settings?.enable_cod !== false ? (
+              <PayBtn active={payment === "COD"} onClick={() => setPayment("COD")} label="Cash on delivery" hint="Pay the delivery partner" />
+            ) : null}
+            {settings?.enable_online_payment ? (
+              <PayBtn active={payment === "ONLINE"} onClick={() => setPayment("ONLINE")} label="Pay online (UPI / card)" hint={`Secured by ${settings.payment_gateway}`} />
+            ) : (
+              <p className="text-xs text-muted-foreground">Online payment is currently switched off.</p>
+            )}
           </div>
         </div>
+
+        {err ? <p className="text-xs font-semibold text-destructive">{err}</p> : null}
       </div>
 
       <div className="fixed inset-x-0 bottom-[62px] z-40 mx-auto w-full max-w-[480px] px-3">
         <button
-          disabled={!serviceable}
-          onClick={() => {
-            const order = actions.placeOrder(payment, address);
-            navigate({ to: "/orders/$id", params: { id: order.id } });
-          }}
+          disabled={busy || !bill}
+          onClick={place}
           className="flex w-full items-center justify-between rounded-xl bg-primary px-4 py-3 text-primary-foreground shadow-lg disabled:opacity-50"
         >
-          <span className="text-sm font-bold">{inr(bill.grand)}</span>
-          <span className="text-sm font-bold">PLACE ORDER ›</span>
+          <span className="text-sm font-bold">{bill ? inr(bill.grandTotal) : "—"}</span>
+          <span className="text-sm font-bold">{busy ? "PLACING…" : "PLACE ORDER ›"}</span>
         </button>
       </div>
     </Shell>
+  );
+}
+
+function PayBtn({ active, onClick, label, hint }: { active: boolean; onClick: () => void; label: string; hint: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-xl border px-3 py-2.5 text-left ${active ? "border-primary" : "border-border"}`}
+    >
+      <p className={`text-sm font-bold ${active ? "text-primary" : ""}`}>{label}</p>
+      <p className="text-[11px] text-muted-foreground">{hint}</p>
+    </button>
   );
 }
 
