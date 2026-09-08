@@ -188,8 +188,9 @@ function Admin() {
               name={v.stall_name}
               status={v.status}
               onSet={async (status) => {
-                await supabase.from("vendors").update({ status }).eq("id", v.id);
-                setVendors(vendors.map((x) => (x.id === v.id ? { ...x, status } : x)));
+                const { error } = await supabase.from("vendors").update({ status }).eq("id", v.id);
+                if (error) throw error;
+                setVendors((prev) => prev.map((x) => (x.id === v.id ? { ...x, status } : x)));
               }}
             />
           ))}
