@@ -47,7 +47,7 @@ function RiderPortal() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("delivery_partners").select("id,name,status,is_online,is_busy").eq("user_id", user.id).maybeSingle()
+    supabase.from("delivery_partners").select("id,name,status,is_online,is_busy,dl_number").eq("user_id", user.id).maybeSingle()
       .then(({ data }) => setMe(data));
   }, [user?.id]);
 
@@ -142,7 +142,7 @@ function RiderPortal() {
             onClick={async () => {
               const { data, error } = await supabase.from("delivery_partners").insert({
                 user_id: user.id, name: form.name, mobile: form.mobile, vehicle_no: form.vehicle_no, status: "PENDING_APPROVAL",
-              }).select("id,name,status,is_online,is_busy").single();
+              }).select("id,name,status,is_online,is_busy,dl_number").single();
               if (error) setMsg(error.message);
               else setMe(data);
             }}
