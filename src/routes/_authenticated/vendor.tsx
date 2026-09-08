@@ -307,6 +307,21 @@ function VendorPortal() {
           </div>
         ) : null}
 
+        <div className="grid grid-cols-3 gap-2">
+          <div className="card-soft border border-border p-3 text-center">
+            <p className="text-[11px] text-muted-foreground">Today&apos;s orders</p>
+            <p className="text-sm font-black">{today.orders}</p>
+          </div>
+          <div className="card-soft border border-border p-3 text-center">
+            <p className="text-[11px] text-muted-foreground">Today&apos;s sales</p>
+            <p className="text-sm font-black">{inr(Math.round(today.sales))}</p>
+          </div>
+          <div className="card-soft border border-border p-3 text-center">
+            <p className="text-[11px] text-muted-foreground">Food rating</p>
+            <p className="text-sm font-black">{today.rating ? `${today.rating} ★` : "—"}</p>
+          </div>
+        </div>
+
         <button
           onClick={async () => {
             await supabase.from("vendors").update({ is_open: !vendor.is_open }).eq("id", vendor.id);
