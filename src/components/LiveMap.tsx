@@ -138,5 +138,9 @@ export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className 
       </div>
     );
   }
-  return <div ref={ref} className={className} />;
+  return (
+    <div className={className}>
+      <div ref={ref} className="h-full w-full" />
+    </div>
+  );
 }
