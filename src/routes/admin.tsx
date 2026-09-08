@@ -316,8 +316,8 @@ function CouponManager() {
   async function create() {
     const code = form.code.trim().toUpperCase();
     const value = Number(form.discount_value);
-    if (!/^[A-Z0-9]{4,15}$/.test(code)) return toast.error("Code must be 4-15 letters or numbers.");
-    if (!value || value <= 0) return toast.error("Enter a discount value above zero.");
+    if (!/^[A-Z0-9]{4,15}$/.test(code)) { toast.error("Code must be 4-15 letters or numbers."); return; }
+    if (!value || value <= 0) { toast.error("Enter a discount value above zero."); return; }
     setBusy(true);
     const { error } = await supabase.from("coupons").insert({
       code,
