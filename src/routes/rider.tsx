@@ -7,6 +7,7 @@ import { rejectOffer } from "@/lib/dispatch";
 import { haversineKm, inr } from "@/lib/fees";
 import { useSession } from "@/lib/session";
 import { dlError, normalizeDl } from "@/lib/validation";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/rider")({
   head: () => ({
