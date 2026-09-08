@@ -395,7 +395,10 @@ function PayuKeys() {
       .from("payment_credentials")
       .upsert({ id: true, provider: "PAYU", payu_key: key.trim(), payu_salt: salt.trim(), is_live: live, updated_at: new Date().toISOString() });
     setBusy(false);
-    if (error) return toast.error("Could not save the keys. Please try again.");
+    if (error) {
+      toast.error("Could not save the keys. Please try again.");
+      return;
+    }
     toast.success(live ? "Online payment is live now." : "Saved. Test mode is on.");
   }
 
