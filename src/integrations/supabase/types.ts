@@ -247,6 +247,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           code: string
+          completed_at: string | null
           created_at: string
           customer_mobile: string
           customer_name: string
@@ -270,9 +271,11 @@ export type Database = {
           penalty_fee: number
           picked_up_at: string | null
           pickup_otp: string
+          pickup_scanned_at: string | null
           pincode: string
           platform_fee: number
           proof_photo_url: string | null
+          qr_hash: string | null
           rejected_partner_ids: string[]
           status: string
           surge_fee: number
@@ -289,6 +292,7 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           code?: string
+          completed_at?: string | null
           created_at?: string
           customer_mobile: string
           customer_name: string
@@ -312,9 +316,11 @@ export type Database = {
           penalty_fee?: number
           picked_up_at?: string | null
           pickup_otp?: string
+          pickup_scanned_at?: string | null
           pincode: string
           platform_fee?: number
           proof_photo_url?: string | null
+          qr_hash?: string | null
           rejected_partner_ids?: string[]
           status?: string
           surge_fee?: number
@@ -331,6 +337,7 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           code?: string
+          completed_at?: string | null
           created_at?: string
           customer_mobile?: string
           customer_name?: string
@@ -354,9 +361,11 @@ export type Database = {
           penalty_fee?: number
           picked_up_at?: string | null
           pickup_otp?: string
+          pickup_scanned_at?: string | null
           pincode?: string
           platform_fee?: number
           proof_photo_url?: string | null
+          qr_hash?: string | null
           rejected_partner_ids?: string[]
           status?: string
           surge_fee?: number
@@ -872,6 +881,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_delivery: {
+        Args: { _order_id: string; _otp: string }
+        Returns: undefined
+      }
       decide_refund: {
         Args: { _admin_note?: string; _approve: boolean; _request_id: string }
         Returns: undefined
