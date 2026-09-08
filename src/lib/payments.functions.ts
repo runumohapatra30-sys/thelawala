@@ -44,7 +44,7 @@ export const createPayuPayment = createServerFn({ method: "POST" })
     const seq = [key, txnid, amount, productinfo, firstname, email, udf1, udf2, udf3, "", "", "", "", "", "", salt];
     const hash = createHash("sha512").update(seq.join("|")).digest("hex");
 
-    const origin = process.env["PUBLIC_SITE_URL"] || "";
+    const origin = data.origin.replace(/\/$/, "");
     return {
       action,
       params: {
