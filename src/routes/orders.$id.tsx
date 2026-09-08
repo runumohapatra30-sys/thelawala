@@ -169,8 +169,16 @@ function Track() {
 
         {live ? (
           <div className="card-soft border-2 border-primary p-4 text-center">
-            <p className="text-xs font-semibold text-muted-foreground">Delivery OTP · share only at handover</p>
-            <p className="mt-1 text-4xl font-black tracking-[0.35em] text-primary">{order.delivery_otp}</p>
+            <p className="text-xs font-semibold text-muted-foreground">
+              Share this OTP with your delivery partner at delivery
+            </p>
+            <div className="mt-2 flex justify-center gap-2">
+              {String(order.delivery_otp ?? "").split("").map((d, i) => (
+                <span key={i} className="grid h-12 w-11 place-items-center rounded-xl bg-primary text-2xl font-black text-primary-foreground">
+                  {d}
+                </span>
+              ))}
+            </div>
           </div>
         ) : null}
 
