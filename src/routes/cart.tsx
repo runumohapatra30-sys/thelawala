@@ -342,7 +342,7 @@ function Cart() {
           onClick={place}
           className="flex w-full items-center justify-between rounded-xl bg-primary px-4 py-3 text-primary-foreground shadow-lg disabled:opacity-50"
         >
-          <span className="text-sm font-bold">{bill ? inr(bill.grandTotal) : "—"}</span>
+          <span className="text-sm font-bold">{bill ? inr(payable) : "—"}</span>
           <span className="text-sm font-bold">{busy ? "PLACING…" : "PLACE ORDER ›"}</span>
         </button>
       </div>
