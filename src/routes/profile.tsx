@@ -115,6 +115,9 @@ function Profile() {
           <Link to="/terms" className="flex items-center justify-between px-3 py-3.5 text-sm font-bold">
             Account privacy, cancellation &amp; refunds <Chevron />
           </Link>
+          <Link to="/support" search={{ order: undefined }} className="flex items-center justify-between border-b border-border px-3 py-3.5 text-sm font-bold text-primary">
+            Chat with support <Chevron />
+          </Link>
           <a href="tel:9078492360" className="flex items-center justify-between px-3 py-3.5 text-sm font-bold text-primary">
             Call support · 9078492360 <Chevron />
           </a>

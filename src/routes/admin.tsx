@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
+import { SupportQueue } from "@/components/SupportQueue";
 import { supabase } from "@/integrations/supabase/client";
 import { inr, STATUS_LABEL, type Settings } from "@/lib/fees";
 import { useIsAdmin, useSession } from "@/lib/session";
@@ -213,6 +214,8 @@ function Admin() {
             />
           ))}
         </section>
+
+        <SupportQueue adminId={user.id} />
 
         <section className="card-soft border border-border p-3">
           <p className="text-sm font-bold">Refund requests</p>

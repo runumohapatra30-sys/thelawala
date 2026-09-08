@@ -49,6 +49,7 @@ function Orders() {
           <p className="py-16 text-center text-sm text-muted-foreground">No orders yet.</p>
         ) : (
           rows.map((o) => (
+            <div key={o.id} className="space-y-1">
             <Link
               key={o.id}
               to="/orders/$id"
@@ -64,6 +65,10 @@ function Orders() {
               </div>
               <p className="text-sm font-bold">{inr(Number(o.grand_total))}</p>
             </Link>
+            <Link to="/support" search={{ order: o.id }} className="block px-1 text-[11px] font-bold text-primary">
+              Need help with this order?
+            </Link>
+            </div>
           ))
         )}
       </div>
