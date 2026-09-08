@@ -17,7 +17,7 @@ export const Route = createFileRoute("/vendor")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: VendorPortal;
+  component: VendorPortal,
 });
 
 type Order = {
