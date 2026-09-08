@@ -191,3 +191,24 @@
   border-radius: 1rem;
   z-index: 0;
 }
+
+@utility brand-header {
+  background: linear-gradient(180deg, var(--color-brand) 0%, color-mix(in oklab, var(--color-brand) 88%, white) 100%);
+  color: var(--color-brand-foreground);
+}
+
+@utility press {
+  transition: transform 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+@utility food-grid-bg {
+  background-color: var(--color-brand-soft);
+  background-image: radial-gradient(circle at 20% 15%, color-mix(in oklab, var(--color-brand) 55%, transparent) 0 12px, transparent 13px),
+    radial-gradient(circle at 78% 30%, color-mix(in oklab, var(--color-primary) 22%, transparent) 0 10px, transparent 11px),
+    radial-gradient(circle at 35% 70%, color-mix(in oklab, var(--color-primary) 16%, transparent) 0 14px, transparent 15px),
+    radial-gradient(circle at 85% 82%, color-mix(in oklab, var(--color-brand) 45%, transparent) 0 11px, transparent 12px);
+  background-size: 180px 180px;
+}
