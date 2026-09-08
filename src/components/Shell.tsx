@@ -2,11 +2,26 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 const NAV = [
-  { to: "/", label: "Home", icon: "M4 11l8-7 8 7v8a1 1 0 01-1 1h-5v-6H10v6H5a1 1 0 01-1-1z" },
-  { to: "/orders", label: "Orders", icon: "M6 4h12v16l-6-3-6 3z" },
-  { to: "/vendor", label: "Stall", icon: "M4 10l1.5-4h13L20 10v2H4z M6 12h12v7H6z" },
-  { to: "/rider", label: "Rider", icon: "M5 17a3 3 0 106 0 3 3 0 00-6 0zm8 0a3 3 0 106 0 3 3 0 00-6 0zM7 15l3-6h4l2 6" },
-  { to: "/admin", label: "Admin", icon: "M12 3l8 4v5c0 5-3.4 8.2-8 9-4.6-.8-8-4-8-9V7z" },
+  {
+    to: "/",
+    label: "Home",
+    icon: "M4 11l8-7 8 7v8a1 1 0 01-1 1h-5v-6H10v6H5a1 1 0 01-1-1z",
+  },
+  {
+    to: "/orders",
+    label: "Order Again",
+    icon: "M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4",
+  },
+  {
+    to: "/categories",
+    label: "Categories",
+    icon: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
+  },
+  {
+    to: "/profile",
+    label: "Account",
+    icon: "M12 12a4 4 0 100-8 4 4 0 000 8zM4.5 20a7.5 7.5 0 0115 0",
+  },
 ];
 
 export function Shell({ children }: { children: ReactNode }) {
@@ -23,12 +38,12 @@ export function Shell({ children }: { children: ReactNode }) {
             <Link
               key={n.to}
               to={n.to}
-              className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-semibold ${
+              className={`press flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-bold ${
                 active ? "text-primary" : "text-muted-foreground"
               }`}
             >
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
-                <path d={n.icon} strokeLinejoin="round" />
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d={n.icon} strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               {n.label}
             </Link>
@@ -41,16 +56,16 @@ export function Shell({ children }: { children: ReactNode }) {
 
 export function PortalHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-card px-4 py-3">
+    <header className="brand-header sticky top-0 z-30 px-4 py-3">
       <div className="flex items-center gap-3">
-        <Link to="/" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-muted">
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+        <Link to="/" className="press grid h-9 w-9 shrink-0 place-items-center rounded-full bg-card/70">
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2">
             <path d="M15 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </Link>
         <div className="min-w-0">
-          <h1 className="truncate text-base font-bold text-foreground">{title}</h1>
-          {subtitle ? <p className="truncate text-xs text-muted-foreground">{subtitle}</p> : null}
+          <h1 className="truncate text-base font-extrabold">{title}</h1>
+          {subtitle ? <p className="truncate text-xs font-medium opacity-80">{subtitle}</p> : null}
         </div>
       </div>
     </header>
@@ -79,9 +94,21 @@ export function GreenButton({
   return (
     <button
       {...props}
-      className={`w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50 ${props.className ?? ""}`}
+      className={`press w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50 ${props.className ?? ""}`}
     >
       {children}
     </button>
+  );
+}
+
+export function ThelaLogo({ className = "h-10 w-10" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 48" className={className} aria-hidden="true">
+      <rect x="6" y="16" width="30" height="14" rx="3" fill="var(--color-primary)" />
+      <path d="M6 16l4-8h22l4 8z" fill="var(--color-brand)" stroke="var(--color-primary)" strokeWidth="2" strokeLinejoin="round" />
+      <circle cx="14" cy="36" r="5" fill="none" stroke="var(--color-primary)" strokeWidth="3" />
+      <circle cx="31" cy="36" r="5" fill="none" stroke="var(--color-primary)" strokeWidth="3" />
+      <path d="M36 22h6" stroke="var(--color-primary)" strokeWidth="3" strokeLinecap="round" />
+    </svg>
   );
 }
