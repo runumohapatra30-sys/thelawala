@@ -62,6 +62,9 @@ function Profile() {
           <p className="mt-1 text-[11px] text-muted-foreground">
             Refunds land here instantly and can be spent on your next order.
           </p>
+          <Link to="/wallet" className="mt-2 inline-block rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">
+            Add money &amp; history
+          </Link>
         </div>
 
         <div className="card-soft space-y-2 border border-border p-3">

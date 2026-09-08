@@ -4,6 +4,7 @@ import { PortalHeader, Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { cart, cartTotals, useCart } from "@/lib/cart";
 import { computeBill, haversineKm, inr, type Settings } from "@/lib/fees";
+import { createPayuPayment } from "@/lib/payments.functions";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/cart")({
@@ -35,6 +36,8 @@ function Cart() {
   const [payment, setPayment] = useState<"COD" | "ONLINE">("COD");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [useWallet, setUseWallet] = useState(true);
 
   useEffect(() => {
     supabase.from("system_settings").select("*").maybeSingle().then(({ data }) => {
@@ -42,6 +45,16 @@ function Cart() {
       if (data && !data.enable_cod) setPayment("ONLINE");
     });
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("wallets")
+      .select("balance,status")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setWalletBalance(data?.status === "ACTIVE" ? Number(data.balance) : 0));
+  }, [user?.id]);
 
   useEffect(() => {
     const vid = lines[0]?.vendorId;
@@ -81,6 +94,8 @@ function Cart() {
 
   const distanceKm = vendor && coords ? haversineKm(coords, { lat: Number(vendor.lat), lng: Number(vendor.lng) }) : 0;
   const bill = settings ? computeBill({ settings, foodTotal, mrpTotal, distanceKm }) : null;
+  const walletUse = bill && useWallet ? Math.min(walletBalance, bill.grandTotal) : 0;
+  const payable = bill ? Math.round((bill.grandTotal - walletUse) * 100) / 100 : 0;
 
   if (lines.length === 0) {
     return (
@@ -132,8 +147,9 @@ function Cart() {
         packing_fee: bill.packingFee,
         surge_fee: bill.surgeFee,
         grand_total: bill.grandTotal,
-        payment_mode: payment,
-        payment_status: payment === "COD" ? "PENDING" : "PENDING",
+        wallet_paid: walletUse,
+        payment_mode: payable === 0 ? "WALLET" : payment,
+        payment_status: payable === 0 ? "PAID" : "PENDING",
         pickup_otp: otp(),
         delivery_otp: otp(),
         status: "PLACED",
@@ -158,7 +174,52 @@ function Cart() {
       })),
     );
 
+    if (walletUse > 0) {
+      const { error: wErr } = await supabase.rpc("wallet_debit", {
+        _amount: walletUse,
+        _order_id: order.id,
+        _note: "Paid for order",
+      });
+      if (wErr) {
+        setBusy(false);
+        return setErr(wErr.message);
+      }
+    }
+
     cart.clear();
+
+    if (payable > 0 && payment === "ONLINE") {
+      try {
+        const checkout = await createPayuPayment({
+          data: {
+            amount: payable,
+            purpose: "ORDER",
+            orderId: order.id,
+            name: form.full_name,
+            email: user.email ?? "",
+            mobile: form.mobile,
+            origin: window.location.origin,
+          },
+        });
+        const f = document.createElement("form");
+        f.method = "POST";
+        f.action = checkout.action;
+        Object.entries(checkout.params).forEach(([k, v]) => {
+          const i = document.createElement("input");
+          i.type = "hidden";
+          i.name = k;
+          i.value = v;
+          f.appendChild(i);
+        });
+        document.body.appendChild(f);
+        f.submit();
+        return;
+      } catch (e) {
+        setBusy(false);
+        return setErr(e instanceof Error ? e.message : "Could not open the payment page.");
+      }
+    }
+
     setBusy(false);
     navigate({ to: "/orders/$id", params: { id: order.id }, search: { placed: 1 } });
   }
@@ -236,9 +297,10 @@ function Cart() {
               {bill.handlingFee ? <Row label="Handling fee" value={inr(bill.handlingFee)} /> : null}
               {bill.packingFee ? <Row label="Packing fee" value={inr(bill.packingFee)} /> : null}
               {bill.surgeFee ? <Row label="Surge fee" value={inr(bill.surgeFee)} /> : null}
+              {walletUse > 0 ? <Row label="Paid from wallet" value={`− ${inr(walletUse)}`} good /> : null}
               <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold">
                 <span>To pay</span>
-                <span>{inr(bill.grandTotal)}</span>
+                <span>{inr(payable)}</span>
               </div>
             </dl>
           ) : (
@@ -248,6 +310,17 @@ function Cart() {
 
         <div className="card-soft border border-border p-3">
           <p className="text-sm font-bold">Payment method</p>
+          {walletBalance > 0 ? (
+            <button
+              onClick={() => setUseWallet(!useWallet)}
+              className={`mt-2 flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm font-semibold ${useWallet ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+            >
+              Use wallet balance ({inr(walletBalance)})<span>{useWallet ? "ON" : "OFF"}</span>
+            </button>
+          ) : null}
+          {payable === 0 ? (
+            <p className="mt-2 text-xs font-semibold text-primary">Fully paid by your wallet.</p>
+          ) : null}
           <div className="mt-2 grid gap-2">
             {settings?.enable_cod !== false ? (
               <PayBtn active={payment === "COD"} onClick={() => setPayment("COD")} label="Cash on delivery" hint="Pay the delivery partner" />
@@ -269,7 +342,7 @@ function Cart() {
           onClick={place}
           className="flex w-full items-center justify-between rounded-xl bg-primary px-4 py-3 text-primary-foreground shadow-lg disabled:opacity-50"
         >
-          <span className="text-sm font-bold">{bill ? inr(bill.grandTotal) : "—"}</span>
+          <span className="text-sm font-bold">{bill ? inr(payable) : "—"}</span>
           <span className="text-sm font-bold">{busy ? "PLACING…" : "PLACE ORDER ›"}</span>
         </button>
       </div>

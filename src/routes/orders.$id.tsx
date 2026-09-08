@@ -35,6 +35,7 @@ type Order = {
   surge_fee: number; penalty_fee: number; distance_km: number; delivery_otp: string;
   drop_lat: number; drop_lng: number; vendor_id: string; partner_id: string | null;
   payment_mode: string; address_line: string; proof_photo_url: string | null; created_at: string;
+  payment_status: string; wallet_paid: number; cancel_reason: string | null;
 };
 
 function Track() {
@@ -48,6 +49,7 @@ function Track() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [reason, setReason] = useState(REASONS[0]!);
   const [splash, setSplash] = useState(Boolean(placed));
+  const [refundMsg, setRefundMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (!splash) return;
@@ -216,6 +218,30 @@ function Track() {
             </button>
           ) : null}
         </div>
+        {order.status === "CANCELLED" && (order.payment_status === "PAID" || Number(order.wallet_paid) > 0) ? (
+          <div className="card-soft border border-border p-3">
+            <p className="text-sm font-bold">Refund</p>
+            <p className="text-[11px] text-muted-foreground">
+              Ask for the money back to your Thaleewala wallet. Approved refunds are credited within minutes.
+            </p>
+            <button
+              onClick={async () => {
+                const amount = Math.max(0, Number(order.grand_total) - Number(order.penalty_fee ?? 0));
+                const { error } = await supabase.rpc("request_refund", {
+                  _order_id: order.id,
+                  _amount: amount,
+                  _reason: order.cancel_reason ?? "Order cancelled",
+                  _method: "WALLET",
+                });
+                setRefundMsg(error ? error.message : "Refund requested. We will credit your wallet shortly.");
+              }}
+              className="mt-2 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground"
+            >
+              Request refund
+            </button>
+            {refundMsg ? <p className="mt-2 text-xs font-semibold text-primary">{refundMsg}</p> : null}
+          </div>
+        ) : null}
         <Link to="/terms" className="block text-center text-[11px] text-muted-foreground underline">
           Cancellation &amp; refund terms
         </Link>
