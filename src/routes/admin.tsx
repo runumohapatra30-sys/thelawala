@@ -195,11 +195,16 @@ function Admin() {
 
         <section className="card-soft border border-border p-3">
           <p className="text-sm font-bold">Delivery partner approvals</p>
+          {riders.some((r) => r.status === "UNDER_REVIEW") ? (
+            <p className="mt-1 rounded-lg bg-destructive/10 px-2 py-1 text-[11px] font-bold text-destructive">
+              {riders.filter((r) => r.status === "UNDER_REVIEW").length} partner(s) changed their driving licence and are off duty until you approve.
+            </p>
+          ) : null}
           {riders.length === 0 ? <p className="mt-1 text-xs text-muted-foreground">No applications yet.</p> : null}
           {riders.map((r) => (
             <ApprovalRow
               key={r.id}
-              name={r.name}
+              name={`${r.name}${r.dl_number ? ` · DL ${r.dl_number}` : ""}`}
               status={r.status}
               onSet={async (status) => {
                 await supabase.from("delivery_partners").update({ status }).eq("id", r.id);
