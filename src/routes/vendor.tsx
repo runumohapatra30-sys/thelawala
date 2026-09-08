@@ -1,181 +1,203 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { Field, GreenButton, PortalHeader, Shell } from "@/components/Shell";
-import { ZONES } from "@/lib/geo";
-import { STATUS_LABEL, actions, inr, useApp } from "@/lib/store";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { PortalHeader, Shell } from "@/components/Shell";
+import { supabase } from "@/integrations/supabase/client";
+import { offerToNearestPartner } from "@/lib/dispatch";
+import { inr, STATUS_LABEL } from "@/lib/fees";
+import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/vendor")({
   head: () => ({
     meta: [
       { title: "Stall partner portal — Thaleewala" },
-      { name: "description", content: "Accept orders, prepare, pack and share the pickup OTP with riders." },
+      { name: "description", content: "Accept Thaleewala orders, mark food ready, share the pickup OTP and manage your stall menu and photos." },
       { property: "og:title", content: "Stall partner portal — Thaleewala" },
-      { property: "og:description", content: "Register your Bhubaneswar street stall and run live orders." },
+      { property: "og:description", content: "Run your street food stall on Thaleewala." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: VendorPortal,
+  component: VendorPortal;
 });
 
+type Order = {
+  id: string; code: string; status: string; grand_total: number; food_total: number;
+  pickup_otp: string; customer_name: string; address_line: string; partner_id: string | null;
+};
+type Item = { id: string; name: string; price: number; mrp: number; in_stock: boolean };
+
 function VendorPortal() {
-  const vendors = useApp((s) => s.vendors);
-  const orders = useApp((s) => s.orders);
-  const [tab, setTab] = useState<"orders" | "register">("orders");
-  const me = vendors[vendors.length - 1];
-  const live = orders.filter((o) => o.status !== "DELIVERED" && o.status !== "CANCELLED");
+  const { user, loading } = useSession();
+  const [vendor, setVendor] = useState<{ id: string; stall_name: string; status: string; is_open: boolean } | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
+  const [form, setForm] = useState({ stall_name: "", owner_name: "", mobile: "", address: "" });
+  const [msg, setMsg] = useState<string | null>(null);
 
-  return (
-    <Shell>
-      <PortalHeader title="Partner with Us" subtitle="Thaleewala stall portal" />
-      <div className="flex gap-2 p-4 pb-0">
-        {(["orders", "register"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`rounded-full px-4 py-1.5 text-xs font-bold ${
-              tab === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-            }`}
-          >
-            {t === "orders" ? "Live orders" : "Register stall"}
-          </button>
-        ))}
-      </div>
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("vendors").select("id,stall_name,status,is_open").eq("owner_id", user.id).maybeSingle()
+      .then(({ data }) => setVendor(data));
+  }, [user?.id]);
 
-      {tab === "orders" ? (
-        <div className="space-y-3 p-4">
-          {live.length === 0 ? (
-            <p className="py-16 text-center text-sm text-muted-foreground">No live orders right now.</p>
-          ) : null}
-          {live.map((o) => (
-            <div key={o.id} className="card-soft border border-border p-3">
-              <div className="flex justify-between">
-                <p className="text-sm font-bold">#{o.id}</p>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-primary">
-                  {STATUS_LABEL[o.status]}
-                </span>
-              </div>
-              <ul className="mt-2 text-sm text-muted-foreground">
-                {o.lines.map((l) => (
-                  <li key={l.productId}>
-                    {l.qty} × {l.name}
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {ZONES.find((z) => z.id === o.zoneId)?.name} · {inr(o.bill.grand)}
-              </p>
+  useEffect(() => {
+    if (!vendor) return;
+    const load = () => {
+      supabase.from("orders")
+        .select("id,code,status,grand_total,food_total,pickup_otp,customer_name,address_line,partner_id")
+        .eq("vendor_id", vendor.id).order("created_at", { ascending: false }).limit(30)
+        .then(({ data }) => setOrders((data ?? []) as Order[]));
+    };
+    load();
+    supabase.from("menu_items").select("id,name,price,mrp,in_stock").eq("vendor_id", vendor.id)
+      .then(({ data }) => setItems((data ?? []) as Item[]));
+    const t = setInterval(load, 8000);
+    return () => clearInterval(t);
+  }, [vendor?.id]);
 
-              {o.status === "PLACED" ? (
-                <GreenButton className="mt-3" onClick={() => actions.advance(o.id, "VENDOR_ACCEPTED")}>
-                  ACCEPT ORDER
-                </GreenButton>
-              ) : null}
-              {o.status === "VENDOR_ACCEPTED" ? (
-                <GreenButton className="mt-3" onClick={() => actions.advance(o.id, "PREPARING")}>
-                  START PREPARING
-                </GreenButton>
-              ) : null}
-              {o.status === "PREPARING" ? (
-                <GreenButton className="mt-3" onClick={() => actions.advance(o.id, "PACKED")}>
-                  PACKED · READY FOR PICKUP
-                </GreenButton>
-              ) : null}
-              {o.status === "PACKED" ? (
-                <div className="mt-3 rounded-xl bg-muted p-3 text-center">
-                  <p className="text-[11px] font-bold tracking-wide text-muted-foreground">PICKUP OTP</p>
-                  <p className="text-2xl font-extrabold tracking-[0.3em] text-primary">{o.pickupOtp}</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    Share only with the assigned delivery partner.
-                  </p>
-                </div>
-              ) : null}
-              {o.status === "PICKED_UP" || o.status === "OUT_FOR_DELIVERY" ? (
-                <p className="mt-3 text-xs font-semibold text-primary">Pickup verified · rider on the way</p>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      ) : (
-        <RegisterStall lastStatus={me?.status} />
-      )}
-    </Shell>
-  );
-}
+  async function setStatus(o: Order, status: string) {
+    const patch: Record<string, unknown> = { status };
+    if (status === "VENDOR_ACCEPTED") patch['accepted_at'] = new Date().toISOString();
+    await supabase.from("orders").update(patch).eq("id", o.id);
+    if (status === "READY") await offerToNearestPartner(o.id);
+    setOrders(orders.map((x) => (x.id === o.id ? { ...x, status } : x)));
+  }
 
-function RegisterStall({ lastStatus }: { lastStatus: string | undefined }) {
-  const [form, setForm] = useState({
-    stallName: "",
-    ownerName: "",
-    mobile: "",
-    pan: "",
-    accountNo: "",
-    ifsc: "",
-    fssai: "",
-    zoneId: "dumduma",
-  });
-  const [done, setDone] = useState(false);
-  const upd = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [k]: e.target.value });
+  if (loading) return <Shell><PortalHeader title="Stall partner" /></Shell>;
 
-  if (done) {
+  if (!user) {
     return (
-      <div className="p-4">
-        <div className="card-soft border border-border p-4 text-center">
-          <p className="text-sm font-bold text-primary">Application submitted</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Status: PENDING_APPROVAL. Thaleewala admin will verify your KYC and approve your stall.
-          </p>
+      <Shell>
+        <PortalHeader title="Stall partner" />
+        <div className="py-20 text-center">
+          <p className="text-sm text-muted-foreground">Sign in to manage your stall.</p>
+          <Link to="/auth" className="mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">Sign in</Link>
         </div>
-      </div>
+      </Shell>
+    );
+  }
+
+  if (!vendor) {
+    return (
+      <Shell>
+        <PortalHeader title="Register your stall" subtitle="Approval usually takes a day" />
+        <div className="space-y-2 p-4">
+          {([["stall_name", "Stall name"], ["owner_name", "Owner name"], ["mobile", "Mobile number"], ["address", "Stall address"]] as const).map(([k, label]) => (
+            <label key={k} className="block">
+              <span className="mb-1 block text-xs font-semibold text-muted-foreground">{label}</span>
+              <input
+                value={form[k]}
+                onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+                className="w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
+              />
+            </label>
+          ))}
+          <button
+            onClick={async () => {
+              const pos = await new Promise<GeolocationPosition | null>((res) =>
+                navigator.geolocation
+                  ? navigator.geolocation.getCurrentPosition((p) => res(p), () => res(null))
+                  : res(null),
+              );
+              const { data, error } = await supabase.from("vendors").insert({
+                stall_name: form.stall_name,
+                owner_name: form.owner_name,
+                mobile: form.mobile,
+                address: form.address,
+                owner_id: user.id,
+                lat: pos?.coords.latitude ?? 20.2961,
+                lng: pos?.coords.longitude ?? 85.8245,
+                status: "PENDING_APPROVAL",
+              }).select("id,stall_name,status,is_open").single();
+              if (error) setMsg(error.message);
+              else setVendor(data);
+            }}
+            className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground"
+          >
+            Send for approval
+          </button>
+          {msg ? <p className="text-xs text-destructive">{msg}</p> : null}
+        </div>
+      </Shell>
     );
   }
 
   return (
-    <form
-      className="space-y-3 p-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        const zone = ZONES.find((z) => z.id === form.zoneId)!;
-        actions.addVendor({
-          id: `v${Date.now().toString().slice(-5)}`,
-          stallName: form.stallName,
-          ownerName: form.ownerName,
-          mobile: form.mobile,
-          zoneId: form.zoneId,
-          location: zone.center,
-          status: "PENDING_APPROVAL",
-          fssai: form.fssai,
-          pan: form.pan,
-          accountNo: form.accountNo,
-          ifsc: form.ifsc,
-        });
-        setDone(true);
-      }}
-    >
-      <Field label="Stall name" required value={form.stallName} onChange={upd("stallName")} />
-      <Field label="Owner name" required value={form.ownerName} onChange={upd("ownerName")} />
-      <Field label="Mobile" required inputMode="numeric" maxLength={10} value={form.mobile} onChange={upd("mobile")} />
-      <Field label="FSSAI licence" value={form.fssai} onChange={upd("fssai")} />
-      <Field label="PAN" value={form.pan} onChange={upd("pan")} />
-      <Field label="Bank account number" value={form.accountNo} onChange={upd("accountNo")} />
-      <Field label="IFSC" value={form.ifsc} onChange={upd("ifsc")} />
-      <label className="block">
-        <span className="mb-1 block text-xs font-semibold text-muted-foreground">Delivery zone</span>
-        <select
-          value={form.zoneId}
-          onChange={(e) => setForm({ ...form, zoneId: e.target.value })}
-          className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary"
+    <Shell>
+      <PortalHeader title={vendor.stall_name} subtitle={vendor.status === "APPROVED" ? "Live on Thaleewala" : "Waiting for approval"} />
+      <div className="space-y-3 p-4">
+        <button
+          onClick={async () => {
+            await supabase.from("vendors").update({ is_open: !vendor.is_open }).eq("id", vendor.id);
+            setVendor({ ...vendor, is_open: !vendor.is_open });
+          }}
+          className={`w-full rounded-xl border px-3 py-2.5 text-sm font-bold ${vendor.is_open ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
         >
-          {ZONES.map((z) => (
-            <option key={z.id} value={z.id}>
-              {z.name}
-            </option>
+          Stall is {vendor.is_open ? "OPEN" : "CLOSED"} · tap to change
+        </button>
+
+        <section className="space-y-2">
+          <p className="text-sm font-bold">Live orders</p>
+          {orders.length === 0 ? <p className="text-xs text-muted-foreground">No orders yet.</p> : null}
+          {orders.map((o) => (
+            <div key={o.id} className="card-soft border border-border p-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-bold">#{o.code}</p>
+                  <p className="text-[11px] text-muted-foreground">{o.customer_name} · {o.address_line}</p>
+                  <p className="mt-1 text-xs font-semibold text-primary">{STATUS_LABEL[o.status] ?? o.status}</p>
+                </div>
+                <p className="text-sm font-bold">{inr(Number(o.grand_total))}</p>
+              </div>
+
+              {["READY", "ASSIGNED"].includes(o.status) ? (
+                <div className="mt-2 rounded-xl bg-muted p-2 text-center">
+                  <p className="text-[11px] font-semibold text-muted-foreground">Pickup OTP for #{o.code}</p>
+                  <p className="text-2xl font-extrabold tracking-[0.3em]">{o.pickup_otp}</p>
+                  <p className="text-[11px] text-muted-foreground">Tell this only to the delivery partner</p>
+                </div>
+              ) : null}
+
+              <div className="mt-2 flex gap-2">
+                {o.status === "PLACED" ? (
+                  <>
+                    <button onClick={() => setStatus(o, "VENDOR_ACCEPTED")} className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground">Accept</button>
+                    <button onClick={() => setStatus(o, "CANCELLED")} className="flex-1 rounded-xl border border-border py-2 text-xs font-bold">Reject</button>
+                  </>
+                ) : null}
+                {o.status === "VENDOR_ACCEPTED" ? (
+                  <button onClick={() => setStatus(o, "PREPARING")} className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground">Start cooking</button>
+                ) : null}
+                {o.status === "PREPARING" ? (
+                  <button onClick={() => setStatus(o, "READY")} className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground">Food is ready</button>
+                ) : null}
+              </div>
+            </div>
           ))}
-        </select>
-      </label>
-      <p className="text-[11px] text-muted-foreground">
-        Documents stay private and are visible only to Thaleewala admin.
-      </p>
-      <GreenButton type="submit">SUBMIT FOR APPROVAL</GreenButton>
-      {lastStatus ? <p className="text-center text-[11px] text-muted-foreground">Last application: {lastStatus}</p> : null}
-    </form>
+        </section>
+
+        <section className="card-soft border border-border p-3">
+          <p className="text-sm font-bold">Your menu</p>
+          {items.map((i) => (
+            <div key={i.id} className="mt-2 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold">{i.name}</p>
+                <p className="text-[11px] text-muted-foreground">{inr(Number(i.price))}</p>
+              </div>
+              <button
+                onClick={async () => {
+                  await supabase.from("menu_items").update({ in_stock: !i.in_stock }).eq("id", i.id);
+                  setItems(items.map((x) => (x.id === i.id ? { ...x, in_stock: !x.in_stock } : x)));
+                }}
+                className={`rounded-lg border px-3 py-1 text-xs font-bold ${i.in_stock ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+              >
+                {i.in_stock ? "In stock" : "Out of stock"}
+              </button>
+            </div>
+          ))}
+          {items.length === 0 ? <p className="mt-1 text-xs text-muted-foreground">No dishes added yet.</p> : null}
+        </section>
+      </div>
+    </Shell>
   );
 }
