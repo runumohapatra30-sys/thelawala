@@ -9,9 +9,9 @@ import { useSession } from "@/lib/session";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Thaleewala — Street food in 15 minutes, Bhubaneswar" },
+      { title: "ThelaWala — Street food in 15 minutes, Bhubaneswar" },
       { name: "description", content: "Order bhata dali, dahi bara, rolls, chaat, biryani, momo and chai from Bhubaneswar street stalls, delivered in 15 minutes." },
-      { property: "og:title", content: "Thaleewala — Street food in 15 minutes" },
+      { property: "og:title", content: "ThelaWala — Street food in 15 minutes" },
       { property: "og:description", content: "Hot food from your nearest thela, delivered fast across Bhubaneswar." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -87,7 +87,7 @@ function Home() {
       <header className="sticky top-0 z-30 bg-primary px-4 pb-3 pt-4 text-primary-foreground">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-lg font-extrabold leading-none">Thaleewala</p>
+            <p className="text-lg font-extrabold leading-none">ThelaWala</p>
             <p className="mt-1 text-xs opacity-90">Delivery in 15 minutes · Bhubaneswar</p>
           </div>
           <div className="flex items-center gap-2">

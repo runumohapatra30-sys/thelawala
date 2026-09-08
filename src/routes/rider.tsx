@@ -11,10 +11,10 @@ import { dlError, normalizeDl } from "@/lib/validation";
 export const Route = createFileRoute("/rider")({
   head: () => ({
     meta: [
-      { title: "Delivery partner portal — Thaleewala" },
-      { name: "description", content: "Go online, accept nearby Thaleewala orders, verify pickup and delivery OTPs, capture proof and track your earnings." },
-      { property: "og:title", content: "Delivery partner portal — Thaleewala" },
-      { property: "og:description", content: "Earn with Thaleewala street food deliveries." },
+      { title: "Delivery partner portal — ThelaWala" },
+      { name: "description", content: "Go online, accept nearby ThelaWala orders, verify pickup and delivery OTPs, capture proof and track your earnings." },
+      { property: "og:title", content: "Delivery partner portal — ThelaWala" },
+      { property: "og:description", content: "Earn with ThelaWala street food deliveries." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

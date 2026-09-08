@@ -8,9 +8,9 @@ import { useSession } from "@/lib/session";
 export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
-      { title: "Your account — Thaleewala" },
-      { name: "description", content: "Your Thaleewala profile, wallet balance, saved addresses and support options." },
-      { property: "og:title", content: "Your account — Thaleewala" },
+      { title: "Your account — ThelaWala" },
+      { name: "description", content: "Your ThelaWala profile, wallet balance, saved addresses and support options." },
+      { property: "og:title", content: "Your account — ThelaWala" },
       { property: "og:description", content: "Wallet, addresses and help in one place." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -57,7 +57,7 @@ function Profile() {
       <PortalHeader title="Your account" subtitle={user?.email ?? ""} />
       <div className="space-y-3 p-4">
         <div className="card-soft border border-border p-4">
-          <p className="text-xs font-semibold text-muted-foreground">Thaleewala wallet</p>
+          <p className="text-xs font-semibold text-muted-foreground">ThelaWala wallet</p>
           <p className="text-2xl font-extrabold text-primary">{inr(balance)}</p>
           <p className="mt-1 text-[11px] text-muted-foreground">
             Refunds land here instantly and can be spent on your next order.

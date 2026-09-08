@@ -7,9 +7,9 @@ import { GreenButton, PortalHeader, Shell } from "@/components/Shell";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in — Thaleewala" },
-      { name: "description", content: "Sign in to Thaleewala with an email code or Google to order street food in 15 minutes." },
-      { property: "og:title", content: "Sign in — Thaleewala" },
+      { title: "Sign in — ThelaWala" },
+      { name: "description", content: "Sign in to ThelaWala with an email code or Google to order street food in 15 minutes." },
+      { property: "og:title", content: "Sign in — ThelaWala" },
       { property: "og:description", content: "Email code or Google sign-in for Bhubaneswar street food delivery." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -75,7 +75,7 @@ function AuthPage() {
 
   return (
     <Shell>
-      <PortalHeader title="Sign in to Thaleewala" subtitle="Order hot street food in 15 minutes" />
+      <PortalHeader title="Sign in to ThelaWala" subtitle="Order hot street food in 15 minutes" />
       <div className="space-y-4 p-4">
         <div className="card-soft border border-border p-4">
           <label className="block text-xs font-semibold text-muted-foreground">Email address</label>

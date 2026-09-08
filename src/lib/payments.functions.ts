@@ -33,7 +33,7 @@ export const createPayuPayment = createServerFn({ method: "POST" })
 
     const amount = data.amount.toFixed(2);
     const txnid = `TW${Date.now()}${Math.floor(Math.random() * 1000)}`;
-    const productinfo = data.purpose === "WALLET" ? "Thaleewala wallet top-up" : "Thaleewala order";
+    const productinfo = data.purpose === "WALLET" ? "ThelaWala wallet top-up" : "ThelaWala order";
     const firstname = (data.name || "Customer").slice(0, 40);
     const email = data.email;
     const udf1 = context.userId;

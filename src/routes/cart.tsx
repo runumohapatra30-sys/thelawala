@@ -10,9 +10,9 @@ import { useSession } from "@/lib/session";
 export const Route = createFileRoute("/cart")({
   head: () => ({
     meta: [
-      { title: "Checkout — Thaleewala" },
-      { name: "description", content: "Add your name, mobile, pincode and address, choose cash or online payment and place your Thaleewala order." },
-      { property: "og:title", content: "Checkout — Thaleewala" },
+      { title: "Checkout — ThelaWala" },
+      { name: "description", content: "Add your name, mobile, pincode and address, choose cash or online payment and place your ThelaWala order." },
+      { property: "og:title", content: "Checkout — ThelaWala" },
       { property: "og:description", content: "Transparent bill with distance-based delivery fee." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

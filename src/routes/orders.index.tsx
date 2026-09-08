@@ -8,9 +8,9 @@ import { useSession } from "@/lib/session";
 export const Route = createFileRoute("/orders/")({
   head: () => ({
     meta: [
-      { title: "Your orders — Thaleewala" },
-      { name: "description", content: "Track every Thaleewala street food order, its status and bill in one place." },
-      { property: "og:title", content: "Your orders — Thaleewala" },
+      { title: "Your orders — ThelaWala" },
+      { name: "description", content: "Track every ThelaWala street food order, its status and bill in one place." },
+      { property: "og:title", content: "Your orders — ThelaWala" },
       { property: "og:description", content: "All your street food orders and live tracking." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

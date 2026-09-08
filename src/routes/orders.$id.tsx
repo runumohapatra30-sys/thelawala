@@ -9,9 +9,9 @@ export const Route = createFileRoute("/orders/$id")({
   validateSearch: (s: Record<string, unknown>): { placed?: 1 } => (s['placed'] ? { placed: 1 } : {}),
   head: () => ({
     meta: [
-      { title: "Track your order — Thaleewala" },
-      { name: "description", content: "Live map tracking, delivery OTP, rider details and bill for your Thaleewala order." },
-      { property: "og:title", content: "Track your order — Thaleewala" },
+      { title: "Track your order — ThelaWala" },
+      { name: "description", content: "Live map tracking, delivery OTP, rider details and bill for your ThelaWala order." },
+      { property: "og:title", content: "Track your order — ThelaWala" },
       { property: "og:description", content: "Watch your street food arrive in 15 minutes." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -222,7 +222,7 @@ function Track() {
           <div className="card-soft border border-border p-3">
             <p className="text-sm font-bold">Refund</p>
             <p className="text-[11px] text-muted-foreground">
-              Ask for the money back to your Thaleewala wallet. Approved refunds are credited within minutes.
+              Ask for the money back to your ThelaWala wallet. Approved refunds are credited within minutes.
             </p>
             <button
               onClick={async () => {
@@ -263,7 +263,7 @@ function Track() {
               ))}
             </div>
             <p className="mt-2 text-[11px] text-muted-foreground">
-              Prepaid orders are refunded to your Thaleewala wallet within minutes. A small fee may apply once the stall
+              Prepaid orders are refunded to your ThelaWala wallet within minutes. A small fee may apply once the stall
               has started cooking.
             </p>
             <div className="mt-3 flex gap-2">
