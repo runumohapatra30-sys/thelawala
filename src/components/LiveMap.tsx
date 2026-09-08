@@ -65,6 +65,7 @@ export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className 
         map.fitBounds(line.getBounds(), { padding: [30, 30] });
         etaRef.current?.(route.durationMin, route.distanceKm);
 
+        setTimeout(() => map.invalidateSize(), 200);
         setReady((n) => n + 1);
         cleanup = () => {
           mapRef.current = null;
