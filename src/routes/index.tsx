@@ -31,6 +31,7 @@ type Item = {
   price: number;
   mrp: number;
   in_stock: boolean;
+  food_type: string;
 };
 type Category = { id: string; name: string; emoji: string | null };
 type Vendor = { id: string; stall_name: string; is_open: boolean };
@@ -57,13 +58,17 @@ function Home() {
   const [toast, setToast] = useState<string | null>(null);
   const [balance, setBalance] = useState(0);
   const [address, setAddress] = useState<string | null>(null);
+  const [favs, setFavs] = useState<string[]>([]);
+  const [onlyFav, setOnlyFav] = useState(false);
+  const [onlyVeg, setOnlyVeg] = useState(false);
+  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
     supabase.from("categories").select("id,name,emoji").order("sort_order").then(({ data }) => setCats(data ?? []));
     supabase.from("vendors").select("id,stall_name,is_open").eq("status", "APPROVED").then(({ data }) => setVendors(data ?? []));
     supabase
       .from("menu_items")
-      .select("id,vendor_id,category_id,name,details,photo_url,unit,price,mrp,in_stock")
+      .select("id,vendor_id,category_id,name,details,photo_url,unit,price,mrp,in_stock,food_type")
       .order("created_at")
       .then(({ data }) => setItems((data ?? []) as Item[]));
   }, []);
@@ -81,7 +86,29 @@ function Home() {
       .limit(1)
       .maybeSingle()
       .then(({ data }) => setAddress(data?.line ?? null));
+    supabase
+      .from("favorites")
+      .select("item_id")
+      .eq("user_id", user.id)
+      .then(({ data }) => setFavs((data ?? []).map((f) => f.item_id).filter(Boolean) as string[]));
+    supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("is_read", false)
+      .then(({ count }) => setUnread(count ?? 0));
   }, [user?.id]);
+
+  async function toggleFav(itemId: string, vendorId: string) {
+    if (!user) return;
+    if (favs.includes(itemId)) {
+      setFavs((f) => f.filter((x) => x !== itemId));
+      await supabase.from("favorites").delete().eq("user_id", user.id).eq("item_id", itemId);
+    } else {
+      setFavs((f) => [...f, itemId]);
+      await supabase.from("favorites").insert({ user_id: user.id, item_id: itemId, vendor_id: vendorId });
+    }
+  }
 
   const vendorName = useMemo(
     () => Object.fromEntries(vendors.map((v) => [v.id, v.stall_name])),
@@ -91,7 +118,9 @@ function Home() {
   const shown = items.filter(
     (i) =>
       (!active || i.category_id === active) &&
-      (!q || i.name.toLowerCase().includes(q.toLowerCase())),
+      (!q || i.name.toLowerCase().includes(q.toLowerCase())) &&
+      (!onlyVeg || i.food_type !== "NONVEG") &&
+      (!onlyFav || favs.includes(i.id)),
   );
 
   function add(i: Item) {
@@ -128,6 +157,20 @@ function Home() {
             >
               <span aria-hidden="true">👛</span>
               {inr(balance)}
+            </Link>
+            <Link
+              to="/notifications"
+              aria-label="Notifications"
+              className="press relative grid h-9 w-9 place-items-center rounded-full bg-card shadow-sm"
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M6 9a6 6 0 1112 0c0 4 1.5 5.5 1.5 5.5h-15S6 13 6 9zM10 19a2 2 0 004 0" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {unread > 0 ? (
+                <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 text-[9px] font-black text-white">
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              ) : null}
             </Link>
             <Link
               to={user ? "/profile" : "/auth"}
@@ -209,8 +252,20 @@ function Home() {
         </div>
       </section>
 
-      <section className="px-4 pt-5">
-        <h2 className="text-sm font-black">Hot from the thela</h2>
+      <section className="flex items-center gap-2 px-4 pt-5">
+        <h2 className="mr-auto text-sm font-black">Hot from the thela</h2>
+        <button
+          onClick={() => setOnlyVeg((v) => !v)}
+          className={`press rounded-full border px-2.5 py-1 text-[11px] font-black ${onlyVeg ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+        >
+          Veg only
+        </button>
+        <button
+          onClick={() => setOnlyFav((v) => !v)}
+          className={`press rounded-full border px-2.5 py-1 text-[11px] font-black ${onlyFav ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+        >
+          ♥ Favourites
+        </button>
       </section>
 
       <div className="grid grid-cols-2 gap-3 px-4 pb-32 pt-2">
@@ -232,6 +287,15 @@ function Home() {
                   <span className="absolute inset-0 grid place-items-center rounded-xl bg-black/55 text-xs font-bold text-white">
                     Out of stock
                   </span>
+                ) : null}
+                {user ? (
+                  <button
+                    aria-label={favs.includes(i.id) ? "Remove from favourites" : "Add to favourites"}
+                    onClick={() => toggleFav(i.id, i.vendor_id)}
+                    className={`press absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-card/90 text-sm shadow-sm ${favs.includes(i.id) ? "text-destructive" : "text-muted-foreground"}`}
+                  >
+                    {favs.includes(i.id) ? "♥" : "♡"}
+                  </button>
                 ) : null}
               </div>
               <p className="mt-2 truncate text-sm font-bold">{i.name}</p>

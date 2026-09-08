@@ -95,6 +95,7 @@ function VendorPortal() {
   const [dishSaving, setDishSaving] = useState(false);
   const [dishOpen, setDishOpen] = useState(false);
   const [slip, setSlip] = useState<Order | null>(null);
+  const [today, setToday] = useState({ orders: 0, sales: 0, rating: 0 });
 
   const pending = orders.filter((o) => o.status === "ORDER_PLACED").length;
   useOrderBell(pending);
@@ -118,9 +119,25 @@ function VendorPortal() {
         .eq("vendor_id", vendor.id).order("created_at", { ascending: false }).limit(30)
         .then(({ data }) => setOrders((data ?? []) as Order[]));
     };
+    const loadToday = async () => {
+      const since = new Date();
+      since.setHours(0, 0, 0, 0);
+      const [{ data: done }, { data: rates }] = await Promise.all([
+        supabase.from("orders").select("food_total").eq("vendor_id", vendor.id).eq("status", "DELIVERED")
+          .gte("delivered_at", since.toISOString()),
+        supabase.from("order_ratings").select("food_stars").eq("vendor_id", vendor.id),
+      ]);
+      const stars = (rates ?? []).map((r) => Number(r.food_stars));
+      setToday({
+        orders: done?.length ?? 0,
+        sales: (done ?? []).reduce((a, d) => a + Number(d.food_total), 0),
+        rating: stars.length ? Math.round((stars.reduce((a, b) => a + b, 0) / stars.length) * 10) / 10 : 0,
+      });
+    };
     load();
+    loadToday();
     loadItems(vendor.id);
-    const t = setInterval(load, 8000);
+    const t = setInterval(() => { load(); loadToday(); }, 8000);
     return () => clearInterval(t);
   }, [vendor?.id]);
 
@@ -289,6 +306,21 @@ function VendorPortal() {
             🔔 {pending} new order{pending > 1 ? "s" : ""} waiting — accept or reject below
           </div>
         ) : null}
+
+        <div className="grid grid-cols-3 gap-2">
+          <div className="card-soft border border-border p-3 text-center">
+            <p className="text-[11px] text-muted-foreground">Today&apos;s orders</p>
+            <p className="text-sm font-black">{today.orders}</p>
+          </div>
+          <div className="card-soft border border-border p-3 text-center">
+            <p className="text-[11px] text-muted-foreground">Today&apos;s sales</p>
+            <p className="text-sm font-black">{inr(Math.round(today.sales))}</p>
+          </div>
+          <div className="card-soft border border-border p-3 text-center">
+            <p className="text-[11px] text-muted-foreground">Food rating</p>
+            <p className="text-sm font-black">{today.rating ? `${today.rating} ★` : "—"}</p>
+          </div>
+        </div>
 
         <button
           onClick={async () => {

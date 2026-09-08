@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { SupportQueue } from "@/components/SupportQueue";
 import { supabase } from "@/integrations/supabase/client";
+import { listCoupons, type Coupon } from "@/lib/coupons";
 import { inr, STATUS_LABEL, type Settings } from "@/lib/fees";
 import { useIsAdmin, useSession } from "@/lib/session";
 import { toast } from "sonner";
@@ -282,6 +283,8 @@ function Admin() {
           ))}
         </section>
 
+        <CouponManager />
+
         <section className="card-soft border border-border p-3">
           <p className="text-sm font-bold">Recent orders</p>
           <div className="mt-2 space-y-2">
@@ -299,6 +302,106 @@ function Admin() {
         </section>
       </div>
     </Shell>
+  );
+}
+
+function CouponManager() {
+  const [rows, setRows] = useState<Coupon[]>([]);
+  const [form, setForm] = useState({ code: "", description: "", discount_type: "FLAT", discount_value: "", min_order: "0" });
+  const [busy, setBusy] = useState(false);
+
+  const load = () => listCoupons().then(setRows);
+  useEffect(() => { load(); }, []);
+
+  async function create() {
+    const code = form.code.trim().toUpperCase();
+    const value = Number(form.discount_value);
+    if (!/^[A-Z0-9]{4,15}$/.test(code)) { toast.error("Code must be 4-15 letters or numbers."); return; }
+    if (!value || value <= 0) { toast.error("Enter a discount value above zero."); return; }
+    setBusy(true);
+    const { error } = await supabase.from("coupons").insert({
+      code,
+      description: form.description || null,
+      discount_type: form.discount_type,
+      discount_value: value,
+      min_order: Number(form.min_order) || 0,
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message.includes("duplicate") ? "This code already exists." : "Could not save the coupon."); return; }
+    toast.success(`${code} is live`);
+    setForm({ code: "", description: "", discount_type: "FLAT", discount_value: "", min_order: "0" });
+    load();
+  }
+
+  return (
+    <section className="card-soft space-y-2 border border-border p-3">
+      <p className="text-sm font-bold">Coupons &amp; offers</p>
+      <div className="grid grid-cols-2 gap-2">
+        <input
+          value={form.code}
+          onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+          placeholder="CODE"
+          className="rounded-xl border border-border px-3 py-2.5 text-sm uppercase outline-none focus:border-primary"
+        />
+        <select
+          value={form.discount_type}
+          onChange={(e) => setForm({ ...form, discount_type: e.target.value })}
+          className="rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
+        >
+          <option value="FLAT">Flat ₹ off</option>
+          <option value="PERCENT">% off</option>
+        </select>
+        <input
+          value={form.discount_value}
+          onChange={(e) => setForm({ ...form, discount_value: e.target.value })}
+          placeholder="Discount value"
+          inputMode="decimal"
+          className="rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
+        />
+        <input
+          value={form.min_order}
+          onChange={(e) => setForm({ ...form, min_order: e.target.value })}
+          placeholder="Minimum order"
+          inputMode="decimal"
+          className="rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
+        />
+      </div>
+      <input
+        value={form.description}
+        onChange={(e) => setForm({ ...form, description: e.target.value })}
+        placeholder="Short description shown to customers"
+        className="w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
+      />
+      <button
+        disabled={busy}
+        onClick={create}
+        className="press w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+      >
+        {busy ? "Saving…" : "Create coupon"}
+      </button>
+      <div className="space-y-2 pt-1">
+        {rows.map((c) => (
+          <div key={c.id} className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold">{c.code}</p>
+              <p className="truncate text-[11px] text-muted-foreground">
+                {c.discount_type === "PERCENT" ? `${c.discount_value}% off` : `${inr(Number(c.discount_value))} off`} · min {inr(Number(c.min_order))}
+              </p>
+            </div>
+            <button
+              onClick={async () => {
+                await supabase.from("coupons").update({ is_active: !c.is_active }).eq("id", c.id);
+                load();
+              }}
+              className={`shrink-0 rounded-lg border px-3 py-1 text-xs font-bold ${c.is_active ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+            >
+              {c.is_active ? "Active" : "Off"}
+            </button>
+          </div>
+        ))}
+        {rows.length === 0 ? <p className="text-xs text-muted-foreground">No coupons yet.</p> : null}
+      </div>
+    </section>
   );
 }
 

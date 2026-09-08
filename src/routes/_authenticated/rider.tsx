@@ -107,6 +107,7 @@ function RiderPortal() {
   const [msg, setMsg] = useState<string | null>(null);
   const [showComplete, setShowComplete] = useState(false);
   const [earnings, setEarnings] = useState({ trips: 0, total: 0 });
+  const [week, setWeek] = useState({ trips: 0, total: 0, rating: 0 });
   const [form, setForm] = useState({ name: "", mobile: "", vehicle_no: "", dl_number: "" });
   const [dlDraft, setDlDraft] = useState("");
   const [dlMsg, setDlMsg] = useState<string | null>(null);
@@ -159,6 +160,21 @@ function RiderPortal() {
       setEarnings({
         trips: done?.length ?? 0,
         total: (done ?? []).reduce((a, d) => a + Number(d.delivery_fee) + Number(d.tip_amount ?? 0), 0),
+      });
+
+      const weekStart = new Date();
+      weekStart.setDate(weekStart.getDate() - 6);
+      weekStart.setHours(0, 0, 0, 0);
+      const [{ data: wk }, { data: rates }] = await Promise.all([
+        supabase.from("orders").select("delivery_fee,tip_amount").eq("partner_id", me.id).eq("status", "DELIVERED")
+          .gte("delivered_at", weekStart.toISOString()),
+        supabase.from("order_ratings").select("delivery_stars").eq("partner_id", me.id),
+      ]);
+      const stars = (rates ?? []).map((r) => Number(r.delivery_stars));
+      setWeek({
+        trips: wk?.length ?? 0,
+        total: (wk ?? []).reduce((a, d) => a + Number(d.delivery_fee) + Number(d.tip_amount ?? 0), 0),
+        rating: stars.length ? Math.round((stars.reduce((a, b) => a + b, 0) / stars.length) * 10) / 10 : 0,
       });
     };
     load();
@@ -340,6 +356,21 @@ function RiderPortal() {
       />
 
       <div className="space-y-3 p-4">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="card-soft border border-border p-3 text-center">
+            <p className="text-[11px] text-muted-foreground">This week</p>
+            <p className="text-sm font-black">{inr(Math.round(week.total))}</p>
+          </div>
+          <div className="card-soft border border-border p-3 text-center">
+            <p className="text-[11px] text-muted-foreground">Trips (7 days)</p>
+            <p className="text-sm font-black">{week.trips}</p>
+          </div>
+          <div className="card-soft border border-border p-3 text-center">
+            <p className="text-[11px] text-muted-foreground">Your rating</p>
+            <p className="text-sm font-black">{week.rating ? `${week.rating} ★` : "—"}</p>
+          </div>
+        </div>
+
         {me.status === "UNDER_REVIEW" ? (
           <div className="card-soft border-2 border-destructive p-3">
             <p className="text-sm font-bold text-destructive">Duty locked · licence under review</p>
