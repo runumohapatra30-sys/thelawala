@@ -9,7 +9,16 @@ export const Route = createFileRoute("/api/public/payu/callback")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const salt = process.env["PAYU_SALT"];
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        let salt = process.env["PAYU_SALT"] ?? "";
+        if (!salt) {
+          const { data: creds } = await supabaseAdmin
+            .from("payment_credentials")
+            .select("payu_salt")
+            .eq("id", true)
+            .maybeSingle();
+          salt = creds?.payu_salt ?? "";
+        }
         if (!salt) return new Response("Not configured", { status: 500 });
 
         const form = await request.formData();
@@ -50,7 +59,6 @@ export const Route = createFileRoute("/api/public/payu/callback")({
         const amount = Number(g("amount"));
         const ref = g("mihpayid") || g("txnid");
 
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         if (purpose === "WALLET") {
           await supabaseAdmin.rpc("wallet_credit", {
