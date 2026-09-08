@@ -88,6 +88,7 @@ export const STATUS_LABEL: Record<string, string> = {
   PREPARING: "Preparing your food",
   READY: "Ready for pickup",
   ASSIGNED: "Delivery partner assigned",
+  ARRIVED_AT_VENDOR: "Partner reached the stall",
   PICKED_UP: "Picked up",
   OUT_FOR_DELIVERY: "On the way",
   DELIVERED: "Delivered",
