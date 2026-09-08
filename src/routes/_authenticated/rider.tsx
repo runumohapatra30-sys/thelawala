@@ -8,6 +8,7 @@ import { haversineKm, inr } from "@/lib/fees";
 import { useSession } from "@/lib/session";
 import { dlError, normalizeDl } from "@/lib/validation";
 import { toast } from "sonner";
+import { Html5Qrcode } from "html5-qrcode";
 
 export const Route = createFileRoute("/_authenticated/rider")({
   head: () => ({
@@ -33,7 +34,64 @@ type Order = {
 type Partner = { id: string; name: string; status: string; is_online: boolean; is_busy: boolean; dl_number: string | null };
 type Vendor = { stall_name: string; lat: number; lng: number; mobile: string | null; address: string | null };
 
-const OTP_LEN = 6;
+const OTP_LEN = 4;
+
+function chime(ok: boolean) {
+  try {
+    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new Ctx();
+    const notes = ok ? [660, 880] : [300, 200];
+    notes.forEach((f, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = f;
+      gain.gain.setValueAtTime(0.2, ctx.currentTime + i * 0.16);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + i * 0.16 + 0.15);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.16);
+      osc.stop(ctx.currentTime + i * 0.16 + 0.16);
+    });
+  } catch {
+    /* audio unavailable */
+  }
+}
+
+function ScannerModal({ onClose, onResult }: { onClose: () => void; onResult: (text: string) => void }) {
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    const scanner = new Html5Qrcode("qr-reader");
+    let running = false;
+    scanner
+      .start({ facingMode: "environment" }, { fps: 10, qrbox: 240 }, (text) => {
+        if (!running) return;
+        running = false;
+        void scanner.stop().then(() => onResult(text));
+      }, () => {})
+      .then(() => {
+        running = true;
+      })
+      .catch(() => setErr("Could not open the camera. Allow camera access and try again."));
+    return () => {
+      if (running) void scanner.stop().catch(() => {});
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70">
+      <div className="w-full max-w-[480px] rounded-t-3xl bg-card p-4 pb-6">
+        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-border" />
+        <div className="flex items-start justify-between">
+          <p className="text-base font-extrabold">Scan the parcel QR</p>
+          <button onClick={onClose} className="press text-sm font-bold text-muted-foreground">Close</button>
+        </div>
+        <div id="qr-reader" className="mt-3 overflow-hidden rounded-2xl bg-black" />
+        {err ? <p className="mt-2 text-xs font-semibold text-destructive">{err}</p> : null}
+        <p className="mt-2 text-[11px] text-muted-foreground">Point the camera at the QR code on the stall&apos;s order slip.</p>
+      </div>
+    </div>
+  );
+}
 
 function RiderPortal() {
   const { user, loading } = useSession();
@@ -42,7 +100,8 @@ function RiderPortal() {
   const [active, setActive] = useState<Order | null>(null);
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [secs, setSecs] = useState(45);
-  const [pickupCode, setPickupCode] = useState("");
+  const [scanOpen, setScanOpen] = useState(false);
+  const [scanErr, setScanErr] = useState<string | null>(null);
   const [dropCode, setDropCode] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -211,46 +270,55 @@ function RiderPortal() {
   }
 
   const trip = active;
-  const step = !trip ? 0 : trip.status === "OUT_FOR_DELIVERY" ? 2 : trip.status === "ARRIVED_AT_VENDOR" ? 1 : 0;
+  const step = !trip ? 0 : trip.status === "OUT_FOR_DELIVERY" ? 2 : 1;
 
   async function acceptOffer() {
     if (!offer || !me) return;
-    await supabase.from("orders").update({ partner_id: me.id, status: "ASSIGNED", offered_to: null, offer_expires_at: null }).eq("id", offer.id);
+    await supabase.from("orders").update({ partner_id: me.id, status: "RIDER_ASSIGNED", offered_to: null, offer_expires_at: null }).eq("id", offer.id);
     await supabase.from("delivery_partners").update({ is_busy: true }).eq("id", me.id);
-    setActive({ ...offer, partner_id: me.id, status: "ASSIGNED" });
+    setActive({ ...offer, partner_id: me.id, status: "RIDER_ASSIGNED" });
     setOffer(null);
   }
 
-  async function reachedStall() {
+  async function onScan(text: string) {
     if (!trip) return;
-    await supabase.from("orders").update({ status: "ARRIVED_AT_VENDOR" }).eq("id", trip.id);
-    setActive({ ...trip, status: "ARRIVED_AT_VENDOR" });
-  }
-
-  async function verifyPickup() {
-    if (!trip) return;
-    const { data } = await supabase.from("orders").select("pickup_otp").eq("id", trip.id).maybeSingle();
-    if (!data || data.pickup_otp !== pickupCode.trim()) return setMsg("Wrong pickup PIN. Ask the stall to read it again.");
-    await supabase.from("orders").update({ status: "OUT_FOR_DELIVERY", picked_up_at: new Date().toISOString() }).eq("id", trip.id);
+    let parsed: { order_id?: string; qr_hash?: string } = {};
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parsed = {};
+    }
+    const { data } = await supabase.from("orders").select("qr_hash").eq("id", trip.id).maybeSingle();
+    if (!data || parsed.order_id !== trip.id || !parsed.qr_hash || parsed.qr_hash !== data.qr_hash) {
+      chime(false);
+      setScanErr("Incorrect parcel! Please verify Order ID");
+      return;
+    }
+    const now = new Date().toISOString();
+    await supabase.from("orders").update({
+      status: "OUT_FOR_DELIVERY", pickup_scanned_at: now, picked_up_at: now,
+    }).eq("id", trip.id);
+    chime(true);
+    setScanErr(null);
+    setScanOpen(false);
     setMsg(null);
     setActive({ ...trip, status: "OUT_FOR_DELIVERY" });
+    toast.success("Parcel verified · out for delivery");
   }
 
   async function completeDelivery() {
     if (!trip || !me) return;
     if (!photo) return setMsg("Take the handover photo first.");
-    const { data } = await supabase.from("orders").select("delivery_otp").eq("id", trip.id).maybeSingle();
-    if (!data || data.delivery_otp !== dropCode.trim()) return setMsg("Wrong delivery PIN. Ask the customer to read it again.");
-    await supabase.from("orders").update({
-      status: "DELIVERED", delivered_at: new Date().toISOString(), proof_photo_url: photo, payment_status: "PAID",
-    }).eq("id", trip.id);
-    await supabase.from("delivery_partners").update({ is_busy: false }).eq("id", me.id);
+    await supabase.from("orders").update({ proof_photo_url: photo }).eq("id", trip.id);
+    const { error } = await supabase.rpc("complete_delivery", { _order_id: trip.id, _otp: dropCode.trim() });
+    if (error) return setMsg("Wrong delivery PIN. Ask the customer to read it again.");
+    chime(true);
     setMsg(null);
     setActive(null);
-    setPickupCode("");
     setDropCode("");
     setPhoto(null);
     setShowComplete(false);
+    toast.success("Delivery completed · earnings added");
   }
 
   const pos = posRef.current;
@@ -354,24 +422,23 @@ function RiderPortal() {
               )}
             </div>
 
-            {step === 0 ? (
-              <button onClick={reachedStall} className="press w-full rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground">
-                Reached Stall
-              </button>
-            ) : null}
-
             {step === 1 ? (
-              <div className="card-soft space-y-3 border border-border p-3">
-                <p className="text-sm font-bold">Enter the pickup PIN shown by the stall</p>
-                <OtpBoxes value={pickupCode} onChange={setPickupCode} />
+              <>
+                {scanErr ? (
+                  <p className="rounded-xl bg-destructive px-3 py-2.5 text-center text-sm font-bold text-destructive-foreground">
+                    {scanErr}
+                  </p>
+                ) : null}
                 <button
-                  disabled={pickupCode.length < OTP_LEN}
-                  onClick={verifyPickup}
-                  className="press w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                  onClick={() => {
+                    setScanErr(null);
+                    setScanOpen(true);
+                  }}
+                  className="press w-full rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground"
                 >
-                  Order Picked Up
+                  Scan Order QR to Pickup
                 </button>
-              </div>
+              </>
             ) : null}
 
             {step === 2 ? (
@@ -458,6 +525,8 @@ function RiderPortal() {
         />
       ) : null}
 
+      {scanOpen && trip ? <ScannerModal onClose={() => setScanOpen(false)} onResult={onScan} /> : null}
+
       {showComplete && trip ? (
         <CompleteDrawer
           value={dropCode}
@@ -528,7 +597,7 @@ function RiderHeader({
 }
 
 function Stepper({ step }: { step: number }) {
-  const steps = ["Reached Stall", "Order Picked Up", "Out for Delivery"];
+  const steps = ["Navigate to Stall", "Scan & Pick Up", "Out for Delivery"];
   return (
     <div className="flex items-center gap-1">
       {steps.map((s, i) => (
