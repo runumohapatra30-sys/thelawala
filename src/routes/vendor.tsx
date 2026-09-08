@@ -101,8 +101,28 @@ function VendorPortal() {
               />
             </label>
           ))}
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-muted-foreground">FSSAI licence number</span>
+            <input
+              value={form.fssai_number}
+              inputMode="numeric"
+              placeholder="14 digits, e.g. 12345678901234"
+              onChange={(e) => setForm({ ...form, fssai_number: normalizeFssai(e.target.value) })}
+              className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none ${
+                form.fssai_number && fssaiError(form.fssai_number) ? "border-destructive" : "border-border focus:border-primary"
+              }`}
+            />
+            {form.fssai_number && fssaiError(form.fssai_number) ? (
+              <span className="mt-1 block text-[11px] font-semibold text-destructive">{fssaiError(form.fssai_number)}</span>
+            ) : (
+              <span className="mt-1 block text-[11px] text-muted-foreground">Exactly 14 digits, starting with 1 or 2.</span>
+            )}
+          </label>
           <button
+            disabled={Boolean(fssaiError(form.fssai_number))}
             onClick={async () => {
+              const badFssai = fssaiError(form.fssai_number);
+              if (badFssai) return setMsg(badFssai);
               const pos = await new Promise<GeolocationPosition | null>((res) =>
                 navigator.geolocation
                   ? navigator.geolocation.getCurrentPosition((p) => res(p), () => res(null))
