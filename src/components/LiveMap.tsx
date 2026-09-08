@@ -25,6 +25,7 @@ export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className 
   const etaRef = useRef(onEta);
   etaRef.current = onEta;
   const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,7 +65,14 @@ export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className 
         map.fitBounds(line.getBounds(), { padding: [30, 30] });
         etaRef.current?.(route.durationMin, route.distanceKm);
 
-        cleanup = () => map.remove();
+        setReady((n) => n + 1);
+        cleanup = () => {
+          mapRef.current = null;
+          leafletRef.current = null;
+          riderMarkerRef.current = null;
+          lineRef.current = null;
+          map.remove();
+        };
       } catch {
         if (!cancelled) setError("Map is offline right now. Route details are still shown below.");
       }
@@ -119,7 +127,7 @@ export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className 
       if (animRef.current) cancelAnimationFrame(animRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rider?.lat, rider?.lng, to.lat, to.lng]);
+  }, [rider?.lat, rider?.lng, to.lat, to.lng, ready]);
 
   if (error) {
     return (
