@@ -349,14 +349,24 @@ function Cart() {
       </div>
 
       <div className="fixed inset-x-0 bottom-[62px] z-40 mx-auto w-full max-w-[480px] px-3">
-        <button
-          disabled={busy || !bill}
-          onClick={place}
-          className="flex w-full items-center justify-between rounded-xl bg-primary px-4 py-3 text-primary-foreground shadow-lg disabled:opacity-50"
-        >
-          <span className="text-sm font-bold">{bill ? inr(payable) : "—"}</span>
-          <span className="text-sm font-bold">{busy ? "PLACING…" : "PLACE ORDER ›"}</span>
-        </button>
+        <div className="rounded-2xl bg-card p-2 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-1 pb-2">
+            <p className="truncate text-[11px] font-semibold text-muted-foreground">
+              📍 {form.line || "Set your delivery address"}
+            </p>
+            {coords && vendor ? (
+              <span className="shrink-0 text-[11px] font-black text-primary">{distanceKm} km away</span>
+            ) : null}
+          </div>
+          <button
+            disabled={busy || !bill}
+            onClick={place}
+            className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-3.5 text-primary-foreground disabled:opacity-50"
+          >
+            <span className="text-sm font-black">{bill ? inr(payable) : "—"}</span>
+            <span className="text-sm font-black">{busy ? "PLACING…" : "Select Payment Method ›"}</span>
+          </button>
+        </div>
       </div>
     </Shell>
   );
