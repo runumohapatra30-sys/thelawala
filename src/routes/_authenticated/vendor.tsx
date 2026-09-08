@@ -135,7 +135,7 @@ function VendorPortal() {
     setOrders(orders.map((x) => (x.id === o.id ? { ...x, status } : x)));
   }
 
-  async function addDish() {
+  async function addDish(): Promise<void> {
     if (!vendor) return;
     const price = Number(dish.price);
     if (!dish.name.trim() || !price) {
