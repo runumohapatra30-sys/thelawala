@@ -105,7 +105,7 @@ function Track() {
   }
 
   const stepIndex = FLOW.indexOf(order.status);
-  const cancellable = ["PLACED", "VENDOR_ACCEPTED"].includes(order.status);
+  const cancellable = ["ORDER_PLACED", "PREPARING"].includes(order.status);
   const live = !["DELIVERED", "CANCELLED"].includes(order.status);
 
   return (
