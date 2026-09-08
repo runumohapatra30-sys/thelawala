@@ -273,6 +273,7 @@ export type Database = {
           rejected_partner_ids: string[]
           status: string
           surge_fee: number
+          tip_amount: number
           updated_at: string
           user_id: string
           vendor_id: string
@@ -314,6 +315,7 @@ export type Database = {
           rejected_partner_ids?: string[]
           status?: string
           surge_fee?: number
+          tip_amount?: number
           updated_at?: string
           user_id: string
           vendor_id: string
@@ -355,6 +357,7 @@ export type Database = {
           rejected_partner_ids?: string[]
           status?: string
           surge_fee?: number
+          tip_amount?: number
           updated_at?: string
           user_id?: string
           vendor_id?: string
