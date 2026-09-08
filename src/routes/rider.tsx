@@ -141,10 +141,32 @@ function RiderPortal() {
               />
             </label>
           ))}
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-muted-foreground">Driving licence number</span>
+            <input
+              value={form.dl_number}
+              inputMode="text"
+              autoCapitalize="characters"
+              placeholder="OD02 20210012345"
+              onChange={(e) => setForm({ ...form, dl_number: normalizeDl(e.target.value) })}
+              className={`w-full rounded-xl border px-3 py-2.5 text-sm uppercase outline-none ${
+                form.dl_number && dlError(form.dl_number) ? "border-destructive" : "border-border focus:border-primary"
+              }`}
+            />
+            {form.dl_number && dlError(form.dl_number) ? (
+              <span className="mt-1 block text-[11px] font-semibold text-destructive">{dlError(form.dl_number)}</span>
+            ) : (
+              <span className="mt-1 block text-[11px] text-muted-foreground">Format: 2 letters, 2 digits, then 11 digits.</span>
+            )}
+          </label>
           <button
+            disabled={Boolean(dlError(form.dl_number))}
             onClick={async () => {
+              const bad = dlError(form.dl_number);
+              if (bad) return setMsg(bad);
               const { data, error } = await supabase.from("delivery_partners").insert({
-                user_id: user.id, name: form.name, mobile: form.mobile, vehicle_no: form.vehicle_no, status: "PENDING_APPROVAL",
+                user_id: user.id, name: form.name, mobile: form.mobile, vehicle_no: form.vehicle_no,
+                dl_number: form.dl_number.trim(), status: "PENDING_APPROVAL",
               }).select("id,name,status,is_online,is_busy,dl_number").single();
               if (error) setMsg(error.message);
               else setMe(data);
