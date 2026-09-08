@@ -25,6 +25,7 @@ export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className 
   const etaRef = useRef(onEta);
   etaRef.current = onEta;
   const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
