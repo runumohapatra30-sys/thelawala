@@ -48,6 +48,7 @@ export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className 
 
         const icon = (html: string) =>
           L.divIcon({ html, className: "", iconSize: [34, 34], iconAnchor: [17, 30] });
+        leafletRef.current = { L, icon };
 
         L.marker([from.lat, from.lng], { icon: icon(fromKind === "stall" ? stallIcon : riderIcon) }).addTo(map);
         L.marker([to.lat, to.lng], { icon: icon(dropIcon) }).addTo(map);
@@ -56,11 +57,12 @@ export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className 
           riderMarkerRef.current = L.marker([rider.lat, rider.lng], { icon: icon(riderIcon) }).addTo(map);
         }
 
-        const route = await fetchRoute(from, to);
+        const route = await fetchRoute(rider ?? from, to);
         if (cancelled) return;
         const line = L.polyline(route.coords, { color: "#0066FF", weight: 5, opacity: 0.9 }).addTo(map);
+        lineRef.current = line;
         map.fitBounds(line.getBounds(), { padding: [30, 30] });
-        onEta?.(route.durationMin, route.distanceKm);
+        etaRef.current?.(route.durationMin, route.distanceKm);
 
         cleanup = () => map.remove();
       } catch {
