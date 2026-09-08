@@ -136,6 +136,7 @@ function VendorPortal() {
                 owner_id: user.id,
                 lat: pos?.coords.latitude ?? 20.2961,
                 lng: pos?.coords.longitude ?? 85.8245,
+                fssai_number: form.fssai_number.trim(),
                 status: "PENDING_APPROVAL",
               }).select("id,stall_name,status,is_open,fssai_number").single();
               if (error) setMsg(error.message);
