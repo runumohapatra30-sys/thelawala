@@ -178,13 +178,27 @@ function RiderPortal() {
             onClick={async () => {
               const bad = dlError(form.dl_number);
               if (bad) return setMsg(bad);
-              const { data, error } = await supabase.from("delivery_partners").insert({
-                user_id: user.id, name: form.name, mobile: form.mobile, vehicle_no: form.vehicle_no,
-                dl_number: form.dl_number.trim(), status: "PENDING_APPROVAL",
-              }).select("id,name,status,is_online,is_busy,dl_number").single();
-              if (error) setMsg(error.message);
-              else setMe(data);
+              setMsg("");
+              try {
+                const { data, error } = await supabase.from("delivery_partners").insert({
+                  user_id: user.id, name: form.name, mobile: form.mobile, vehicle_no: form.vehicle_no,
+                  dl_number: form.dl_number.trim(), status: "PENDING",
+                }).select("id,name,status,is_online,is_busy,dl_number").single();
+                if (error) throw error;
+                setMe(data);
+                toast.success("Details submitted for review!");
+              } catch (e: any) {
+                const m = String(e?.message ?? "");
+                toast.error(
+                  m.includes("dl_format") ? "Driving licence format is not valid."
+                  : m.includes("duplicate") ? "You have already registered as a delivery partner."
+                  : m.includes("_check") ? "Some details are not accepted. Please check and try again."
+                  : "Could not submit right now. Please try again.",
+                );
+                setMsg("");
+              }
             }}
+
             className="press w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
           >
             Send for approval
