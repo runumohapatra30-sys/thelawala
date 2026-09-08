@@ -48,10 +48,13 @@ export type CartLine = { productId: string; qty: number };
 
 export type OrderStatus =
   | "PLACED"
+  | "VENDOR_ACCEPTED"
   | "PREPARING"
   | "PACKED"
   | "PICKED_UP"
-  | "DELIVERED";
+  | "OUT_FOR_DELIVERY"
+  | "DELIVERED"
+  | "CANCELLED";
 
 export type Order = {
   id: string;
@@ -65,9 +68,15 @@ export type Order = {
   pickupOtp: string;
   deliveryOtp: string;
   riderId: string | null;
+  arrivedAtStall: boolean;
+  arrivedAtDrop: boolean;
+  pickupVerifiedAt: number | null;
+  deliveredAt: number | null;
+  otpAttempts: number;
   proofPhoto: string | null;
   bill: Bill;
   payment: string;
+  history: { status: OrderStatus | string; at: number }[];
 };
 
 export type Bill = {
@@ -78,6 +87,7 @@ export type Bill = {
   surge: number;
   delivery: number;
   charity: number;
+  coupon: number;
   grand: number;
   platformProfit: number;
 };
