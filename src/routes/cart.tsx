@@ -22,6 +22,7 @@ export const Route = createFileRoute("/cart")({
 });
 
 const otp = () => String(Math.floor(100000 + Math.random() * 900000));
+const pin4 = () => String(Math.floor(Math.random() * 10000)).padStart(4, "0");
 
 function Cart() {
   const navigate = useNavigate();
