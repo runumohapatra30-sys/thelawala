@@ -27,9 +27,34 @@ function AuthPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [googleOn, setGoogleOn] = useState(true);
 
+  async function goAfterLogin() {
+    const { data: u } = await supabase.auth.getUser();
+    const uid = u.user?.id;
+    if (!uid) return navigate({ to: "/" });
+
+    let saved: string | null = null;
+    try {
+      saved = sessionStorage.getItem("thelawala.redirect");
+      sessionStorage.removeItem("thelawala.redirect");
+    } catch {
+      saved = null;
+    }
+
+    const [{ data: vendor }, { data: partner }] = await Promise.all([
+      supabase.from("vendors").select("id").eq("owner_id", uid).maybeSingle(),
+      supabase.from("delivery_partners").select("id").eq("user_id", uid).maybeSingle(),
+    ]);
+
+    if (saved?.startsWith("/vendor")) return navigate({ to: "/vendor" });
+    if (saved?.startsWith("/rider")) return navigate({ to: "/rider" });
+    if (vendor) return navigate({ to: "/vendor" });
+    if (partner) return navigate({ to: "/rider" });
+    navigate({ to: "/" });
+  }
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/" });
+      if (data.session) goAfterLogin();
     });
     supabase
       .from("system_settings")
@@ -61,7 +86,7 @@ function AuthPage() {
     });
     setBusy(false);
     if (error) return setMsg(error.message);
-    navigate({ to: "/" });
+    await goAfterLogin();
   }
 
   async function google() {
@@ -70,7 +95,7 @@ function AuthPage() {
     });
     if (result.error) return setMsg("Google sign-in failed. Try the email code.");
     if (result.redirected) return;
-    navigate({ to: "/" });
+    await goAfterLogin();
   }
 
   return (
