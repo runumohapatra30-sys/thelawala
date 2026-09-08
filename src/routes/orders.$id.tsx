@@ -48,6 +48,7 @@ function Track() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [reason, setReason] = useState(REASONS[0]!);
   const [splash, setSplash] = useState(Boolean(placed));
+  const [refundMsg, setRefundMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (!splash) return;
