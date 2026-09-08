@@ -101,7 +101,7 @@ function VendorPortal() {
   );
 }
 
-function RegisterStall({ lastStatus }: { lastStatus?: string }) {
+function RegisterStall({ lastStatus }: { lastStatus: string | undefined }) {
   const [form, setForm] = useState({
     stallName: "",
     ownerName: "",
