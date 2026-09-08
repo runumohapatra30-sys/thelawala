@@ -17,8 +17,13 @@ const riderIcon = `<svg viewBox="0 0 24 24" width="34" height="34" xmlns="http:/
 
 export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className }: Props) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<unknown>(null);
-  const riderMarkerRef = useRef<{ setLatLng: (p: [number, number]) => void } | null>(null);
+  const mapRef = useRef<any>(null);
+  const leafletRef = useRef<any>(null);
+  const riderMarkerRef = useRef<any>(null);
+  const lineRef = useRef<any>(null);
+  const animRef = useRef<number | null>(null);
+  const etaRef = useRef(onEta);
+  etaRef.current = onEta;
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
