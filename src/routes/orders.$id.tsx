@@ -124,11 +124,19 @@ function Track() {
         </div>
       ) : null}
 
-      <div className="bg-primary px-4 pb-5 pt-4 text-primary-foreground">
-        <p className="text-xs opacity-90">#{order.code}</p>
-        <p className="text-xl font-extrabold">{STATUS_LABEL[order.status] ?? order.status}</p>
-        <p className="mt-1 text-xs opacity-90">
-          {live ? (eta ? `Arriving in about ${Math.max(5, Math.round(eta))} minutes` : "Arriving in about 15 minutes") : "Order closed"}
+      <div className="bg-primary px-4 pb-6 pt-4 text-primary-foreground">
+        <div className="flex items-center gap-3">
+          <Link to="/orders" aria-label="Back to orders" className="press grid h-9 w-9 place-items-center rounded-full bg-white/20">
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4">
+              <path d="M15 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+          <p className="text-sm font-semibold opacity-90">{STATUS_LABEL[order.status] ?? order.status} · #{order.code}</p>
+        </div>
+        <p className="mt-3 text-2xl font-black leading-tight">
+          {live
+            ? `Arriving in ${eta ? Math.max(5, Math.round(eta)) : 10}-${eta ? Math.max(10, Math.round(eta) + 5) : 15} minutes`
+            : STATUS_LABEL[order.status] ?? order.status}
         </p>
       </div>
 
