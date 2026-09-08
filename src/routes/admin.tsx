@@ -163,10 +163,9 @@ function Admin() {
                   className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary"
                 />
               </label>
-              <p className="text-[11px] text-muted-foreground">
-                Gateway secret keys are stored securely on the server, never in this screen.
-              </p>
             </section>
+
+            <PayuKeys />
 
             <button
               onClick={async () => {
