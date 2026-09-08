@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { rejectOffer } from "@/lib/dispatch";
 import { haversineKm, inr, STATUS_LABEL } from "@/lib/fees";
 import { useSession } from "@/lib/session";
+import { dlError, normalizeDl } from "@/lib/validation";
 
 export const Route = createFileRoute("/rider")({
   head: () => ({
