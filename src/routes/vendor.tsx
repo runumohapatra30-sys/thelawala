@@ -6,6 +6,7 @@ import { offerToNearestPartner } from "@/lib/dispatch";
 import { inr, STATUS_LABEL } from "@/lib/fees";
 import { useSession } from "@/lib/session";
 import { fssaiError, normalizeFssai } from "@/lib/validation";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/vendor")({
   head: () => ({
@@ -123,25 +124,38 @@ function VendorPortal() {
             onClick={async () => {
               const badFssai = fssaiError(form.fssai_number);
               if (badFssai) return setMsg(badFssai);
+              setMsg("");
               const pos = await new Promise<GeolocationPosition | null>((res) =>
                 navigator.geolocation
                   ? navigator.geolocation.getCurrentPosition((p) => res(p), () => res(null))
                   : res(null),
               );
-              const { data, error } = await supabase.from("vendors").insert({
-                stall_name: form.stall_name,
-                owner_name: form.owner_name,
-                mobile: form.mobile,
-                address: form.address,
-                owner_id: user.id,
-                lat: pos?.coords.latitude ?? 20.2961,
-                lng: pos?.coords.longitude ?? 85.8245,
-                fssai_number: form.fssai_number.trim(),
-                status: "PENDING_APPROVAL",
-              }).select("id,stall_name,status,is_open,fssai_number").single();
-              if (error) setMsg(error.message);
-              else setVendor(data);
+              try {
+                const { data, error } = await supabase.from("vendors").insert({
+                  stall_name: form.stall_name,
+                  owner_name: form.owner_name,
+                  mobile: form.mobile,
+                  address: form.address,
+                  owner_id: user.id,
+                  lat: pos?.coords.latitude ?? 20.2961,
+                  lng: pos?.coords.longitude ?? 85.8245,
+                  fssai_number: form.fssai_number.trim(),
+                  status: "PENDING",
+                }).select("id,stall_name,status,is_open,fssai_number").single();
+                if (error) throw error;
+                setVendor(data);
+                toast.success("Stall details submitted for review!");
+              } catch (e: any) {
+                const m = String(e?.message ?? "");
+                toast.error(
+                  m.includes("fssai_format") ? "FSSAI number must be 14 digits starting with 1 or 2."
+                  : m.includes("duplicate") ? "You have already registered a stall."
+                  : m.includes("_check") ? "Some details are not accepted. Please check and try again."
+                  : "Could not submit right now. Please try again.",
+                );
+              }
             }}
+
             className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground"
           >
             Send for approval
