@@ -90,6 +90,39 @@ function Track() {
     };
   }, [id]);
 
+  // Follow the delivery partner's location live.
+  const partnerId = order?.partner_id ?? null;
+  useEffect(() => {
+    if (!partnerId) return;
+    let alive = true;
+    const pull = async () => {
+      const { data } = await supabase
+        .from("delivery_partners")
+        .select("name,mobile,lat,lng")
+        .eq("id", partnerId)
+        .maybeSingle();
+      if (alive && data) setRider(data);
+    };
+    pull();
+    const timer = setInterval(pull, 4000);
+    const ch = supabase
+      .channel(`partner-${partnerId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "delivery_partners", filter: `id=eq.${partnerId}` },
+        (payload) => {
+          const p = payload.new as { name: string; mobile: string | null; lat: number | null; lng: number | null };
+          if (alive) setRider({ name: p.name, mobile: p.mobile, lat: p.lat, lng: p.lng });
+        },
+      )
+      .subscribe();
+    return () => {
+      alive = false;
+      clearInterval(timer);
+      supabase.removeChannel(ch);
+    };
+  }, [partnerId]);
+
   async function cancelOrder() {
     if (!order) return;
     await supabase
