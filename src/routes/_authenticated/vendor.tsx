@@ -138,7 +138,10 @@ function VendorPortal() {
   async function addDish() {
     if (!vendor) return;
     const price = Number(dish.price);
-    if (!dish.name.trim() || !price) return toast.error("Add a dish name and price.");
+    if (!dish.name.trim() || !price) {
+      toast.error("Add a dish name and price.");
+      return;
+    }
     setDishSaving(true);
     try {
       let photoUrl: string | null = null;
