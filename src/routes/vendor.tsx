@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { offerToNearestPartner } from "@/lib/dispatch";
 import { inr, STATUS_LABEL } from "@/lib/fees";
 import { useSession } from "@/lib/session";
+import { fssaiError, normalizeFssai } from "@/lib/validation";
 
 export const Route = createFileRoute("/vendor")({
   head: () => ({
