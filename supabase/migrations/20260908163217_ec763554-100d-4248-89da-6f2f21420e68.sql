@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.wallet_credit(uuid, numeric, text, uuid, text, text) TO service_role;
