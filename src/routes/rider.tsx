@@ -1,304 +1,338 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { PortalHeader, Shell } from "@/components/Shell";
 import { LiveMap } from "@/components/LiveMap";
-import { Field, GreenButton, PortalHeader, Shell } from "@/components/Shell";
-import { VENDORS } from "@/lib/data";
-import { STATUS_LABEL, actions, inr, useApp } from "@/lib/store";
-import type { Order } from "@/lib/types";
+import { supabase } from "@/integrations/supabase/client";
+import { rejectOffer } from "@/lib/dispatch";
+import { haversineKm, inr, STATUS_LABEL } from "@/lib/fees";
+import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/rider")({
   head: () => ({
     meta: [
-      { title: "Deliver with Thaleewala — rider portal" },
-      { name: "description", content: "Go on duty, verify pickup OTP, navigate and complete deliveries with photo proof." },
-      { property: "og:title", content: "Deliver with Thaleewala" },
-      { property: "og:description", content: "Rider dashboard with earnings, live navigation and OTP verification." },
+      { title: "Delivery partner portal — Thaleewala" },
+      { name: "description", content: "Go online, accept nearby Thaleewala orders, verify pickup and delivery OTPs, capture proof and track your earnings." },
+      { property: "og:title", content: "Delivery partner portal — Thaleewala" },
+      { property: "og:description", content: "Earn with Thaleewala street food deliveries." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: RiderPortal,
 });
 
+type Order = {
+  id: string; code: string; status: string; grand_total: number; distance_km: number;
+  delivery_fee: number; customer_name: string; customer_mobile: string; address_line: string;
+  drop_lat: number; drop_lng: number; vendor_id: string; partner_id: string | null;
+  offered_to: string | null; offer_expires_at: string | null; rejected_partner_ids: string[];
+  payment_mode: string;
+};
+type Partner = { id: string; name: string; status: string; is_online: boolean; is_busy: boolean };
+
 function RiderPortal() {
-  const riders = useApp((s) => s.riders);
-  const orders = useApp((s) => s.orders);
-  const [tab, setTab] = useState<"duty" | "register">("duty");
-  const rider = riders.find((r) => r.status === "APPROVED") ?? riders[0]!;
-  const active = orders.find(
-    (o) => o.status !== "DELIVERED" && o.status !== "CANCELLED" && o.status !== "PLACED",
-  );
-  const doneToday = orders.filter((o) => o.status === "DELIVERED");
-  const earnings = doneToday.length * 38 + doneToday.length * 12;
+  const { user, loading } = useSession();
+  const [me, setMe] = useState<Partner | null>(null);
+  const [offer, setOffer] = useState<Order | null>(null);
+  const [active, setActive] = useState<Order | null>(null);
+  const [vendor, setVendor] = useState<{ stall_name: string; lat: number; lng: number; mobile: string | null } | null>(null);
+  const [secs, setSecs] = useState(45);
+  const [pickupCode, setPickupCode] = useState("");
+  const [dropCode, setDropCode] = useState("");
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [earnings, setEarnings] = useState({ trips: 0, total: 0 });
+  const [form, setForm] = useState({ name: "", mobile: "", vehicle_no: "" });
+  const posRef = useRef<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("delivery_partners").select("id,name,status,is_online,is_busy").eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => setMe(data));
+  }, [user?.id]);
+
+  // Share live location while online
+  useEffect(() => {
+    if (!me?.is_online || !navigator.geolocation) return;
+    const id = navigator.geolocation.watchPosition(async (p) => {
+      posRef.current = { lat: p.coords.latitude, lng: p.coords.longitude };
+      await supabase.from("delivery_partners").update({ lat: p.coords.latitude, lng: p.coords.longitude }).eq("id", me.id);
+    });
+    return () => navigator.geolocation.clearWatch(id);
+  }, [me?.id, me?.is_online]);
+
+  // Poll for offers and the current trip
+  useEffect(() => {
+    if (!me) return;
+    const load = async () => {
+      const { data: mine } = await supabase.from("orders").select("*")
+        .eq("partner_id", me.id).not("status", "in", '("DELIVERED","CANCELLED")')
+        .order("created_at", { ascending: false }).limit(1).maybeSingle();
+      setActive((mine ?? null) as Order | null);
+
+      if (!mine) {
+        const { data: off } = await supabase.from("orders").select("*")
+          .eq("offered_to", me.id).is("partner_id", null).limit(1).maybeSingle();
+        setOffer((off ?? null) as Order | null);
+        if (off?.offer_expires_at) {
+          setSecs(Math.max(0, Math.round((new Date(off.offer_expires_at).getTime() - Date.now()) / 1000)));
+        }
+      } else {
+        setOffer(null);
+      }
+
+      const { data: done } = await supabase.from("orders").select("delivery_fee").eq("partner_id", me.id).eq("status", "DELIVERED");
+      setEarnings({ trips: done?.length ?? 0, total: (done ?? []).reduce((a, d) => a + Number(d.delivery_fee), 0) });
+    };
+    load();
+    const t = setInterval(load, 6000);
+    return () => clearInterval(t);
+  }, [me?.id]);
+
+  useEffect(() => {
+    const order = active ?? offer;
+    if (!order) return;
+    supabase.from("vendors").select("stall_name,lat,lng,mobile").eq("id", order.vendor_id).maybeSingle()
+      .then(({ data }) => setVendor(data));
+  }, [active?.id, offer?.id]);
+
+  useEffect(() => {
+    if (!offer) return;
+    const t = setInterval(() => setSecs((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [offer?.id]);
+
+  useEffect(() => {
+    if (offer && secs === 0 && me) {
+      rejectOffer(offer.id, me.id, offer.rejected_partner_ids ?? []);
+      setOffer(null);
+    }
+  }, [secs, offer?.id]);
+
+  if (loading) return <Shell><PortalHeader title="Delivery partner" /></Shell>;
+
+  if (!user) {
+    return (
+      <Shell>
+        <PortalHeader title="Delivery partner" />
+        <div className="py-20 text-center">
+          <p className="text-sm text-muted-foreground">Sign in to start delivering.</p>
+          <Link to="/auth" className="mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">Sign in</Link>
+        </div>
+      </Shell>
+    );
+  }
+
+  if (!me) {
+    return (
+      <Shell>
+        <PortalHeader title="Join as delivery partner" subtitle="Approval usually takes a day" />
+        <div className="space-y-2 p-4">
+          {([["name", "Your name"], ["mobile", "Mobile number"], ["vehicle_no", "Vehicle number"]] as const).map(([k, label]) => (
+            <label key={k} className="block">
+              <span className="mb-1 block text-xs font-semibold text-muted-foreground">{label}</span>
+              <input
+                value={form[k]}
+                onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+                className="w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
+              />
+            </label>
+          ))}
+          <button
+            onClick={async () => {
+              const { data, error } = await supabase.from("delivery_partners").insert({
+                user_id: user.id, name: form.name, mobile: form.mobile, vehicle_no: form.vehicle_no, status: "PENDING_APPROVAL",
+              }).select("id,name,status,is_online,is_busy").single();
+              if (error) setMsg(error.message);
+              else setMe(data);
+            }}
+            className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground"
+          >
+            Send for approval
+          </button>
+          {msg ? <p className="text-xs text-destructive">{msg}</p> : null}
+        </div>
+      </Shell>
+    );
+  }
+
+  const trip = active;
+
+  async function acceptOffer() {
+    if (!offer || !me) return;
+    await supabase.from("orders").update({ partner_id: me.id, status: "ASSIGNED", offered_to: null, offer_expires_at: null }).eq("id", offer.id);
+    await supabase.from("delivery_partners").update({ is_busy: true }).eq("id", me.id);
+    setActive({ ...offer, partner_id: me.id, status: "ASSIGNED" });
+    setOffer(null);
+  }
+
+  async function verifyPickup() {
+    if (!trip) return;
+    const { data } = await supabase.from("orders").select("pickup_otp").eq("id", trip.id).maybeSingle();
+    if (!data || data.pickup_otp !== pickupCode.trim()) return setMsg("Wrong pickup OTP. Ask the stall to read it again.");
+    await supabase.from("orders").update({ status: "OUT_FOR_DELIVERY", picked_up_at: new Date().toISOString() }).eq("id", trip.id);
+    setMsg(null);
+    setActive({ ...trip, status: "OUT_FOR_DELIVERY" });
+  }
+
+  async function completeDelivery() {
+    if (!trip || !me) return;
+    if (!photo) return setMsg("Take the handover photo first.");
+    const { data } = await supabase.from("orders").select("delivery_otp").eq("id", trip.id).maybeSingle();
+    if (!data || data.delivery_otp !== dropCode.trim()) return setMsg("Wrong delivery OTP. Ask the customer to read it again.");
+    await supabase.from("orders").update({
+      status: "DELIVERED", delivered_at: new Date().toISOString(), proof_photo_url: photo,
+      payment_status: trip.payment_mode === "COD" ? "PAID" : "PAID",
+    }).eq("id", trip.id);
+    await supabase.from("delivery_partners").update({ is_busy: false }).eq("id", me.id);
+    setMsg(null);
+    setActive(null);
+    setPickupCode("");
+    setDropCode("");
+    setPhoto(null);
+  }
 
   return (
     <Shell>
-      <PortalHeader title="Deliver with Thaleewala" subtitle={rider.name} />
-      <div className="flex gap-2 p-4 pb-0">
-        {(["duty", "register"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`rounded-full px-4 py-1.5 text-xs font-bold ${
-              tab === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-            }`}
-          >
-            {t === "duty" ? "Dashboard" : "Join as rider"}
-          </button>
-        ))}
-      </div>
-
-      {tab === "register" ? (
-        <RegisterRider />
-      ) : (
-        <div className="space-y-3 p-4">
-          <div className="card-soft grid grid-cols-3 gap-2 border border-border p-3 text-center">
-            <Stat label="Earnings" value={inr(earnings)} />
-            <Stat label="Trips" value={String(doneToday.length)} />
-            <Stat label="Rating" value="4.9" />
+      <PortalHeader title={me.name} subtitle={me.status === "APPROVED" ? "Approved partner" : "Waiting for approval"} />
+      <div className="space-y-3 p-4">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="card-soft border border-border p-3 text-center">
+            <p className="text-[11px] text-muted-foreground">Trips</p>
+            <p className="text-lg font-bold">{earnings.trips}</p>
           </div>
-
-          <div className="card-soft flex items-center justify-between border border-border p-3">
-            <div>
-              <p className="text-sm font-bold">{rider.onDuty ? "ON DUTY" : "OFF DUTY"}</p>
-              <p className="text-xs text-muted-foreground">
-                {rider.onDuty ? "Location shared for active trips only" : "You will not receive orders"}
-              </p>
-            </div>
-            <button
-              onClick={() => actions.toggleDuty(rider.id)}
-              className={`h-7 w-12 rounded-full p-1 transition ${rider.onDuty ? "bg-primary" : "bg-muted"}`}
-              aria-label="Toggle duty"
-            >
-              <span
-                className={`block h-5 w-5 rounded-full bg-card transition ${rider.onDuty ? "translate-x-5" : ""}`}
-              />
-            </button>
+          <div className="card-soft border border-border p-3 text-center">
+            <p className="text-[11px] text-muted-foreground">Earnings</p>
+            <p className="text-lg font-bold">{inr(Math.round(earnings.total))}</p>
           </div>
-
-          <div className="card-soft border border-border p-3 text-xs">
-            <p className="text-sm font-bold">Earnings breakdown</p>
-            <p className="mt-1 text-muted-foreground">Base ₹25 · Distance ₹8/km · Peak bonus ₹12 · Tips 100% yours</p>
-          </div>
-
-          {active ? (
-            <ActiveTrip order={active} onDuty={rider.onDuty} />
-          ) : (
-            <p className="py-10 text-center text-sm text-muted-foreground">
-              No trip assigned. Waiting for the stall to accept an order.
-            </p>
-          )}
-
-          <a
-            href="tel:112"
-            className="block rounded-xl border border-destructive py-3 text-center text-sm font-bold text-destructive"
-          >
-            SOS · Emergency & support
-          </a>
         </div>
-      )}
+
+        <button
+          onClick={async () => {
+            await supabase.from("delivery_partners").update({ is_online: !me.is_online }).eq("id", me.id);
+            setMe({ ...me, is_online: !me.is_online });
+          }}
+          className={`w-full rounded-xl border py-3 text-sm font-bold ${me.is_online ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+        >
+          You are {me.is_online ? "ONLINE" : "OFFLINE"} · tap to change
+        </button>
+
+        {offer ? (
+          <div className="card-soft border-2 border-primary p-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-bold">New order #{offer.code}</p>
+              <p className="text-sm font-bold text-primary">{secs}s</p>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {vendor?.stall_name} → {offer.address_line} · {offer.distance_km} km
+            </p>
+            <p className="text-xs font-semibold">You earn {inr(Number(offer.delivery_fee))}</p>
+            <div className="mt-2 flex gap-2">
+              <button onClick={acceptOffer} className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground">Accept</button>
+              <button
+                onClick={async () => {
+                  await rejectOffer(offer.id, me.id, offer.rejected_partner_ids ?? []);
+                  setOffer(null);
+                }}
+                className="flex-1 rounded-xl border border-border py-2.5 text-sm font-bold"
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {trip && vendor ? (
+          <div className="card-soft space-y-3 border border-border p-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-bold">#{trip.code}</p>
+              <p className="text-xs font-semibold text-primary">{STATUS_LABEL[trip.status] ?? trip.status}</p>
+            </div>
+
+            <LiveMap
+              from={
+                trip.status === "OUT_FOR_DELIVERY" && posRef.current
+                  ? posRef.current
+                  : { lat: Number(vendor.lat), lng: Number(vendor.lng) }
+              }
+              to={
+                trip.status === "OUT_FOR_DELIVERY"
+                  ? { lat: Number(trip.drop_lat), lng: Number(trip.drop_lng) }
+                  : { lat: Number(vendor.lat), lng: Number(vendor.lng) }
+              }
+              fromKind={trip.status === "OUT_FOR_DELIVERY" ? "rider" : "stall"}
+              className="h-48 w-full overflow-hidden rounded-2xl border border-border"
+            />
+
+            {trip.status !== "OUT_FOR_DELIVERY" ? (
+              <>
+                <p className="text-xs text-muted-foreground">Pick up from {vendor.stall_name}</p>
+                <NearBanner target={{ lat: Number(vendor.lat), lng: Number(vendor.lng) }} pos={posRef.current} label="stall" />
+                <input
+                  inputMode="numeric"
+                  value={pickupCode}
+                  onChange={(e) => setPickupCode(e.target.value)}
+                  placeholder="Pickup OTP from stall"
+                  className="w-full rounded-xl border border-border px-3 py-2.5 text-center text-lg font-bold tracking-[0.3em] outline-none focus:border-primary"
+                />
+                <button onClick={verifyPickup} className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground">
+                  Verify pickup
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground">Deliver to {trip.customer_name} · {trip.address_line}</p>
+                <NearBanner target={{ lat: Number(trip.drop_lat), lng: Number(trip.drop_lng) }} pos={posRef.current} label="customer" />
+                <a href={`tel:${trip.customer_mobile}`} className="block rounded-xl border border-border py-2.5 text-center text-sm font-bold">
+                  Call customer
+                </a>
+                <label className="block rounded-xl border border-dashed border-border py-3 text-center text-sm font-semibold">
+                  {photo ? "Photo captured · retake" : "Take handover photo"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      const reader = new FileReader();
+                      reader.onload = () => setPhoto(String(reader.result));
+                      reader.readAsDataURL(f);
+                    }}
+                  />
+                </label>
+                {photo ? <img src={photo} alt="Handover proof" className="w-full rounded-xl object-cover" /> : null}
+                <input
+                  inputMode="numeric"
+                  value={dropCode}
+                  onChange={(e) => setDropCode(e.target.value)}
+                  placeholder="Delivery OTP from customer"
+                  className="w-full rounded-xl border border-border px-3 py-2.5 text-center text-lg font-bold tracking-[0.3em] outline-none focus:border-primary"
+                />
+                <button onClick={completeDelivery} className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground">
+                  Complete delivery
+                </button>
+              </>
+            )}
+            {msg ? <p className="text-xs font-semibold text-destructive">{msg}</p> : null}
+          </div>
+        ) : null}
+
+        <a href="tel:9078492360" className="block rounded-xl border border-destructive py-3 text-center text-sm font-bold text-destructive">
+          SOS · call support 9078492360
+        </a>
+      </div>
     </Shell>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function NearBanner({ target, pos, label }: { target: { lat: number; lng: number }; pos: { lat: number; lng: number } | null; label: string }) {
+  if (!pos) return <p className="text-[11px] text-muted-foreground">Turn on location to see how far the {label} is.</p>;
+  const km = haversineKm(pos, target);
   return (
-    <div>
-      <p className="text-base font-extrabold">{value}</p>
-      <p className="text-[11px] text-muted-foreground">{label}</p>
-    </div>
-  );
-}
-
-function ActiveTrip({ order, onDuty }: { order: Order; onDuty: boolean }) {
-  const vendor = VENDORS.find((v) => v.id === order.vendorId)!;
-  const [otp, setOtp] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [photo, setPhoto] = useState<string | null>(null);
-  const [accepted, setAccepted] = useState(Boolean(order.riderId));
-  const [timer, setTimer] = useState(45);
-  const fileRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    if (accepted) return;
-    const t = setInterval(() => setTimer((s) => (s > 0 ? s - 1 : 0)), 1000);
-    return () => clearInterval(t);
-  }, [accepted]);
-
-  if (!onDuty) {
-    return <p className="py-10 text-center text-sm text-muted-foreground">Go ON DUTY to see your trip.</p>;
-  }
-
-  if (!accepted) {
-    return (
-      <div className="card-soft border border-border p-3">
-        <p className="text-sm font-bold">New trip · #{order.id}</p>
-        <p className="text-xs text-muted-foreground">{vendor.stallName} → {order.address}</p>
-        <p className="mt-1 text-xs font-bold text-destructive">Respond in {timer}s</p>
-        <div className="mt-3 flex gap-2">
-          <button
-            onClick={() => {
-              actions.assignRider(order.id, "r1");
-              setAccepted(true);
-            }}
-            disabled={timer === 0}
-            className="flex-1 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
-          >
-            ACCEPT
-          </button>
-          <button className="flex-1 rounded-xl border border-border py-3 text-sm font-bold">REJECT</button>
-        </div>
-      </div>
-    );
-  }
-
-  const toStall = order.status === "PACKED" || order.status === "VENDOR_ACCEPTED" || order.status === "PREPARING";
-
-  return (
-    <div className="card-soft space-y-3 border border-border p-3">
-      <div className="flex justify-between">
-        <p className="text-sm font-bold">#{order.id}</p>
-        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-primary">
-          {STATUS_LABEL[order.status]}
-        </span>
-      </div>
-
-      <LiveMap
-        from={toStall ? { lat: vendor.location.lat - 0.006, lng: vendor.location.lng - 0.004 } : vendor.location}
-        to={toStall ? vendor.location : order.drop}
-        fromKind={toStall ? "rider" : "stall"}
-        className="h-48 w-full overflow-hidden rounded-2xl"
-      />
-
-      {toStall ? (
-        <>
-          <p className="text-xs text-muted-foreground">Step 1 · Ride to {vendor.stallName}</p>
-          {!order.arrivedAtStall ? (
-            <GreenButton onClick={() => actions.markArrived(order.id, "stall")}>ARRIVED AT STALL</GreenButton>
-          ) : (
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-muted-foreground">
-                Enter pickup OTP from the stall
-              </label>
-              <input
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                inputMode="numeric"
-                maxLength={4}
-                className="w-full rounded-xl border border-border px-3 py-2.5 text-center text-lg font-bold tracking-[0.4em] outline-none focus:border-primary"
-              />
-              <GreenButton
-                className="mt-2"
-                onClick={() => {
-                  const res = actions.verifyPickup(order.id, otp);
-                  setError(res.ok ? null : (res.error ?? "Verification failed"));
-                  if (res.ok) setOtp("");
-                }}
-              >
-                VERIFY PICKUP
-              </GreenButton>
-            </div>
-          )}
-        </>
-      ) : (
-        <>
-          <p className="text-xs text-muted-foreground">Step 2 · Deliver to {order.address}</p>
-          {!order.arrivedAtDrop ? (
-            <GreenButton onClick={() => actions.markArrived(order.id, "drop")}>ARRIVED AT CUSTOMER</GreenButton>
-          ) : (
-            <div className="space-y-2">
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (!f) return;
-                  const reader = new FileReader();
-                  reader.onload = () => setPhoto(String(reader.result));
-                  reader.readAsDataURL(f);
-                }}
-              />
-              <button
-                onClick={() => fileRef.current?.click()}
-                className="w-full rounded-xl border border-border py-3 text-sm font-bold"
-              >
-                {photo ? "RETAKE HANDOVER PHOTO" : "CAPTURE HANDOVER PHOTO"}
-              </button>
-              {photo ? <img src={photo} alt="Handover proof" className="w-full rounded-xl" /> : null}
-              <input
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                inputMode="numeric"
-                maxLength={4}
-                placeholder="Delivery OTP"
-                className="w-full rounded-xl border border-border px-3 py-2.5 text-center text-lg font-bold tracking-[0.4em] outline-none focus:border-primary"
-              />
-              <GreenButton
-                onClick={() => {
-                  const res = actions.verifyDelivery(order.id, otp, photo);
-                  setError(res.ok ? null : (res.error ?? "Verification failed"));
-                }}
-              >
-                COMPLETE DELIVERY
-              </GreenButton>
-              <a href="tel:9078492360" className="block py-1 text-center text-xs font-semibold text-primary">
-                Customer not available? Call now
-              </a>
-            </div>
-          )}
-        </>
-      )}
-
-      {error ? <p className="text-xs font-semibold text-destructive">{error}</p> : null}
-    </div>
-  );
-}
-
-function RegisterRider() {
-  const [form, setForm] = useState({ name: "", mobile: "", dl: "", pan: "", accountNo: "", ifsc: "" });
-  const [done, setDone] = useState(false);
-  const upd = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [k]: e.target.value });
-
-  if (done) {
-    return (
-      <div className="p-4">
-        <div className="card-soft border border-border p-4 text-center">
-          <p className="text-sm font-bold text-primary">Application submitted</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Status: PENDING_APPROVAL. You can go on duty once admin approves your KYC.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <form
-      className="space-y-3 p-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        actions.addRider({
-          id: `r${Date.now().toString().slice(-5)}`,
-          name: form.name,
-          mobile: form.mobile,
-          dl: form.dl,
-          pan: form.pan,
-          accountNo: form.accountNo,
-          ifsc: form.ifsc,
-          status: "PENDING_APPROVAL",
-          onDuty: false,
-        });
-        setDone(true);
-      }}
-    >
-      <Field label="Full name" required value={form.name} onChange={upd("name")} />
-      <Field label="Mobile" required inputMode="numeric" maxLength={10} value={form.mobile} onChange={upd("mobile")} />
-      <Field label="Driving licence" value={form.dl} onChange={upd("dl")} />
-      <Field label="PAN" value={form.pan} onChange={upd("pan")} />
-      <Field label="Bank account number" value={form.accountNo} onChange={upd("accountNo")} />
-      <Field label="IFSC" value={form.ifsc} onChange={upd("ifsc")} />
-      <GreenButton type="submit">SUBMIT FOR APPROVAL</GreenButton>
-    </form>
+    <p className={`text-[11px] font-semibold ${km < 0.15 ? "text-primary" : "text-muted-foreground"}`}>
+      {km < 0.15 ? `You have arrived at the ${label}` : `${km} km from the ${label}`}
+    </p>
   );
 }
