@@ -15,10 +15,10 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as RiderRouteImport } from './routes/rider'
 import { Route as TermsRouteImport } from './routes/terms'
-import { Route as VendorRouteImport } from './routes/vendor'
 import { Route as WalletRouteImport } from './routes/wallet'
+import { Route as AuthenticatedRiderRouteImport } from './routes/_authenticated/rider'
+import { Route as AuthenticatedVendorRouteImport } from './routes/_authenticated/vendor'
 import { Route as OrdersIndexRouteImport } from './routes/orders.index'
 import { Route as OrdersIdRouteImport } from './routes/orders.$id'
 import { Route as SupportIndexRouteImport } from './routes/support.index'
@@ -55,24 +55,24 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RiderRoute = RiderRouteImport.update({
-  id: '/rider',
-  path: '/rider',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
-const VendorRoute = VendorRouteImport.update({
-  id: '/vendor',
-  path: '/vendor',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
   path: '/wallet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRiderRoute = AuthenticatedRiderRouteImport.update({
+  id: '/_authenticated/rider',
+  path: '/rider',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedVendorRoute = AuthenticatedVendorRouteImport.update({
+  id: '/_authenticated/vendor',
+  path: '/vendor',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrdersIndexRoute = OrdersIndexRouteImport.update({
@@ -108,10 +108,10 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/profile': typeof ProfileRoute
-  '/rider': typeof RiderRoute
   '/terms': typeof TermsRoute
-  '/vendor': typeof VendorRoute
   '/wallet': typeof WalletRoute
+  '/rider': typeof AuthenticatedRiderRoute
+  '/vendor': typeof AuthenticatedVendorRoute
   '/orders/$id': typeof OrdersIdRoute
   '/support/$id': typeof SupportIdRoute
   '/orders/': typeof OrdersIndexRoute
@@ -125,10 +125,10 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/profile': typeof ProfileRoute
-  '/rider': typeof RiderRoute
   '/terms': typeof TermsRoute
-  '/vendor': typeof VendorRoute
   '/wallet': typeof WalletRoute
+  '/rider': typeof AuthenticatedRiderRoute
+  '/vendor': typeof AuthenticatedVendorRoute
   '/orders/$id': typeof OrdersIdRoute
   '/support/$id': typeof SupportIdRoute
   '/orders': typeof OrdersIndexRoute
@@ -143,10 +143,10 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
   '/profile': typeof ProfileRoute
-  '/rider': typeof RiderRoute
   '/terms': typeof TermsRoute
-  '/vendor': typeof VendorRoute
   '/wallet': typeof WalletRoute
+  '/_authenticated/rider': typeof AuthenticatedRiderRoute
+  '/_authenticated/vendor': typeof AuthenticatedVendorRoute
   '/orders/$id': typeof OrdersIdRoute
   '/support/$id': typeof SupportIdRoute
   '/orders/': typeof OrdersIndexRoute
@@ -162,10 +162,10 @@ export interface FileRouteTypes {
     | '/cart'
     | '/categories'
     | '/profile'
-    | '/rider'
     | '/terms'
-    | '/vendor'
     | '/wallet'
+    | '/rider'
+    | '/vendor'
     | '/orders/$id'
     | '/support/$id'
     | '/orders/'
@@ -179,10 +179,10 @@ export interface FileRouteTypes {
     | '/cart'
     | '/categories'
     | '/profile'
-    | '/rider'
     | '/terms'
-    | '/vendor'
     | '/wallet'
+    | '/rider'
+    | '/vendor'
     | '/orders/$id'
     | '/support/$id'
     | '/orders'
@@ -196,10 +196,10 @@ export interface FileRouteTypes {
     | '/cart'
     | '/categories'
     | '/profile'
-    | '/rider'
     | '/terms'
-    | '/vendor'
     | '/wallet'
+    | '/_authenticated/rider'
+    | '/_authenticated/vendor'
     | '/orders/$id'
     | '/support/$id'
     | '/orders/'
@@ -214,10 +214,10 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   CategoriesRoute: typeof CategoriesRoute
   ProfileRoute: typeof ProfileRoute
-  RiderRoute: typeof RiderRoute
   TermsRoute: typeof TermsRoute
-  VendorRoute: typeof VendorRoute
   WalletRoute: typeof WalletRoute
+  AuthenticatedRiderRoute: typeof AuthenticatedRiderRoute
+  AuthenticatedVendorRoute: typeof AuthenticatedVendorRoute
   OrdersIdRoute: typeof OrdersIdRoute
   SupportIdRoute: typeof SupportIdRoute
   OrdersIndexRoute: typeof OrdersIndexRoute
@@ -269,13 +269,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/rider': {
-      id: '/rider'
-      path: '/rider'
-      fullPath: '/rider'
-      preLoaderRoute: typeof RiderRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -283,18 +276,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/vendor': {
-      id: '/vendor'
-      path: '/vendor'
-      fullPath: '/vendor'
-      preLoaderRoute: typeof VendorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/wallet': {
       id: '/wallet'
       path: '/wallet'
       fullPath: '/wallet'
       preLoaderRoute: typeof WalletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/rider': {
+      id: '/_authenticated/rider'
+      path: '/rider'
+      fullPath: '/rider'
+      preLoaderRoute: typeof AuthenticatedRiderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/vendor': {
+      id: '/_authenticated/vendor'
+      path: '/vendor'
+      fullPath: '/vendor'
+      preLoaderRoute: typeof AuthenticatedVendorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/orders/': {
@@ -342,10 +342,10 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   CategoriesRoute: CategoriesRoute,
   ProfileRoute: ProfileRoute,
-  RiderRoute: RiderRoute,
   TermsRoute: TermsRoute,
-  VendorRoute: VendorRoute,
   WalletRoute: WalletRoute,
+  AuthenticatedRiderRoute: AuthenticatedRiderRoute,
+  AuthenticatedVendorRoute: AuthenticatedVendorRoute,
   OrdersIdRoute: OrdersIdRoute,
   SupportIdRoute: SupportIdRoute,
   OrdersIndexRoute: OrdersIndexRoute,
