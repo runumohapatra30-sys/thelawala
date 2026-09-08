@@ -17,6 +17,7 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RiderRouteImport } from './routes/rider'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as VendorRouteImport } from './routes/vendor'
+import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as OrdersIndexRouteImport } from './routes/orders.index'
 import { Route as OrdersIdRouteImport } from './routes/orders.$id'
 import { Route as ApiPublicPayuCallbackRouteImport } from './routes/api/public/payu/callback'
@@ -61,6 +62,11 @@ const VendorRoute = VendorRouteImport.update({
   path: '/vendor',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WalletRoute = WalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrdersIndexRoute = OrdersIndexRouteImport.update({
   id: '/orders/',
   path: '/orders/',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/rider': typeof RiderRoute
   '/terms': typeof TermsRoute
   '/vendor': typeof VendorRoute
+  '/wallet': typeof WalletRoute
   '/orders/$id': typeof OrdersIdRoute
   '/orders/': typeof OrdersIndexRoute
   '/api/public/payu/callback': typeof ApiPublicPayuCallbackRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/rider': typeof RiderRoute
   '/terms': typeof TermsRoute
   '/vendor': typeof VendorRoute
+  '/wallet': typeof WalletRoute
   '/orders/$id': typeof OrdersIdRoute
   '/orders': typeof OrdersIndexRoute
   '/api/public/payu/callback': typeof ApiPublicPayuCallbackRoute
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/rider': typeof RiderRoute
   '/terms': typeof TermsRoute
   '/vendor': typeof VendorRoute
+  '/wallet': typeof WalletRoute
   '/orders/$id': typeof OrdersIdRoute
   '/orders/': typeof OrdersIndexRoute
   '/api/public/payu/callback': typeof ApiPublicPayuCallbackRoute
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/rider'
     | '/terms'
     | '/vendor'
+    | '/wallet'
     | '/orders/$id'
     | '/orders/'
     | '/api/public/payu/callback'
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/rider'
     | '/terms'
     | '/vendor'
+    | '/wallet'
     | '/orders/$id'
     | '/orders'
     | '/api/public/payu/callback'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '/rider'
     | '/terms'
     | '/vendor'
+    | '/wallet'
     | '/orders/$id'
     | '/orders/'
     | '/api/public/payu/callback'
@@ -168,6 +180,7 @@ export interface RootRouteChildren {
   RiderRoute: typeof RiderRoute
   TermsRoute: typeof TermsRoute
   VendorRoute: typeof VendorRoute
+  WalletRoute: typeof WalletRoute
   OrdersIdRoute: typeof OrdersIdRoute
   OrdersIndexRoute: typeof OrdersIndexRoute
   ApiPublicPayuCallbackRoute: typeof ApiPublicPayuCallbackRoute
@@ -231,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/wallet': {
+      id: '/wallet'
+      path: '/wallet'
+      fullPath: '/wallet'
+      preLoaderRoute: typeof WalletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/orders/': {
       id: '/orders/'
       path: '/orders'
@@ -264,6 +284,7 @@ const rootRouteChildren: RootRouteChildren = {
   RiderRoute: RiderRoute,
   TermsRoute: TermsRoute,
   VendorRoute: VendorRoute,
+  WalletRoute: WalletRoute,
   OrdersIdRoute: OrdersIdRoute,
   OrdersIndexRoute: OrdersIndexRoute,
   ApiPublicPayuCallbackRoute: ApiPublicPayuCallbackRoute,
