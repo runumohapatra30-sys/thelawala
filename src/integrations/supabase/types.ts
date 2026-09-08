@@ -133,6 +133,7 @@ export type Database = {
           category_id: string | null
           created_at: string
           details: string | null
+          food_type: string
           id: string
           in_stock: boolean
           mrp: number
@@ -147,6 +148,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           details?: string | null
+          food_type?: string
           id?: string
           in_stock?: boolean
           mrp?: number
@@ -161,6 +163,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           details?: string | null
+          food_type?: string
           id?: string
           in_stock?: boolean
           mrp?: number
