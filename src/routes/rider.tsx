@@ -42,7 +42,10 @@ function RiderPortal() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [earnings, setEarnings] = useState({ trips: 0, total: 0 });
-  const [form, setForm] = useState({ name: "", mobile: "", vehicle_no: "" });
+  const [form, setForm] = useState({ name: "", mobile: "", vehicle_no: "", dl_number: "" });
+  const [dlDraft, setDlDraft] = useState("");
+  const [dlMsg, setDlMsg] = useState<string | null>(null);
+  const [dlSaving, setDlSaving] = useState(false);
   const posRef = useRef<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
