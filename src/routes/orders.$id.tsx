@@ -151,27 +151,87 @@ function Track() {
           />
         ) : null}
 
-        {order.status === "OUT_FOR_DELIVERY" ? (
-          <div className="card-soft border border-primary p-3 text-center">
-            <p className="text-xs font-semibold text-muted-foreground">Share this OTP with the delivery partner</p>
-            <p className="mt-1 text-3xl font-extrabold tracking-[0.3em] text-primary">{order.delivery_otp}</p>
+        {live && order.payment_status !== "PAID" ? (
+          <div className="card-soft grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border border-border p-3">
+            <p className="min-w-0 text-sm font-bold">
+              Pay {inr(Number(order.grand_total) + Number(order.tip_amount ?? 0))} before or on delivery
+            </p>
+            <Link to="/wallet" className="press shrink-0 rounded-full bg-primary px-3 py-1.5 text-[11px] font-black text-primary-foreground">
+              Pay Online
+            </Link>
+          </div>
+        ) : null}
+
+        {live ? (
+          <div className="card-soft border-2 border-primary p-4 text-center">
+            <p className="text-xs font-semibold text-muted-foreground">Delivery OTP · share only at handover</p>
+            <p className="mt-1 text-4xl font-black tracking-[0.35em] text-primary">{order.delivery_otp}</p>
           </div>
         ) : null}
 
         {rider ? (
-          <div className="card-soft flex items-center gap-3 border border-border p-3">
-            <div className="grid h-11 w-11 place-items-center rounded-full bg-muted text-sm font-bold">
-              {rider.name.slice(0, 1)}
+          <div className="card-soft border border-border p-3">
+            <div className="flex items-center gap-3">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-brand text-base font-black text-brand-foreground">
+                {rider.name.slice(0, 1)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-black">I&apos;m {rider.name}, your delivery partner</p>
+                <p className="mt-1 inline-block rounded-full bg-[color-mix(in_oklab,var(--color-primary)_12%,white)] px-2.5 py-1 text-[11px] font-bold text-primary">
+                  On the way with your order
+                </p>
+              </div>
+              {rider.mobile ? (
+                <a
+                  href={`tel:${rider.mobile}`}
+                  aria-label={`Call ${rider.name}`}
+                  className="press grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground"
+                >
+                  <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 4h3l2 5-2 1a12 12 0 006 6l1-2 5 2v3a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z" strokeLinejoin="round" />
+                  </svg>
+                </a>
+              ) : null}
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold">{rider.name}</p>
-              <p className="text-xs text-muted-foreground">Your delivery partner</p>
+
+            <div className="mt-3 border-t border-border pt-3">
+              <p className="text-xs font-bold">Tip your delivery partner</p>
+              <p className="text-[11px] text-muted-foreground">100% of the tip goes to {rider.name}.</p>
+              <div className="mt-2 flex gap-2">
+                {TIPS.map((t) => (
+                  <button
+                    key={t}
+                    onClick={async () => {
+                      const { error } = await supabase.from("orders").update({ tip_amount: t }).eq("id", order.id);
+                      if (error) return setTipMsg("Could not add the tip right now.");
+                      setOrder({ ...order, tip_amount: t });
+                      setTipMsg(`₹${t} tip added. Thank you!`);
+                    }}
+                    className={`press flex-1 rounded-xl border py-2 text-xs font-black ${
+                      Number(order.tip_amount) === t ? "border-primary bg-primary text-primary-foreground" : "border-border text-foreground"
+                    }`}
+                  >
+                    ₹{t}
+                  </button>
+                ))}
+                <input
+                  inputMode="numeric"
+                  value={customTip}
+                  onChange={(e) => setCustomTip(e.target.value.replace(/\D/g, "").slice(0, 3))}
+                  onBlur={async () => {
+                    const t = Number(customTip);
+                    if (!t || t > 500) return;
+                    const { error } = await supabase.from("orders").update({ tip_amount: t }).eq("id", order.id);
+                    if (error) return setTipMsg("Could not add the tip right now.");
+                    setOrder({ ...order, tip_amount: t });
+                    setTipMsg(`₹${t} tip added. Thank you!`);
+                  }}
+                  placeholder="Other"
+                  className="w-16 rounded-xl border border-border px-2 py-2 text-center text-xs font-bold outline-none focus:border-primary"
+                />
+              </div>
+              {tipMsg ? <p className="mt-2 text-[11px] font-bold text-primary">{tipMsg}</p> : null}
             </div>
-            {rider.mobile ? (
-              <a href={`tel:${rider.mobile}`} className="rounded-xl border border-primary px-3 py-2 text-xs font-bold text-primary">
-                Call
-              </a>
-            ) : null}
           </div>
         ) : null}
 
