@@ -27,7 +27,7 @@ function Admin() {
   const [s, setS] = useState<Settings | null>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [vendors, setVendors] = useState<{ id: string; stall_name: string; status: string }[]>([]);
-  const [riders, setRiders] = useState<{ id: string; name: string; status: string }[]>([]);
+  const [riders, setRiders] = useState<{ id: string; name: string; status: string; dl_number: string | null }[]>([]);
   const [refunds, setRefunds] = useState<{ id: string; amount: number; reason: string | null; method: string; status: string }[]>([]);
   const [closures, setClosures] = useState<{ id: string; amount: number; status: string }[]>([]);
   const [saved, setSaved] = useState(false);
@@ -43,7 +43,7 @@ function Admin() {
     supabase.from("system_settings").select("*").maybeSingle().then(({ data }) => setS(data as Settings));
     supabase.from("orders").select("id,code,status,grand_total,delivery_fee,platform_fee,food_total,created_at").order("created_at", { ascending: false }).limit(50).then(({ data }) => setOrders((data ?? []) as OrderRow[]));
     supabase.from("vendors").select("id,stall_name,status").then(({ data }) => setVendors(data ?? []));
-    supabase.from("delivery_partners").select("id,name,status").then(({ data }) => setRiders(data ?? []));
+    supabase.from("delivery_partners").select("id,name,status,dl_number").then(({ data }) => setRiders(data ?? []));
   }, [isAdmin]);
 
   if (loading) return <Shell><PortalHeader title="Administration" /></Shell>;
