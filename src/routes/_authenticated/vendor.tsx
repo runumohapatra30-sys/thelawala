@@ -119,9 +119,25 @@ function VendorPortal() {
         .eq("vendor_id", vendor.id).order("created_at", { ascending: false }).limit(30)
         .then(({ data }) => setOrders((data ?? []) as Order[]));
     };
+    const loadToday = async () => {
+      const since = new Date();
+      since.setHours(0, 0, 0, 0);
+      const [{ data: done }, { data: rates }] = await Promise.all([
+        supabase.from("orders").select("food_total").eq("vendor_id", vendor.id).eq("status", "DELIVERED")
+          .gte("delivered_at", since.toISOString()),
+        supabase.from("order_ratings").select("food_stars").eq("vendor_id", vendor.id),
+      ]);
+      const stars = (rates ?? []).map((r) => Number(r.food_stars));
+      setToday({
+        orders: done?.length ?? 0,
+        sales: (done ?? []).reduce((a, d) => a + Number(d.food_total), 0),
+        rating: stars.length ? Math.round((stars.reduce((a, b) => a + b, 0) / stars.length) * 10) / 10 : 0,
+      });
+    };
     load();
+    loadToday();
     loadItems(vendor.id);
-    const t = setInterval(load, 8000);
+    const t = setInterval(() => { load(); loadToday(); }, 8000);
     return () => clearInterval(t);
   }, [vendor?.id]);
 
