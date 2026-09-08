@@ -123,16 +123,17 @@ function VendorPortal() {
   }, [vendor?.id]);
 
   async function setStatus(o: Order, status: string) {
-    await supabase
+    const { error } = await supabase
       .from("orders")
       .update(
-        status === "VENDOR_ACCEPTED"
+        status === "PREPARING"
           ? { status, accepted_at: new Date().toISOString() }
           : { status },
       )
       .eq("id", o.id);
-    if (status === "READY") await offerToNearestPartner(o.id);
-    setOrders(orders.map((x) => (x.id === o.id ? { ...x, status } : x)));
+    if (error) return toast.error("Could not update this order. Please try again.");
+    if (status === "READY_FOR_PICKUP") await offerToNearestPartner(o.id);
+    setOrders((prev) => prev.map((x) => (x.id === o.id ? { ...x, status } : x)));
   }
 
   async function addDish(): Promise<void> {
