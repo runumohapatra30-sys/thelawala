@@ -173,7 +173,52 @@ function Cart() {
       })),
     );
 
+    if (walletUse > 0) {
+      const { error: wErr } = await supabase.rpc("wallet_debit", {
+        _amount: walletUse,
+        _order_id: order.id,
+        _note: "Paid for order",
+      });
+      if (wErr) {
+        setBusy(false);
+        return setErr(wErr.message);
+      }
+    }
+
     cart.clear();
+
+    if (payable > 0 && payment === "ONLINE") {
+      try {
+        const checkout = await createPayuPayment({
+          data: {
+            amount: payable,
+            purpose: "ORDER",
+            orderId: order.id,
+            name: form.full_name,
+            email: user.email ?? "",
+            mobile: form.mobile,
+            origin: window.location.origin,
+          },
+        });
+        const f = document.createElement("form");
+        f.method = "POST";
+        f.action = checkout.action;
+        Object.entries(checkout.params).forEach(([k, v]) => {
+          const i = document.createElement("input");
+          i.type = "hidden";
+          i.name = k;
+          i.value = v;
+          f.appendChild(i);
+        });
+        document.body.appendChild(f);
+        f.submit();
+        return;
+      } catch (e) {
+        setBusy(false);
+        return setErr(e instanceof Error ? e.message : "Could not open the payment page.");
+      }
+    }
+
     setBusy(false);
     navigate({ to: "/orders/$id", params: { id: order.id }, search: { placed: 1 } });
   }
