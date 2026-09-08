@@ -133,7 +133,10 @@ function VendorPortal() {
           : { status },
       )
       .eq("id", o.id);
-    if (error) return toast.error("Could not update this order. Please try again.");
+    if (error) {
+      toast.error("Could not update this order. Please try again.");
+      return;
+    }
     if (status === "READY_FOR_PICKUP") await offerToNearestPartner(o.id);
     setOrders((prev) => prev.map((x) => (x.id === o.id ? { ...x, status } : x)));
   }
