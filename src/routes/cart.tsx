@@ -93,6 +93,8 @@ function Cart() {
 
   const distanceKm = vendor && coords ? haversineKm(coords, { lat: Number(vendor.lat), lng: Number(vendor.lng) }) : 0;
   const bill = settings ? computeBill({ settings, foodTotal, mrpTotal, distanceKm }) : null;
+  const walletUse = bill && useWallet ? Math.min(walletBalance, bill.grandTotal) : 0;
+  const payable = bill ? Math.round((bill.grandTotal - walletUse) * 100) / 100 : 0;
 
   if (lines.length === 0) {
     return (
