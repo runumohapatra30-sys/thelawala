@@ -116,7 +116,7 @@ function VendorPortal() {
                 lat: pos?.coords.latitude ?? 20.2961,
                 lng: pos?.coords.longitude ?? 85.8245,
                 status: "PENDING_APPROVAL",
-              }).select("id,stall_name,status,is_open").single();
+              }).select("id,stall_name,status,is_open,fssai_number").single();
               if (error) setMsg(error.message);
               else setVendor(data);
             }}
