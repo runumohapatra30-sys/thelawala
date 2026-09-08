@@ -28,7 +28,7 @@ type Order = {
   offered_to: string | null; offer_expires_at: string | null; rejected_partner_ids: string[];
   payment_mode: string;
 };
-type Partner = { id: string; name: string; status: string; is_online: boolean; is_busy: boolean };
+type Partner = { id: string; name: string; status: string; is_online: boolean; is_busy: boolean; dl_number: string | null };
 
 function RiderPortal() {
   const { user, loading } = useSession();
