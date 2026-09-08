@@ -56,9 +56,14 @@ function VendorPortal() {
   }, [vendor?.id]);
 
   async function setStatus(o: Order, status: string) {
-    const patch: Record<string, unknown> = { status };
-    if (status === "VENDOR_ACCEPTED") patch['accepted_at'] = new Date().toISOString();
-    await supabase.from("orders").update(patch).eq("id", o.id);
+    await supabase
+      .from("orders")
+      .update(
+        status === "VENDOR_ACCEPTED"
+          ? { status, accepted_at: new Date().toISOString() }
+          : { status },
+      )
+      .eq("id", o.id);
     if (status === "READY") await offerToNearestPartner(o.id);
     setOrders(orders.map((x) => (x.id === o.id ? { ...x, status } : x)));
   }
