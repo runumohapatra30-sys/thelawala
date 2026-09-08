@@ -24,11 +24,24 @@ export const createPayuPayment = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ data, context }): Promise<PayuCheckout> => {
-    const key = process.env["PAYU_KEY"];
-    const salt = process.env["PAYU_SALT"];
-    if (!key || !salt) throw new Error("Online payment is not configured yet.");
+    let key = process.env["PAYU_KEY"] ?? "";
+    let salt = process.env["PAYU_SALT"] ?? "";
+    let live = process.env["PAYU_LIVE"] === "true";
 
-    const live = process.env["PAYU_LIVE"] === "true";
+    if (!key || !salt) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: creds } = await supabaseAdmin
+        .from("payment_credentials")
+        .select("payu_key,payu_salt,is_live")
+        .eq("id", true)
+        .maybeSingle();
+      key = creds?.payu_key ?? "";
+      salt = creds?.payu_salt ?? "";
+      live = Boolean(creds?.is_live);
+    }
+
+    if (!key || !salt) throw new Error("Online payment is not set up yet. Please ask the team to add the gateway keys.");
+
     const action = live ? "https://secure.payu.in/_payment" : "https://test.payu.in/_payment";
 
     const amount = data.amount.toFixed(2);
