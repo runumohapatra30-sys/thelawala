@@ -13,6 +13,7 @@ type Input = {
   name: string;
   email: string;
   mobile: string;
+  origin: string;
 };
 
 export const createPayuPayment = createServerFn({ method: "POST" })
