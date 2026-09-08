@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session";
 import { fssaiError, normalizeFssai } from "@/lib/validation";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/vendor")({
+export const Route = createFileRoute("/_authenticated/vendor")({
   head: () => ({
     meta: [
       { title: "Stall partner portal — ThelaWala" },
