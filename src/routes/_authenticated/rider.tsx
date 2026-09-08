@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Shell } from "@/components/Shell";
+import { LogoutButton, Shell } from "@/components/Shell";
 import { LiveMap } from "@/components/LiveMap";
 import { supabase } from "@/integrations/supabase/client";
 import { rejectOffer } from "@/lib/dispatch";
@@ -501,6 +501,7 @@ function RiderHeader({
           <h1 className="truncate text-base font-extrabold">{name}</h1>
           {subtitle ? <p className="truncate text-[11px] opacity-80">{subtitle}</p> : null}
         </div>
+        <LogoutButton className="bg-primary-foreground/20 text-primary-foreground" />
         {onToggleDuty ? (
           <button
             onClick={onToggleDuty}
