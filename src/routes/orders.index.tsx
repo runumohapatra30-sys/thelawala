@@ -33,7 +33,8 @@ const PILL: Record<string, string> = {
 };
 
 function shortStatus(s: string) {
-  if (s === "PREPARING" || s === "VENDOR_ACCEPTED" || s === "PLACED") return "Preparing";
+  if (s === "PREPARING" || s === "ORDER_PLACED") return "Preparing";
+  if (s === "OUT_FOR_DELIVERY") return "Out for Delivery";
   if (s === "DELIVERED") return "Delivered";
   if (s === "CANCELLED") return "Cancelled";
   return STATUS_LABEL[s] ?? s;
