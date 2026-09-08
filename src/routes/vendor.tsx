@@ -166,6 +166,56 @@ function VendorPortal() {
           Stall is {vendor.is_open ? "OPEN" : "CLOSED"} · tap to change
         </button>
 
+        <div className="card-soft border border-border p-3">
+          <p className="text-sm font-bold">FSSAI licence</p>
+          <p className="text-[11px] text-muted-foreground">Current: {vendor.fssai_number ?? "not added yet"}</p>
+          <input
+            value={fssaiDraft || vendor.fssai_number || ""}
+            inputMode="numeric"
+            placeholder="14 digits, e.g. 12345678901234"
+            onChange={(e) => {
+              setFssaiDraft(normalizeFssai(e.target.value));
+              setFssaiMsg(null);
+            }}
+            className={`mt-2 w-full rounded-xl border px-3 py-2.5 text-sm outline-none ${
+              fssaiDraft && fssaiError(fssaiDraft) ? "border-destructive" : "border-border focus:border-primary"
+            }`}
+          />
+          {fssaiDraft && fssaiError(fssaiDraft) ? (
+            <p className="mt-1 text-[11px] font-semibold text-destructive">{fssaiError(fssaiDraft)}</p>
+          ) : null}
+          <button
+            disabled={fssaiSaving || !fssaiDraft || Boolean(fssaiError(fssaiDraft)) || fssaiDraft === vendor.fssai_number}
+            onClick={async () => {
+              const bad = fssaiError(fssaiDraft);
+              if (bad) {
+                setFssaiDraft("");
+                return setFssaiMsg(bad);
+              }
+              setFssaiSaving(true);
+              const { data, error } = await supabase
+                .from("vendors")
+                .update({ fssai_number: fssaiDraft.trim() })
+                .eq("id", vendor.id)
+                .select("id,stall_name,status,is_open,fssai_number")
+                .single();
+              setFssaiSaving(false);
+              if (error || !data) {
+                setFssaiDraft("");
+                return setFssaiMsg("Could not save. Your earlier FSSAI number is unchanged and your stall stays online.");
+              }
+              setVendor(data);
+              setFssaiDraft("");
+              setFssaiMsg("FSSAI number updated.");
+            }}
+            className="mt-2 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+          >
+            {fssaiSaving ? "Saving…" : "Update FSSAI number"}
+          </button>
+          {fssaiMsg ? <p className="mt-2 text-xs font-semibold text-primary">{fssaiMsg}</p> : null}
+        </div>
+
+
         <section className="space-y-2">
           <p className="text-sm font-bold">Live orders</p>
           {orders.length === 0 ? <p className="text-xs text-muted-foreground">No orders yet.</p> : null}
