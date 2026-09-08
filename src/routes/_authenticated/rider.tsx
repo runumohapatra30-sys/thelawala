@@ -107,6 +107,7 @@ function RiderPortal() {
   const [msg, setMsg] = useState<string | null>(null);
   const [showComplete, setShowComplete] = useState(false);
   const [earnings, setEarnings] = useState({ trips: 0, total: 0 });
+  const [week, setWeek] = useState({ trips: 0, total: 0, rating: 0 });
   const [form, setForm] = useState({ name: "", mobile: "", vehicle_no: "", dl_number: "" });
   const [dlDraft, setDlDraft] = useState("");
   const [dlMsg, setDlMsg] = useState<string | null>(null);
