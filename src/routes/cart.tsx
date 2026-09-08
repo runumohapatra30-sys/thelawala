@@ -151,8 +151,8 @@ function Cart() {
         payment_mode: payable === 0 ? "WALLET" : payment,
         payment_status: payable === 0 ? "PAID" : "PENDING",
         pickup_otp: otp(),
-        delivery_otp: otp(),
-        status: "PLACED",
+        delivery_otp: pin4(),
+        status: "ORDER_PLACED",
       })
       .select("id")
       .single();
