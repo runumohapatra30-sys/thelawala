@@ -210,8 +210,9 @@ function Admin() {
               name={`${r.name}${r.dl_number ? ` · DL ${r.dl_number}` : ""}`}
               status={r.status}
               onSet={async (status) => {
-                await supabase.from("delivery_partners").update({ status }).eq("id", r.id);
-                setRiders(riders.map((x) => (x.id === r.id ? { ...x, status } : x)));
+                const { error } = await supabase.from("delivery_partners").update({ status }).eq("id", r.id);
+                if (error) throw error;
+                setRiders((prev) => prev.map((x) => (x.id === r.id ? { ...x, status } : x)));
               }}
             />
           ))}
