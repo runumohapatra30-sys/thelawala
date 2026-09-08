@@ -356,6 +356,21 @@ function RiderPortal() {
       />
 
       <div className="space-y-3 p-4">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="card-soft border border-border p-3 text-center">
+            <p className="text-[11px] text-muted-foreground">This week</p>
+            <p className="text-sm font-black">{inr(Math.round(week.total))}</p>
+          </div>
+          <div className="card-soft border border-border p-3 text-center">
+            <p className="text-[11px] text-muted-foreground">Trips (7 days)</p>
+            <p className="text-sm font-black">{week.trips}</p>
+          </div>
+          <div className="card-soft border border-border p-3 text-center">
+            <p className="text-[11px] text-muted-foreground">Your rating</p>
+            <p className="text-sm font-black">{week.rating ? `${week.rating} ★` : "—"}</p>
+          </div>
+        </div>
+
         {me.status === "UNDER_REVIEW" ? (
           <div className="card-soft border-2 border-destructive p-3">
             <p className="text-sm font-bold text-destructive">Duty locked · licence under review</p>
