@@ -6,6 +6,7 @@ import { offerToNearestPartner } from "@/lib/dispatch";
 import { inr, STATUS_LABEL } from "@/lib/fees";
 import { useSession } from "@/lib/session";
 import { fssaiError, normalizeFssai } from "@/lib/validation";
+import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/vendor")({
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/vendor")({
 
 type Order = {
   id: string; code: string; status: string; grand_total: number; food_total: number;
-  pickup_otp: string; customer_name: string; address_line: string; partner_id: string | null;
+  pickup_otp: string; qr_hash: string | null; customer_name: string; address_line: string; partner_id: string | null;
 };
 type Item = {
   id: string; name: string; price: number; mrp: number; in_stock: boolean;
@@ -93,6 +94,7 @@ function VendorPortal() {
   const [dishFile, setDishFile] = useState<File | null>(null);
   const [dishSaving, setDishSaving] = useState(false);
   const [dishOpen, setDishOpen] = useState(false);
+  const [slip, setSlip] = useState<Order | null>(null);
 
   const pending = orders.filter((o) => o.status === "ORDER_PLACED").length;
   useOrderBell(pending);
