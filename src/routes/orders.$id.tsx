@@ -282,6 +282,13 @@ function Track() {
         </div>
 
         <div className="flex gap-2">
+          <Link
+            to="/support"
+            search={{ order: order.id }}
+            className="flex-1 rounded-xl bg-primary py-2.5 text-center text-sm font-bold text-primary-foreground"
+          >
+            Chat with support
+          </Link>
           <a href="tel:9078492360" className="flex-1 rounded-xl border border-border py-2.5 text-center text-sm font-bold">
             Call support
           </a>

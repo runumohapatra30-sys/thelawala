@@ -21,6 +21,8 @@ import { Route as VendorRouteImport } from './routes/vendor'
 import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as OrdersIndexRouteImport } from './routes/orders.index'
 import { Route as OrdersIdRouteImport } from './routes/orders.$id'
+import { Route as SupportIndexRouteImport } from './routes/support.index'
+import { Route as SupportIdRouteImport } from './routes/support.$id'
 import { Route as ApiPublicPayuCallbackRouteImport } from './routes/api/public/payu/callback'
 
 const IndexRoute = IndexRouteImport.update({
@@ -83,6 +85,16 @@ const OrdersIdRoute = OrdersIdRouteImport.update({
   path: '/orders/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SupportIndexRoute = SupportIndexRouteImport.update({
+  id: '/support/',
+  path: '/support/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportIdRoute = SupportIdRouteImport.update({
+  id: '/support/$id',
+  path: '/support/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicPayuCallbackRoute = ApiPublicPayuCallbackRouteImport.update({
   id: '/api/public/payu/callback',
   path: '/api/public/payu/callback',
@@ -101,7 +113,9 @@ export interface FileRoutesByFullPath {
   '/vendor': typeof VendorRoute
   '/wallet': typeof WalletRoute
   '/orders/$id': typeof OrdersIdRoute
+  '/support/$id': typeof SupportIdRoute
   '/orders/': typeof OrdersIndexRoute
+  '/support/': typeof SupportIndexRoute
   '/api/public/payu/callback': typeof ApiPublicPayuCallbackRoute
 }
 export interface FileRoutesByTo {
@@ -116,7 +130,9 @@ export interface FileRoutesByTo {
   '/vendor': typeof VendorRoute
   '/wallet': typeof WalletRoute
   '/orders/$id': typeof OrdersIdRoute
+  '/support/$id': typeof SupportIdRoute
   '/orders': typeof OrdersIndexRoute
+  '/support': typeof SupportIndexRoute
   '/api/public/payu/callback': typeof ApiPublicPayuCallbackRoute
 }
 export interface FileRoutesById {
@@ -132,7 +148,9 @@ export interface FileRoutesById {
   '/vendor': typeof VendorRoute
   '/wallet': typeof WalletRoute
   '/orders/$id': typeof OrdersIdRoute
+  '/support/$id': typeof SupportIdRoute
   '/orders/': typeof OrdersIndexRoute
+  '/support/': typeof SupportIndexRoute
   '/api/public/payu/callback': typeof ApiPublicPayuCallbackRoute
 }
 export interface FileRouteTypes {
@@ -149,7 +167,9 @@ export interface FileRouteTypes {
     | '/vendor'
     | '/wallet'
     | '/orders/$id'
+    | '/support/$id'
     | '/orders/'
+    | '/support/'
     | '/api/public/payu/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -164,7 +184,9 @@ export interface FileRouteTypes {
     | '/vendor'
     | '/wallet'
     | '/orders/$id'
+    | '/support/$id'
     | '/orders'
+    | '/support'
     | '/api/public/payu/callback'
   id:
     | '__root__'
@@ -179,7 +201,9 @@ export interface FileRouteTypes {
     | '/vendor'
     | '/wallet'
     | '/orders/$id'
+    | '/support/$id'
     | '/orders/'
+    | '/support/'
     | '/api/public/payu/callback'
   fileRoutesById: FileRoutesById
 }
@@ -195,7 +219,9 @@ export interface RootRouteChildren {
   VendorRoute: typeof VendorRoute
   WalletRoute: typeof WalletRoute
   OrdersIdRoute: typeof OrdersIdRoute
+  SupportIdRoute: typeof SupportIdRoute
   OrdersIndexRoute: typeof OrdersIndexRoute
+  SupportIndexRoute: typeof SupportIndexRoute
   ApiPublicPayuCallbackRoute: typeof ApiPublicPayuCallbackRoute
 }
 
@@ -285,6 +311,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrdersIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/support/': {
+      id: '/support/'
+      path: '/support'
+      fullPath: '/support/'
+      preLoaderRoute: typeof SupportIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support/$id': {
+      id: '/support/$id'
+      path: '/support/$id'
+      fullPath: '/support/$id'
+      preLoaderRoute: typeof SupportIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/payu/callback': {
       id: '/api/public/payu/callback'
       path: '/api/public/payu/callback'
@@ -307,7 +347,9 @@ const rootRouteChildren: RootRouteChildren = {
   VendorRoute: VendorRoute,
   WalletRoute: WalletRoute,
   OrdersIdRoute: OrdersIdRoute,
+  SupportIdRoute: SupportIdRoute,
   OrdersIndexRoute: OrdersIndexRoute,
+  SupportIndexRoute: SupportIndexRoute,
   ApiPublicPayuCallbackRoute: ApiPublicPayuCallbackRoute,
 }
 export const routeTree = rootRouteImport
