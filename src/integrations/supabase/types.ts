@@ -399,6 +399,33 @@ export type Database = {
           },
         ]
       }
+      payment_credentials: {
+        Row: {
+          id: boolean
+          is_live: boolean
+          payu_key: string | null
+          payu_salt: string | null
+          provider: string
+          updated_at: string
+        }
+        Insert: {
+          id?: boolean
+          is_live?: boolean
+          payu_key?: string | null
+          payu_salt?: string | null
+          provider?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: boolean
+          is_live?: boolean
+          payu_key?: string | null
+          payu_salt?: string | null
+          provider?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payout_ledgers: {
         Row: {
           amount: number
