@@ -261,7 +261,7 @@ function Cart() {
           </div>
         </div>
 
-        <div className="card-soft space-y-2 border border-border p-3">
+        <div id="delivery-details" className="card-soft space-y-2 border border-border p-3">
           <p className="text-sm font-bold">Delivery details</p>
           {([
             ["full_name", "Full name", "text"],
