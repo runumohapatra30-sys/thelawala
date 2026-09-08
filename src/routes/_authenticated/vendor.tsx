@@ -6,6 +6,7 @@ import { offerToNearestPartner } from "@/lib/dispatch";
 import { inr, STATUS_LABEL } from "@/lib/fees";
 import { useSession } from "@/lib/session";
 import { fssaiError, normalizeFssai } from "@/lib/validation";
+import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/vendor")({
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/vendor")({
 
 type Order = {
   id: string; code: string; status: string; grand_total: number; food_total: number;
-  pickup_otp: string; customer_name: string; address_line: string; partner_id: string | null;
+  pickup_otp: string; qr_hash: string | null; customer_name: string; address_line: string; partner_id: string | null;
 };
 type Item = {
   id: string; name: string; price: number; mrp: number; in_stock: boolean;
@@ -93,8 +94,9 @@ function VendorPortal() {
   const [dishFile, setDishFile] = useState<File | null>(null);
   const [dishSaving, setDishSaving] = useState(false);
   const [dishOpen, setDishOpen] = useState(false);
+  const [slip, setSlip] = useState<Order | null>(null);
 
-  const pending = orders.filter((o) => o.status === "PLACED").length;
+  const pending = orders.filter((o) => o.status === "ORDER_PLACED").length;
   useOrderBell(pending);
 
   useEffect(() => {
@@ -112,7 +114,7 @@ function VendorPortal() {
     if (!vendor) return;
     const load = () => {
       supabase.from("orders")
-        .select("id,code,status,grand_total,food_total,pickup_otp,customer_name,address_line,partner_id")
+        .select("id,code,status,grand_total,food_total,pickup_otp,qr_hash,customer_name,address_line,partner_id")
         .eq("vendor_id", vendor.id).order("created_at", { ascending: false }).limit(30)
         .then(({ data }) => setOrders((data ?? []) as Order[]));
     };
@@ -123,16 +125,20 @@ function VendorPortal() {
   }, [vendor?.id]);
 
   async function setStatus(o: Order, status: string) {
-    await supabase
+    const { error } = await supabase
       .from("orders")
       .update(
-        status === "VENDOR_ACCEPTED"
+        status === "PREPARING"
           ? { status, accepted_at: new Date().toISOString() }
           : { status },
       )
       .eq("id", o.id);
-    if (status === "READY") await offerToNearestPartner(o.id);
-    setOrders(orders.map((x) => (x.id === o.id ? { ...x, status } : x)));
+    if (error) {
+      toast.error("Could not update this order. Please try again.");
+      return;
+    }
+    if (status === "READY_FOR_PICKUP") await offerToNearestPartner(o.id);
+    setOrders((prev) => prev.map((x) => (x.id === o.id ? { ...x, status } : x)));
   }
 
   async function addDish(): Promise<void> {
@@ -358,26 +364,20 @@ function VendorPortal() {
                 <p className="text-sm font-bold">{inr(Number(o.grand_total))}</p>
               </div>
 
-              {["READY", "ASSIGNED", "ARRIVED_AT_VENDOR"].includes(o.status) ? (
-                <div className="mt-2 rounded-xl bg-muted p-2 text-center">
-                  <p className="text-[11px] font-semibold text-muted-foreground">Pickup OTP for #{o.code}</p>
-                  <p className="text-2xl font-extrabold tracking-[0.3em]">{o.pickup_otp}</p>
-                  <p className="text-[11px] text-muted-foreground">Tell this only to the delivery partner</p>
-                </div>
-              ) : null}
-
-              <div className="mt-2 flex gap-2">
-                {o.status === "PLACED" ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {o.status === "ORDER_PLACED" ? (
                   <>
-                    <button onClick={() => setStatus(o, "VENDOR_ACCEPTED")} className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground">Accept</button>
+                    <button onClick={() => setStatus(o, "PREPARING")} className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground">Accept</button>
                     <button onClick={() => setStatus(o, "CANCELLED")} className="flex-1 rounded-xl border border-border py-2 text-xs font-bold">Reject</button>
                   </>
                 ) : null}
-                {o.status === "VENDOR_ACCEPTED" ? (
-                  <button onClick={() => setStatus(o, "PREPARING")} className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground">Start cooking</button>
-                ) : null}
                 {o.status === "PREPARING" ? (
-                  <button onClick={() => setStatus(o, "READY")} className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground">Food is ready</button>
+                  <button onClick={() => setStatus(o, "READY_FOR_PICKUP")} className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground">Ready for Pickup</button>
+                ) : null}
+                {o.status !== "ORDER_PLACED" && o.status !== "CANCELLED" ? (
+                  <button onClick={() => setSlip(o)} className="flex-1 rounded-xl border border-primary py-2 text-xs font-bold text-primary">
+                    Print / View order slip
+                  </button>
                 ) : null}
               </div>
             </div>
@@ -525,6 +525,57 @@ function VendorPortal() {
           {items.length === 0 ? <p className="mt-2 text-xs text-muted-foreground">No dishes added yet.</p> : null}
         </section>
       </div>
+
+      {slip ? <OrderSlip order={slip} onClose={() => setSlip(null)} /> : null}
     </Shell>
+  );
+}
+
+function OrderSlip({ order, onClose }: { order: Order; onClose: () => void }) {
+  const [lines, setLines] = useState<{ id: string; name: string; qty: number }[]>([]);
+  useEffect(() => {
+    supabase.from("order_items").select("id,name,qty").eq("order_id", order.id).then(({ data }) => setLines(data ?? []));
+  }, [order.id]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-[360px] rounded-2xl bg-card p-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-base font-extrabold">Order slip #{order.code}</p>
+            <p className="text-[11px] text-muted-foreground">{order.customer_name}</p>
+          </div>
+          <button onClick={onClose} className="text-sm font-bold text-muted-foreground">Close</button>
+        </div>
+
+        <div className="mt-3 space-y-1 border-y border-dashed border-border py-2">
+          {lines.map((l) => (
+            <p key={l.id} className="flex justify-between text-sm font-semibold">
+              <span className="truncate">{l.name}</span>
+              <span>× {l.qty}</span>
+            </p>
+          ))}
+          {lines.length === 0 ? <p className="text-xs text-muted-foreground">Loading items…</p> : null}
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">Drop: {order.address_line}</p>
+
+        <div className="mt-3 grid place-items-center rounded-xl bg-white p-3">
+          <QRCodeSVG
+            value={JSON.stringify({ order_id: order.id, qr_hash: order.qr_hash })}
+            size={168}
+            level="M"
+            bgColor="#ffffff"
+            fgColor="#000000"
+          />
+        </div>
+        <p className="mt-2 text-center text-[11px] font-semibold text-muted-foreground">
+          Stick this on the parcel. The delivery partner scans it to pick up.
+        </p>
+
+        <button onClick={() => window.print()} className="press mt-3 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground">
+          Print slip
+        </button>
+      </div>
+    </div>
   );
 }

@@ -20,7 +20,7 @@ export const Route = createFileRoute("/orders/$id")({
   component: Track,
 });
 
-const FLOW = ["PLACED", "VENDOR_ACCEPTED", "PREPARING", "READY", "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED"];
+const FLOW = ["ORDER_PLACED", "PREPARING", "READY_FOR_PICKUP", "RIDER_ASSIGNED", "OUT_FOR_DELIVERY", "DELIVERED"];
 const REASONS = [
   "Ordered by mistake",
   "Taking too long",
@@ -79,9 +79,14 @@ function Track() {
     load();
     supabase.from("order_items").select("id,name,qty,price,photo_url").eq("order_id", id).then(({ data }) => setItems(data ?? []));
     const timer = setInterval(load, 8000);
+    const channel = supabase
+      .channel(`order-${id}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${id}` }, () => load())
+      .subscribe();
     return () => {
       alive = false;
       clearInterval(timer);
+      supabase.removeChannel(channel);
     };
   }, [id]);
 
@@ -105,7 +110,7 @@ function Track() {
   }
 
   const stepIndex = FLOW.indexOf(order.status);
-  const cancellable = ["PLACED", "VENDOR_ACCEPTED"].includes(order.status);
+  const cancellable = ["ORDER_PLACED", "PREPARING"].includes(order.status);
   const live = !["DELIVERED", "CANCELLED"].includes(order.status);
 
   return (
@@ -164,8 +169,16 @@ function Track() {
 
         {live ? (
           <div className="card-soft border-2 border-primary p-4 text-center">
-            <p className="text-xs font-semibold text-muted-foreground">Delivery OTP · share only at handover</p>
-            <p className="mt-1 text-4xl font-black tracking-[0.35em] text-primary">{order.delivery_otp}</p>
+            <p className="text-xs font-semibold text-muted-foreground">
+              Share this OTP with your delivery partner at delivery
+            </p>
+            <div className="mt-2 flex justify-center gap-2">
+              {String(order.delivery_otp ?? "").split("").map((d, i) => (
+                <span key={i} className="grid h-12 w-11 place-items-center rounded-xl bg-primary text-2xl font-black text-primary-foreground">
+                  {d}
+                </span>
+              ))}
+            </div>
           </div>
         ) : null}
 

@@ -83,14 +83,20 @@ export const inr = (n: number) =>
   `₹${Number.isInteger(Number(n)) ? Number(n) : Number(n).toFixed(2)}`;
 
 export const STATUS_LABEL: Record<string, string> = {
-  PLACED: "Order placed",
-  VENDOR_ACCEPTED: "Stall accepted",
+  ORDER_PLACED: "Order placed",
   PREPARING: "Preparing your food",
-  READY: "Ready for pickup",
-  ASSIGNED: "Delivery partner assigned",
-  ARRIVED_AT_VENDOR: "Partner reached the stall",
-  PICKED_UP: "Picked up",
+  READY_FOR_PICKUP: "Ready for pickup",
+  RIDER_ASSIGNED: "Delivery partner assigned",
   OUT_FOR_DELIVERY: "On the way",
   DELIVERED: "Delivered",
   CANCELLED: "Cancelled",
 };
+
+export const ORDER_FLOW = [
+  "ORDER_PLACED",
+  "PREPARING",
+  "READY_FOR_PICKUP",
+  "RIDER_ASSIGNED",
+  "OUT_FOR_DELIVERY",
+  "DELIVERED",
+];

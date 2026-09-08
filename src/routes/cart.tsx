@@ -22,6 +22,7 @@ export const Route = createFileRoute("/cart")({
 });
 
 const otp = () => String(Math.floor(100000 + Math.random() * 900000));
+const pin4 = () => String(Math.floor(Math.random() * 10000)).padStart(4, "0");
 
 function Cart() {
   const navigate = useNavigate();
@@ -151,8 +152,8 @@ function Cart() {
         payment_mode: payable === 0 ? "WALLET" : payment,
         payment_status: payable === 0 ? "PAID" : "PENDING",
         pickup_otp: otp(),
-        delivery_otp: otp(),
-        status: "PLACED",
+        delivery_otp: pin4(),
+        status: "ORDER_PLACED",
       })
       .select("id")
       .single();
