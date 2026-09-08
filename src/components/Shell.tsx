@@ -54,6 +54,21 @@ export function Shell({ children }: { children: ReactNode }) {
   );
 }
 
+export function LogoutButton({ className = "" }: { className?: string }) {
+  const navigate = useNavigate();
+  return (
+    <button
+      onClick={async () => {
+        await supabase.auth.signOut();
+        navigate({ to: "/auth", replace: true });
+      }}
+      className={`press shrink-0 rounded-full bg-card/80 px-3 py-1.5 text-[11px] font-bold text-primary ${className}`}
+    >
+      Log out
+    </button>
+  );
+}
+
 export function PortalHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <header className="brand-header sticky top-0 z-30 px-4 py-3">
@@ -63,10 +78,11 @@ export function PortalHeader({ title, subtitle }: { title: string; subtitle?: st
             <path d="M15 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </Link>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="truncate text-base font-extrabold">{title}</h1>
           {subtitle ? <p className="truncate text-xs font-medium opacity-80">{subtitle}</p> : null}
         </div>
+        <LogoutButton />
       </div>
     </header>
   );
