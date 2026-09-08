@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { inr, STATUS_LABEL } from "@/lib/fees";
 
 export const Route = createFileRoute("/orders/$id")({
-  validateSearch: (s: Record<string, unknown>) => ({ placed: s['placed'] ? 1 : undefined }),
+  validateSearch: (s: Record<string, unknown>): { placed?: 1 } => (s['placed'] ? { placed: 1 } : {}),
   head: () => ({
     meta: [
       { title: "Track your order — Thaleewala" },
