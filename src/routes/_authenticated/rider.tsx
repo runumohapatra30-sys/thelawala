@@ -161,6 +161,21 @@ function RiderPortal() {
         trips: done?.length ?? 0,
         total: (done ?? []).reduce((a, d) => a + Number(d.delivery_fee) + Number(d.tip_amount ?? 0), 0),
       });
+
+      const weekStart = new Date();
+      weekStart.setDate(weekStart.getDate() - 6);
+      weekStart.setHours(0, 0, 0, 0);
+      const [{ data: wk }, { data: rates }] = await Promise.all([
+        supabase.from("orders").select("delivery_fee,tip_amount").eq("partner_id", me.id).eq("status", "DELIVERED")
+          .gte("delivered_at", weekStart.toISOString()),
+        supabase.from("order_ratings").select("delivery_stars").eq("partner_id", me.id),
+      ]);
+      const stars = (rates ?? []).map((r) => Number(r.delivery_stars));
+      setWeek({
+        trips: wk?.length ?? 0,
+        total: (wk ?? []).reduce((a, d) => a + Number(d.delivery_fee) + Number(d.tip_amount ?? 0), 0),
+        rating: stars.length ? Math.round((stars.reduce((a, b) => a + b, 0) / stars.length) * 10) / 10 : 0,
+      });
     };
     load();
     const t = setInterval(load, 6000);
