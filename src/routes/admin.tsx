@@ -8,9 +8,9 @@ import { useIsAdmin, useSession } from "@/lib/session";
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Administration — Thaleewala" },
-      { name: "description", content: "Thaleewala control room: delivery fee rules, extra charges, payment settings, stall and rider approvals, orders and earnings." },
-      { property: "og:title", content: "Administration — Thaleewala" },
+      { title: "Administration — ThelaWala" },
+      { name: "description", content: "ThelaWala control room: delivery fee rules, extra charges, payment settings, stall and rider approvals, orders and earnings." },
+      { property: "og:title", content: "Administration — ThelaWala" },
       { property: "og:description", content: "Fee rules, approvals, orders and platform earnings." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

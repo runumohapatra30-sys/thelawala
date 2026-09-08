@@ -9,9 +9,9 @@ export const Route = createFileRoute("/orders/$id")({
   validateSearch: (s: Record<string, unknown>): { placed?: 1 } => (s['placed'] ? { placed: 1 } : {}),
   head: () => ({
     meta: [
-      { title: "Track your order — Thaleewala" },
-      { name: "description", content: "Live map tracking, delivery OTP, rider details and bill for your Thaleewala order." },
-      { property: "og:title", content: "Track your order — Thaleewala" },
+      { title: "Track your order — ThelaWala" },
+      { name: "description", content: "Live map tracking, delivery OTP, rider details and bill for your ThelaWala order." },
+      { property: "og:title", content: "Track your order — ThelaWala" },
       { property: "og:description", content: "Watch your street food arrive in 15 minutes." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -35,8 +35,10 @@ type Order = {
   surge_fee: number; penalty_fee: number; distance_km: number; delivery_otp: string;
   drop_lat: number; drop_lng: number; vendor_id: string; partner_id: string | null;
   payment_mode: string; address_line: string; proof_photo_url: string | null; created_at: string;
-  payment_status: string; wallet_paid: number; cancel_reason: string | null;
+  payment_status: string; wallet_paid: number; cancel_reason: string | null; tip_amount: number;
 };
+
+const TIPS = [20, 30, 50];
 
 function Track() {
   const { id } = Route.useParams();
@@ -50,6 +52,8 @@ function Track() {
   const [reason, setReason] = useState(REASONS[0]!);
   const [splash, setSplash] = useState(Boolean(placed));
   const [refundMsg, setRefundMsg] = useState<string | null>(null);
+  const [tipMsg, setTipMsg] = useState<string | null>(null);
+  const [customTip, setCustomTip] = useState("");
 
   useEffect(() => {
     if (!splash) return;
@@ -120,11 +124,19 @@ function Track() {
         </div>
       ) : null}
 
-      <div className="bg-primary px-4 pb-5 pt-4 text-primary-foreground">
-        <p className="text-xs opacity-90">#{order.code}</p>
-        <p className="text-xl font-extrabold">{STATUS_LABEL[order.status] ?? order.status}</p>
-        <p className="mt-1 text-xs opacity-90">
-          {live ? (eta ? `Arriving in about ${Math.max(5, Math.round(eta))} minutes` : "Arriving in about 15 minutes") : "Order closed"}
+      <div className="bg-primary px-4 pb-6 pt-4 text-primary-foreground">
+        <div className="flex items-center gap-3">
+          <Link to="/orders" aria-label="Back to orders" className="press grid h-9 w-9 place-items-center rounded-full bg-white/20">
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4">
+              <path d="M15 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+          <p className="text-sm font-semibold opacity-90">{STATUS_LABEL[order.status] ?? order.status} · #{order.code}</p>
+        </div>
+        <p className="mt-3 text-2xl font-black leading-tight">
+          {live
+            ? `Arriving in ${eta ? Math.max(5, Math.round(eta)) : 10}-${eta ? Math.max(10, Math.round(eta) + 5) : 15} minutes`
+            : STATUS_LABEL[order.status] ?? order.status}
         </p>
       </div>
 
@@ -139,27 +151,87 @@ function Track() {
           />
         ) : null}
 
-        {order.status === "OUT_FOR_DELIVERY" ? (
-          <div className="card-soft border border-primary p-3 text-center">
-            <p className="text-xs font-semibold text-muted-foreground">Share this OTP with the delivery partner</p>
-            <p className="mt-1 text-3xl font-extrabold tracking-[0.3em] text-primary">{order.delivery_otp}</p>
+        {live && order.payment_status !== "PAID" ? (
+          <div className="card-soft grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border border-border p-3">
+            <p className="min-w-0 text-sm font-bold">
+              Pay {inr(Number(order.grand_total) + Number(order.tip_amount ?? 0))} before or on delivery
+            </p>
+            <Link to="/wallet" className="press shrink-0 rounded-full bg-primary px-3 py-1.5 text-[11px] font-black text-primary-foreground">
+              Pay Online
+            </Link>
+          </div>
+        ) : null}
+
+        {live ? (
+          <div className="card-soft border-2 border-primary p-4 text-center">
+            <p className="text-xs font-semibold text-muted-foreground">Delivery OTP · share only at handover</p>
+            <p className="mt-1 text-4xl font-black tracking-[0.35em] text-primary">{order.delivery_otp}</p>
           </div>
         ) : null}
 
         {rider ? (
-          <div className="card-soft flex items-center gap-3 border border-border p-3">
-            <div className="grid h-11 w-11 place-items-center rounded-full bg-muted text-sm font-bold">
-              {rider.name.slice(0, 1)}
+          <div className="card-soft border border-border p-3">
+            <div className="flex items-center gap-3">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-brand text-base font-black text-brand-foreground">
+                {rider.name.slice(0, 1)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-black">I&apos;m {rider.name}, your delivery partner</p>
+                <p className="mt-1 inline-block rounded-full bg-[color-mix(in_oklab,var(--color-primary)_12%,white)] px-2.5 py-1 text-[11px] font-bold text-primary">
+                  On the way with your order
+                </p>
+              </div>
+              {rider.mobile ? (
+                <a
+                  href={`tel:${rider.mobile}`}
+                  aria-label={`Call ${rider.name}`}
+                  className="press grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground"
+                >
+                  <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 4h3l2 5-2 1a12 12 0 006 6l1-2 5 2v3a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z" strokeLinejoin="round" />
+                  </svg>
+                </a>
+              ) : null}
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold">{rider.name}</p>
-              <p className="text-xs text-muted-foreground">Your delivery partner</p>
+
+            <div className="mt-3 border-t border-border pt-3">
+              <p className="text-xs font-bold">Tip your delivery partner</p>
+              <p className="text-[11px] text-muted-foreground">100% of the tip goes to {rider.name}.</p>
+              <div className="mt-2 flex gap-2">
+                {TIPS.map((t) => (
+                  <button
+                    key={t}
+                    onClick={async () => {
+                      const { error } = await supabase.from("orders").update({ tip_amount: t }).eq("id", order.id);
+                      if (error) return setTipMsg("Could not add the tip right now.");
+                      setOrder({ ...order, tip_amount: t });
+                      setTipMsg(`₹${t} tip added. Thank you!`);
+                    }}
+                    className={`press flex-1 rounded-xl border py-2 text-xs font-black ${
+                      Number(order.tip_amount) === t ? "border-primary bg-primary text-primary-foreground" : "border-border text-foreground"
+                    }`}
+                  >
+                    ₹{t}
+                  </button>
+                ))}
+                <input
+                  inputMode="numeric"
+                  value={customTip}
+                  onChange={(e) => setCustomTip(e.target.value.replace(/\D/g, "").slice(0, 3))}
+                  onBlur={async () => {
+                    const t = Number(customTip);
+                    if (!t || t > 500) return;
+                    const { error } = await supabase.from("orders").update({ tip_amount: t }).eq("id", order.id);
+                    if (error) return setTipMsg("Could not add the tip right now.");
+                    setOrder({ ...order, tip_amount: t });
+                    setTipMsg(`₹${t} tip added. Thank you!`);
+                  }}
+                  placeholder="Other"
+                  className="w-16 rounded-xl border border-border px-2 py-2 text-center text-xs font-bold outline-none focus:border-primary"
+                />
+              </div>
+              {tipMsg ? <p className="mt-2 text-[11px] font-bold text-primary">{tipMsg}</p> : null}
             </div>
-            {rider.mobile ? (
-              <a href={`tel:${rider.mobile}`} className="rounded-xl border border-primary px-3 py-2 text-xs font-bold text-primary">
-                Call
-              </a>
-            ) : null}
           </div>
         ) : null}
 
@@ -201,9 +273,10 @@ function Track() {
             {Number(order.packing_fee) ? <Row label="Packing fee" value={inr(Number(order.packing_fee))} /> : null}
             {Number(order.surge_fee) ? <Row label="Surge fee" value={inr(Number(order.surge_fee))} /> : null}
             {Number(order.penalty_fee) ? <Row label="Cancellation fee" value={inr(Number(order.penalty_fee))} /> : null}
+            {Number(order.tip_amount) ? <Row label="Delivery partner tip" value={inr(Number(order.tip_amount))} /> : null}
             <div className="flex justify-between border-t border-border pt-2 text-base font-bold">
               <span>Total ({order.payment_mode === "COD" ? "Cash on delivery" : "Paid online"})</span>
-              <span>{inr(Number(order.grand_total))}</span>
+              <span>{inr(Number(order.grand_total) + Number(order.tip_amount ?? 0))}</span>
             </div>
           </dl>
         </div>
@@ -222,7 +295,7 @@ function Track() {
           <div className="card-soft border border-border p-3">
             <p className="text-sm font-bold">Refund</p>
             <p className="text-[11px] text-muted-foreground">
-              Ask for the money back to your Thaleewala wallet. Approved refunds are credited within minutes.
+              Ask for the money back to your ThelaWala wallet. Approved refunds are credited within minutes.
             </p>
             <button
               onClick={async () => {
@@ -263,7 +336,7 @@ function Track() {
               ))}
             </div>
             <p className="mt-2 text-[11px] text-muted-foreground">
-              Prepaid orders are refunded to your Thaleewala wallet within minutes. A small fee may apply once the stall
+              Prepaid orders are refunded to your ThelaWala wallet within minutes. A small fee may apply once the stall
               has started cooking.
             </p>
             <div className="mt-3 flex gap-2">

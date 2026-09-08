@@ -4,10 +4,10 @@ import { PortalHeader, Shell } from "@/components/Shell";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "Terms, cancellation & refunds — Thaleewala" },
-      { name: "description", content: "Thaleewala cancellation window, cancellation fee, wallet refund timelines and support contact for Bhubaneswar customers." },
-      { property: "og:title", content: "Terms, cancellation & refunds — Thaleewala" },
-      { property: "og:description", content: "How cancellations, fees and wallet refunds work on Thaleewala." },
+      { title: "Terms, cancellation & refunds — ThelaWala" },
+      { name: "description", content: "ThelaWala cancellation window, cancellation fee, wallet refund timelines and support contact for Bhubaneswar customers." },
+      { property: "og:title", content: "Terms, cancellation & refunds — ThelaWala" },
+      { property: "og:description", content: "How cancellations, fees and wallet refunds work on ThelaWala." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -18,11 +18,11 @@ export const Route = createFileRoute("/terms")({
 const SECTIONS = [
   {
     h: "Cancellation window",
-    p: "You can cancel free of charge until the stall accepts and starts cooking. After cooking begins, a small cancellation fee set by Thaleewala may be deducted because the food is already prepared.",
+    p: "You can cancel free of charge until the stall accepts and starts cooking. After cooking begins, a small cancellation fee set by ThelaWala may be deducted because the food is already prepared.",
   },
   {
     h: "Refunds",
-    p: "Prepaid orders are refunded to your Thaleewala wallet within minutes of approval. Wallet money can be spent on any future order. Bank refunds are processed on request and usually take 3–5 working days.",
+    p: "Prepaid orders are refunded to your ThelaWala wallet within minutes of approval. Wallet money can be spent on any future order. Bank refunds are processed on request and usually take 3–5 working days.",
   },
   {
     h: "Delivery fee",

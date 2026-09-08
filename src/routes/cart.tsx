@@ -10,9 +10,9 @@ import { useSession } from "@/lib/session";
 export const Route = createFileRoute("/cart")({
   head: () => ({
     meta: [
-      { title: "Checkout — Thaleewala" },
-      { name: "description", content: "Add your name, mobile, pincode and address, choose cash or online payment and place your Thaleewala order." },
-      { property: "og:title", content: "Checkout — Thaleewala" },
+      { title: "Checkout — ThelaWala" },
+      { name: "description", content: "Add your name, mobile, pincode and address, choose cash or online payment and place your ThelaWala order." },
+      { property: "og:title", content: "Checkout — ThelaWala" },
       { property: "og:description", content: "Transparent bill with distance-based delivery fee." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -227,9 +227,21 @@ function Cart() {
   return (
     <Shell>
       <PortalHeader title="Checkout" subtitle={vendor?.stall_name ?? "Your order"} />
-      <div className="space-y-3 p-4 pb-32">
+      <div className="space-y-3 p-4 pb-36">
+        <div className="card-soft grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border border-border p-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-black">{form.full_name || "Delivering to you"}</p>
+            <p className="truncate text-[11px] text-muted-foreground">{form.line || "Add your full address below"}</p>
+          </div>
+          <a href="#delivery-details" className="press shrink-0 rounded-full border border-primary px-3 py-1.5 text-[11px] font-black text-primary">
+            Change
+          </a>
+        </div>
+
         <div className="card-soft border border-border p-3">
-          <p className="text-sm font-bold">Delivery in 15 minutes</p>
+          <p className="inline-flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-1 text-[11px] font-black text-primary-foreground">
+            ⚡ Free delivery in 15 mins
+          </p>
           <div className="mt-3 space-y-3">
             {lines.map((l) => (
               <div key={l.itemId} className="flex items-center gap-3">
@@ -249,7 +261,7 @@ function Cart() {
           </div>
         </div>
 
-        <div className="card-soft space-y-2 border border-border p-3">
+        <div id="delivery-details" className="card-soft space-y-2 border border-border p-3">
           <p className="text-sm font-bold">Delivery details</p>
           {([
             ["full_name", "Full name", "text"],
@@ -337,14 +349,24 @@ function Cart() {
       </div>
 
       <div className="fixed inset-x-0 bottom-[62px] z-40 mx-auto w-full max-w-[480px] px-3">
-        <button
-          disabled={busy || !bill}
-          onClick={place}
-          className="flex w-full items-center justify-between rounded-xl bg-primary px-4 py-3 text-primary-foreground shadow-lg disabled:opacity-50"
-        >
-          <span className="text-sm font-bold">{bill ? inr(payable) : "—"}</span>
-          <span className="text-sm font-bold">{busy ? "PLACING…" : "PLACE ORDER ›"}</span>
-        </button>
+        <div className="rounded-2xl bg-card p-2 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-1 pb-2">
+            <p className="truncate text-[11px] font-semibold text-muted-foreground">
+              📍 {form.line || "Set your delivery address"}
+            </p>
+            {coords && vendor ? (
+              <span className="shrink-0 text-[11px] font-black text-primary">{distanceKm} km away</span>
+            ) : null}
+          </div>
+          <button
+            disabled={busy || !bill}
+            onClick={place}
+            className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-3.5 text-primary-foreground disabled:opacity-50"
+          >
+            <span className="text-sm font-black">{bill ? inr(payable) : "—"}</span>
+            <span className="text-sm font-black">{busy ? "PLACING…" : "Select Payment Method ›"}</span>
+          </button>
+        </div>
       </div>
     </Shell>
   );

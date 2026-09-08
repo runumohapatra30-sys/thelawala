@@ -9,9 +9,9 @@ import { useSession } from "@/lib/session";
 export const Route = createFileRoute("/wallet")({
   head: () => ({
     meta: [
-      { title: "Wallet — Thaleewala" },
-      { name: "description", content: "Add money to your Thaleewala wallet, see every credit and debit, and get your balance back any time." },
-      { property: "og:title", content: "Wallet — Thaleewala" },
+      { title: "Wallet — ThelaWala" },
+      { name: "description", content: "Add money to your ThelaWala wallet, see every credit and debit, and get your balance back any time." },
+      { property: "og:title", content: "Wallet — ThelaWala" },
       { property: "og:description", content: "Balance, top-ups, refunds and wallet closure." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

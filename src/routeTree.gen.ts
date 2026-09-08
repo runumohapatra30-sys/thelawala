@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CartRouteImport } from './routes/cart'
+import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RiderRouteImport } from './routes/rider'
 import { Route as TermsRouteImport } from './routes/terms'
@@ -40,6 +41,11 @@ const AuthRoute = AuthRouteImport.update({
 const CartRoute = CartRouteImport.update({
   id: '/cart',
   path: '/cart',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategoriesRoute = CategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
+  '/categories': typeof CategoriesRoute
   '/profile': typeof ProfileRoute
   '/rider': typeof RiderRoute
   '/terms': typeof TermsRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
+  '/categories': typeof CategoriesRoute
   '/profile': typeof ProfileRoute
   '/rider': typeof RiderRoute
   '/terms': typeof TermsRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
+  '/categories': typeof CategoriesRoute
   '/profile': typeof ProfileRoute
   '/rider': typeof RiderRoute
   '/terms': typeof TermsRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/cart'
+    | '/categories'
     | '/profile'
     | '/rider'
     | '/terms'
@@ -147,6 +157,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/cart'
+    | '/categories'
     | '/profile'
     | '/rider'
     | '/terms'
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/cart'
+    | '/categories'
     | '/profile'
     | '/rider'
     | '/terms'
@@ -176,6 +188,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   CartRoute: typeof CartRoute
+  CategoriesRoute: typeof CategoriesRoute
   ProfileRoute: typeof ProfileRoute
   RiderRoute: typeof RiderRoute
   TermsRoute: typeof TermsRoute
@@ -214,6 +227,13 @@ declare module '@tanstack/react-router' {
       path: '/cart'
       fullPath: '/cart'
       preLoaderRoute: typeof CartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/categories': {
+      id: '/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof CategoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -280,6 +300,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   CartRoute: CartRoute,
+  CategoriesRoute: CategoriesRoute,
   ProfileRoute: ProfileRoute,
   RiderRoute: RiderRoute,
   TermsRoute: TermsRoute,

@@ -9,10 +9,10 @@ import { useSession } from "@/lib/session";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Thaleewala — Street food in 15 minutes, Bhubaneswar" },
+      { title: "ThelaWala — Local Thela, super fast delivery in Bhubaneswar" },
       { name: "description", content: "Order bhata dali, dahi bara, rolls, chaat, biryani, momo and chai from Bhubaneswar street stalls, delivered in 15 minutes." },
-      { property: "og:title", content: "Thaleewala — Street food in 15 minutes" },
-      { property: "og:description", content: "Hot food from your nearest thela, delivered fast across Bhubaneswar." },
+      { property: "og:title", content: "ThelaWala — Local Thela | Super Fast Delivery" },
+      { property: "og:description", content: "Hot food from your nearest thela, delivered in 15 minutes across Bhubaneswar." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -35,6 +35,15 @@ type Item = {
 type Category = { id: string; name: string; emoji: string | null };
 type Vendor = { id: string; stall_name: string; is_open: boolean };
 
+const TINTS = [
+  "bg-[color-mix(in_oklab,var(--color-brand)_28%,white)]",
+  "bg-[color-mix(in_oklab,var(--color-primary)_14%,white)]",
+  "bg-[color-mix(in_oklab,var(--color-destructive)_12%,white)]",
+  "bg-[color-mix(in_oklab,var(--color-chart-2)_16%,white)]",
+  "bg-[color-mix(in_oklab,var(--color-chart-5)_18%,white)]",
+  "bg-[color-mix(in_oklab,var(--color-chart-3)_12%,white)]",
+];
+
 function Home() {
   const { user } = useSession();
   const lines = useCart();
@@ -46,6 +55,8 @@ function Home() {
   const [q, setQ] = useState("");
   const [menu, setMenu] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [balance, setBalance] = useState(0);
+  const [address, setAddress] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.from("categories").select("id,name,emoji").order("sort_order").then(({ data }) => setCats(data ?? []));
@@ -56,6 +67,21 @@ function Home() {
       .order("created_at")
       .then(({ data }) => setItems((data ?? []) as Item[]));
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("wallets").select("balance,status").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      setBalance(data?.status === "ACTIVE" ? Number(data.balance) : 0);
+    });
+    supabase
+      .from("addresses")
+      .select("line,landmark")
+      .eq("user_id", user.id)
+      .order("is_default", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => setAddress(data?.line ?? null));
+  }, [user?.id]);
 
   const vendorName = useMemo(
     () => Object.fromEntries(vendors.map((v) => [v.id, v.stall_name])),
@@ -84,17 +110,29 @@ function Home() {
 
   return (
     <Shell>
-      <header className="sticky top-0 z-30 bg-primary px-4 pb-3 pt-4 text-primary-foreground">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-lg font-extrabold leading-none">Thaleewala</p>
-            <p className="mt-1 text-xs opacity-90">Delivery in 15 minutes · Bhubaneswar</p>
-          </div>
-          <div className="flex items-center gap-2">
+      <header className="brand-header sticky top-0 z-30 px-4 pb-3 pt-4">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+          <Link to="/cart" className="min-w-0 text-left">
+            <p className="text-[13px] font-black uppercase tracking-wide">Delivery in 15-20 minutes</p>
+            <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold opacity-80">
+              <span className="truncate">{address ?? "Bhubaneswar · set your address"}</span>
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.6">
+                <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </p>
+          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              to="/wallet"
+              className="press flex items-center gap-1 rounded-full bg-card px-2.5 py-1.5 text-[11px] font-black shadow-sm"
+            >
+              <span aria-hidden="true">👛</span>
+              {inr(balance)}
+            </Link>
             <Link
               to={user ? "/profile" : "/auth"}
               aria-label="Your account"
-              className="grid h-9 w-9 place-items-center rounded-full bg-white/20"
+              className="press grid h-9 w-9 place-items-center rounded-full bg-card shadow-sm"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <circle cx="12" cy="8" r="3.4" /><path d="M4.5 20a7.5 7.5 0 0115 0" strokeLinecap="round" />
@@ -103,7 +141,7 @@ function Home() {
             <button
               aria-label="More options"
               onClick={() => setMenu((m) => !m)}
-              className="grid h-9 w-9 place-items-center rounded-full bg-white/20"
+              className="press grid h-9 w-9 place-items-center rounded-full bg-card shadow-sm"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
                 <circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" />
@@ -111,12 +149,21 @@ function Home() {
             </button>
           </div>
         </div>
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search dahi bara, roll, biryani…"
-          className="mt-3 w-full rounded-xl bg-card px-3 py-2.5 text-sm text-foreground outline-none"
-        />
+
+        <div className="mt-3 flex items-center gap-2 rounded-full bg-card px-3 py-2.5 shadow-sm">
+          <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="6.5" /><path d="M16 16l4 4" strokeLinecap="round" />
+          </svg>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder='Search "dahi bara"'
+            className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none"
+          />
+          <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0014 0M12 18v3" strokeLinecap="round" />
+          </svg>
+        </div>
       </header>
 
       {menu ? (
@@ -139,31 +186,48 @@ function Home() {
         </div>
       ) : null}
 
-      <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 py-3">
-        <button
-          onClick={() => setActive(null)}
-          className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${!active ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
-        >
-          All
-        </button>
-        {cats.map((c) => (
+      <section className="px-4 pt-4">
+        <h2 className="text-sm font-black">Thela categories</h2>
+        <div className="mt-2 grid grid-cols-4 gap-2">
           <button
-            key={c.id}
-            onClick={() => setActive(c.id)}
-            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${active === c.id ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+            onClick={() => setActive(null)}
+            className={`press rounded-2xl border p-2 text-center ${!active ? "border-primary" : "border-transparent"} ${TINTS[0]}`}
           >
-            {c.emoji} {c.name}
+            <span className="block text-xl">🍽️</span>
+            <span className="mt-1 block text-[10px] font-bold leading-tight">All</span>
           </button>
-        ))}
-      </div>
+          {cats.map((c, idx) => (
+            <button
+              key={c.id}
+              onClick={() => setActive(c.id)}
+              className={`press rounded-2xl border p-2 text-center ${active === c.id ? "border-primary" : "border-transparent"} ${TINTS[(idx + 1) % TINTS.length]}`}
+            >
+              <span className="block text-xl">{c.emoji ?? "🥘"}</span>
+              <span className="mt-1 block text-[10px] font-bold leading-tight">{c.name}</span>
+            </button>
+          ))}
+        </div>
+      </section>
 
-      <div className="grid grid-cols-2 gap-3 px-4 pb-32">
+      <section className="px-4 pt-5">
+        <h2 className="text-sm font-black">Hot from the thela</h2>
+      </section>
+
+      <div className="grid grid-cols-2 gap-3 px-4 pb-32 pt-2">
         {shown.map((i) => {
           const line = lines.find((l) => l.itemId === i.id);
+          const off = Number(i.mrp) > Number(i.price)
+            ? Math.round(((Number(i.mrp) - Number(i.price)) / Number(i.mrp)) * 100)
+            : 0;
           return (
             <div key={i.id} className="card-soft border border-border p-2">
               <div className="relative">
                 <img src={i.photo_url ?? "/food/food-tiffin.jpg"} alt={i.name} className="h-28 w-full rounded-xl object-cover" />
+                {off > 0 ? (
+                  <span className="absolute left-1 top-1 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-black text-primary-foreground">
+                    {off}% OFF
+                  </span>
+                ) : null}
                 {!i.in_stock ? (
                   <span className="absolute inset-0 grid place-items-center rounded-xl bg-black/55 text-xs font-bold text-white">
                     Out of stock
@@ -175,18 +239,18 @@ function Home() {
               <div className="mt-2 flex items-center justify-between">
                 <p className="text-sm font-bold">
                   {inr(Number(i.price))}{" "}
-                  {Number(i.mrp) > Number(i.price) ? (
+                  {off > 0 ? (
                     <span className="text-[11px] font-normal text-muted-foreground line-through">{inr(Number(i.mrp))}</span>
                   ) : null}
                 </p>
                 {!i.in_stock ? null : line ? (
-                  <div className="flex items-center gap-2 rounded-lg bg-primary px-2 py-1 text-primary-foreground">
+                  <div className="press flex items-center gap-2 rounded-lg bg-primary px-2 py-1 text-primary-foreground">
                     <button aria-label="Remove one" onClick={() => cart.remove(i.id)} className="px-1 font-bold">−</button>
                     <span className="text-xs font-bold">{line.qty}</span>
                     <button aria-label="Add one" onClick={() => add(i)} className="px-1 font-bold">+</button>
                   </div>
                 ) : (
-                  <button onClick={() => add(i)} className="rounded-lg border border-primary px-3 py-1 text-xs font-bold text-primary">
+                  <button onClick={() => add(i)} className="press rounded-lg border border-primary bg-[color-mix(in_oklab,var(--color-primary)_8%,white)] px-3 py-1 text-xs font-black text-primary">
                     ADD
                   </button>
                 )}
@@ -206,7 +270,7 @@ function Home() {
         <div className="fixed inset-x-0 bottom-[62px] z-40 mx-auto w-full max-w-[480px] px-3">
           <Link
             to="/cart"
-            className="flex items-center justify-between rounded-xl bg-primary px-4 py-3 text-primary-foreground shadow-lg"
+            className="press flex items-center justify-between rounded-xl bg-primary px-4 py-3 text-primary-foreground shadow-lg"
           >
             <span className="text-sm font-bold">{count} item{count > 1 ? "s" : ""} · {inr(foodTotal)}</span>
             <span className="text-sm font-bold">View cart ›</span>

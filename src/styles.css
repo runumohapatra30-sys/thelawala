@@ -60,6 +60,11 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-tile: var(--tile);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --shadow-card: var(--shadow-soft);
 }
 
@@ -72,8 +77,13 @@
   --card-foreground: oklch(0.21 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.21 0 0);
-  --primary: oklch(0.52 0.16 145);
+  --primary: oklch(0.512 0.164 146.5);
   --primary-foreground: oklch(1 0 0);
+  --brand: oklch(0.886 0.176 96.5);
+  --brand-foreground: oklch(0.19 0.02 90);
+  --brand-soft: oklch(0.965 0.06 96.5);
+  --success: oklch(0.512 0.164 146.5);
+  --success-foreground: oklch(1 0 0);
   --secondary: oklch(0.985 0.002 250);
   --secondary-foreground: oklch(0.21 0 0);
   --muted: oklch(0.97 0.002 250);
@@ -104,6 +114,11 @@
 
 
 .dark {
+  --brand: oklch(0.82 0.16 96.5);
+  --brand-foreground: oklch(0.19 0.02 90);
+  --brand-soft: oklch(0.32 0.05 96.5);
+  --success: oklch(0.6 0.16 146.5);
+  --success-foreground: oklch(1 0 0);
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);
@@ -175,4 +190,25 @@
   height: 100%;
   border-radius: 1rem;
   z-index: 0;
+}
+
+@utility brand-header {
+  background: linear-gradient(180deg, var(--color-brand) 0%, color-mix(in oklab, var(--color-brand) 88%, white) 100%);
+  color: var(--color-brand-foreground);
+}
+
+@utility press {
+  transition: transform 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+@utility food-grid-bg {
+  background-color: var(--color-brand-soft);
+  background-image: radial-gradient(circle at 20% 15%, color-mix(in oklab, var(--color-brand) 55%, transparent) 0 12px, transparent 13px),
+    radial-gradient(circle at 78% 30%, color-mix(in oklab, var(--color-primary) 22%, transparent) 0 10px, transparent 11px),
+    radial-gradient(circle at 35% 70%, color-mix(in oklab, var(--color-primary) 16%, transparent) 0 14px, transparent 15px),
+    radial-gradient(circle at 85% 82%, color-mix(in oklab, var(--color-brand) 45%, transparent) 0 11px, transparent 12px);
+  background-size: 180px 180px;
 }

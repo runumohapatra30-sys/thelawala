@@ -10,10 +10,10 @@ import { fssaiError, normalizeFssai } from "@/lib/validation";
 export const Route = createFileRoute("/vendor")({
   head: () => ({
     meta: [
-      { title: "Stall partner portal — Thaleewala" },
-      { name: "description", content: "Accept Thaleewala orders, mark food ready, share the pickup OTP and manage your stall menu and photos." },
-      { property: "og:title", content: "Stall partner portal — Thaleewala" },
-      { property: "og:description", content: "Run your street food stall on Thaleewala." },
+      { title: "Stall partner portal — ThelaWala" },
+      { name: "description", content: "Accept ThelaWala orders, mark food ready, share the pickup OTP and manage your stall menu and photos." },
+      { property: "og:title", content: "Stall partner portal — ThelaWala" },
+      { property: "og:description", content: "Run your street food stall on ThelaWala." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -154,7 +154,7 @@ function VendorPortal() {
 
   return (
     <Shell>
-      <PortalHeader title={vendor.stall_name} subtitle={vendor.status === "APPROVED" ? "Live on Thaleewala" : "Waiting for approval"} />
+      <PortalHeader title={vendor.stall_name} subtitle={vendor.status === "APPROVED" ? "Live on ThelaWala" : "Waiting for approval"} />
       <div className="space-y-3 p-4">
         <button
           onClick={async () => {
