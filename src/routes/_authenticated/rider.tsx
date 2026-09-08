@@ -9,7 +9,7 @@ import { useSession } from "@/lib/session";
 import { dlError, normalizeDl } from "@/lib/validation";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/rider")({
+export const Route = createFileRoute("/_authenticated/rider")({
   head: () => ({
     meta: [
       { title: "Delivery partner portal — ThelaWala Express" },
