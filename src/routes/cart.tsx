@@ -35,6 +35,8 @@ function Cart() {
   const [payment, setPayment] = useState<"COD" | "ONLINE">("COD");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [useWallet, setUseWallet] = useState(true);
 
   useEffect(() => {
     supabase.from("system_settings").select("*").maybeSingle().then(({ data }) => {
@@ -42,6 +44,16 @@ function Cart() {
       if (data && !data.enable_cod) setPayment("ONLINE");
     });
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("wallets")
+      .select("balance,status")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setWalletBalance(data?.status === "ACTIVE" ? Number(data.balance) : 0));
+  }, [user?.id]);
 
   useEffect(() => {
     const vid = lines[0]?.vendorId;
