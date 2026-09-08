@@ -327,7 +327,7 @@ function CouponManager() {
       min_order: Number(form.min_order) || 0,
     });
     setBusy(false);
-    if (error) return toast.error(error.message.includes("duplicate") ? "This code already exists." : "Could not save the coupon.");
+    if (error) { toast.error(error.message.includes("duplicate") ? "This code already exists." : "Could not save the coupon."); return; }
     toast.success(`${code} is live`);
     setForm({ code: "", description: "", discount_type: "FLAT", discount_value: "", min_order: "0" });
     load();
