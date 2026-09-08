@@ -52,6 +52,8 @@ function Track() {
   const [reason, setReason] = useState(REASONS[0]!);
   const [splash, setSplash] = useState(Boolean(placed));
   const [refundMsg, setRefundMsg] = useState<string | null>(null);
+  const [tipMsg, setTipMsg] = useState<string | null>(null);
+  const [customTip, setCustomTip] = useState("");
 
   useEffect(() => {
     if (!splash) return;
