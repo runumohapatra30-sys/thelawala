@@ -520,6 +520,57 @@ function VendorPortal() {
           {items.length === 0 ? <p className="mt-2 text-xs text-muted-foreground">No dishes added yet.</p> : null}
         </section>
       </div>
+
+      {slip ? <OrderSlip order={slip} onClose={() => setSlip(null)} /> : null}
     </Shell>
+  );
+}
+
+function OrderSlip({ order, onClose }: { order: Order; onClose: () => void }) {
+  const [lines, setLines] = useState<{ id: string; name: string; qty: number }[]>([]);
+  useEffect(() => {
+    supabase.from("order_items").select("id,name,qty").eq("order_id", order.id).then(({ data }) => setLines(data ?? []));
+  }, [order.id]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-[360px] rounded-2xl bg-card p-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-base font-extrabold">Order slip #{order.code}</p>
+            <p className="text-[11px] text-muted-foreground">{order.customer_name}</p>
+          </div>
+          <button onClick={onClose} className="text-sm font-bold text-muted-foreground">Close</button>
+        </div>
+
+        <div className="mt-3 space-y-1 border-y border-dashed border-border py-2">
+          {lines.map((l) => (
+            <p key={l.id} className="flex justify-between text-sm font-semibold">
+              <span className="truncate">{l.name}</span>
+              <span>× {l.qty}</span>
+            </p>
+          ))}
+          {lines.length === 0 ? <p className="text-xs text-muted-foreground">Loading items…</p> : null}
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">Drop: {order.address_line}</p>
+
+        <div className="mt-3 grid place-items-center rounded-xl bg-white p-3">
+          <QRCodeSVG
+            value={JSON.stringify({ order_id: order.id, qr_hash: order.qr_hash })}
+            size={168}
+            level="M"
+            bgColor="#ffffff"
+            fgColor="#000000"
+          />
+        </div>
+        <p className="mt-2 text-center text-[11px] font-semibold text-muted-foreground">
+          Stick this on the parcel. The delivery partner scans it to pick up.
+        </p>
+
+        <button onClick={() => window.print()} className="press mt-3 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground">
+          Print slip
+        </button>
+      </div>
+    </div>
   );
 }
