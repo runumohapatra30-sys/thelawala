@@ -230,7 +230,7 @@ function VendorPortal() {
                 <p className="text-sm font-bold">{inr(Number(o.grand_total))}</p>
               </div>
 
-              {["READY", "ASSIGNED"].includes(o.status) ? (
+              {["READY", "ASSIGNED", "ARRIVED_AT_VENDOR"].includes(o.status) ? (
                 <div className="mt-2 rounded-xl bg-muted p-2 text-center">
                   <p className="text-[11px] font-semibold text-muted-foreground">Pickup OTP for #{o.code}</p>
                   <p className="text-2xl font-extrabold tracking-[0.3em]">{o.pickup_otp}</p>
