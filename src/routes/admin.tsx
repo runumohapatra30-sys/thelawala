@@ -5,6 +5,7 @@ import { SupportQueue } from "@/components/SupportQueue";
 import { supabase } from "@/integrations/supabase/client";
 import { inr, STATUS_LABEL, type Settings } from "@/lib/fees";
 import { useIsAdmin, useSession } from "@/lib/session";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -187,8 +188,9 @@ function Admin() {
               name={v.stall_name}
               status={v.status}
               onSet={async (status) => {
-                await supabase.from("vendors").update({ status }).eq("id", v.id);
-                setVendors(vendors.map((x) => (x.id === v.id ? { ...x, status } : x)));
+                const { error } = await supabase.from("vendors").update({ status }).eq("id", v.id);
+                if (error) throw error;
+                setVendors((prev) => prev.map((x) => (x.id === v.id ? { ...x, status } : x)));
               }}
             />
           ))}
@@ -208,8 +210,9 @@ function Admin() {
               name={`${r.name}${r.dl_number ? ` · DL ${r.dl_number}` : ""}`}
               status={r.status}
               onSet={async (status) => {
-                await supabase.from("delivery_partners").update({ status }).eq("id", r.id);
-                setRiders(riders.map((x) => (x.id === r.id ? { ...x, status } : x)));
+                const { error } = await supabase.from("delivery_partners").update({ status }).eq("id", r.id);
+                if (error) throw error;
+                setRiders((prev) => prev.map((x) => (x.id === r.id ? { ...x, status } : x)));
               }}
             />
           ))}
@@ -309,17 +312,55 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ApprovalRow({ name, status, onSet }: { name: string; status: string; onSet: (s: string) => void }) {
+function ApprovalRow({ name, status, onSet }: { name: string; status: string; onSet: (s: string) => Promise<void> | void }) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const decided = status === "APPROVED" || status === "REJECTED";
+
+  const run = async (next: string) => {
+    if (busy || decided) return;
+    setBusy(next);
+    try {
+      await onSet(next);
+      toast.success(next === "APPROVED" ? `${name} approved` : `${name} rejected`);
+    } catch {
+      toast.error("Could not save that. Please try again.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="mt-2 flex items-center justify-between gap-2">
       <div className="min-w-0">
         <p className="truncate text-sm font-semibold">{name}</p>
         <p className="text-[11px] text-muted-foreground">{status}</p>
       </div>
-      <div className="flex gap-2">
-        <button onClick={() => onSet("APPROVED")} className="rounded-lg border border-primary px-3 py-1 text-xs font-bold text-primary">Approve</button>
-        <button onClick={() => onSet("REJECTED")} className="rounded-lg border border-border px-3 py-1 text-xs font-bold text-muted-foreground">Reject</button>
-      </div>
+      {decided ? (
+        <span
+          className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-black text-white ${
+            status === "APPROVED" ? "bg-primary" : "bg-destructive"
+          }`}
+        >
+          {status}
+        </span>
+      ) : (
+        <div className="flex gap-2">
+          <button
+            disabled={Boolean(busy)}
+            onClick={() => run("APPROVED")}
+            className="rounded-lg border border-primary px-3 py-1 text-xs font-bold text-primary disabled:opacity-50"
+          >
+            {busy === "APPROVED" ? "Approving…" : "Approve"}
+          </button>
+          <button
+            disabled={Boolean(busy)}
+            onClick={() => run("REJECTED")}
+            className="rounded-lg border border-border px-3 py-1 text-xs font-bold text-muted-foreground disabled:opacity-50"
+          >
+            {busy === "REJECTED" ? "Saving…" : "Reject"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

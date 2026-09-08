@@ -8,9 +8,9 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in — ThelaWala" },
-      { name: "description", content: "Sign in to ThelaWala with an email code or Google to order street food in 15 minutes." },
+      { name: "description", content: "Sign in to ThelaWala with your mobile number, an email code or Google to order street food in 15 minutes." },
       { property: "og:title", content: "Sign in — ThelaWala" },
-      { property: "og:description", content: "Email code or Google sign-in for Bhubaneswar street food delivery." },
+      { property: "og:description", content: "Mobile OTP, email code or Google sign-in for Bhubaneswar street food delivery." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -20,12 +20,16 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const [mode, setMode] = useState<"phone" | "email">("phone");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [googleOn, setGoogleOn] = useState(true);
+
+  const fullPhone = `+91${phone.replace(/\D/g, "").slice(-10)}`;
 
   async function goAfterLogin() {
     const { data: u } = await supabase.auth.getUser();
@@ -46,7 +50,7 @@ function AuthPage() {
     ]);
 
     if (saved?.startsWith("/vendor")) return navigate({ to: "/vendor" });
-    if (saved?.startsWith("/rider")) return navigate({ to: "/rider" });
+    if (saved?.startsWith("/rider") || saved?.startsWith("/delivery")) return navigate({ to: "/rider" });
     if (vendor) return navigate({ to: "/vendor" });
     if (partner) return navigate({ to: "/rider" });
     navigate({ to: "/" });
@@ -63,29 +67,48 @@ function AuthPage() {
       .then(({ data }) => setGoogleOn(data?.enable_google_login ?? true));
   }, [navigate]);
 
+  function switchMode(next: "phone" | "email") {
+    setMode(next);
+    setSent(false);
+    setCode("");
+    setMsg(null);
+  }
+
   async function sendCode() {
     setBusy(true);
     setMsg(null);
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { emailRedirectTo: window.location.origin },
-    });
+    const { error } =
+      mode === "email"
+        ? await supabase.auth.signInWithOtp({
+            email: email.trim(),
+            options: { emailRedirectTo: window.location.origin },
+          })
+        : await supabase.auth.signInWithOtp({ phone: fullPhone });
     setBusy(false);
-    if (error) return setMsg(error.message);
+    if (error) {
+      return setMsg(
+        mode === "phone"
+          ? "We could not send the SMS code right now. Please use email or Google."
+          : error.message,
+      );
+    }
     setSent(true);
-    setMsg("We emailed you a 6-digit code. It is valid for a few minutes.");
+    setMsg(
+      mode === "email"
+        ? "We emailed you a 6-digit code. It is valid for a few minutes."
+        : `We sent a 6-digit code to ${fullPhone}.`,
+    );
   }
 
   async function verify() {
     setBusy(true);
     setMsg(null);
-    const { error } = await supabase.auth.verifyOtp({
-      email: email.trim(),
-      token: code.trim(),
-      type: "email",
-    });
+    const { error } =
+      mode === "email"
+        ? await supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: "email" })
+        : await supabase.auth.verifyOtp({ phone: fullPhone, token: code.trim(), type: "sms" });
     setBusy(false);
-    if (error) return setMsg(error.message);
+    if (error) return setMsg("That code did not work. Please check it and try again.");
     await goAfterLogin();
   }
 
@@ -93,10 +116,12 @@ function AuthPage() {
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
-    if (result.error) return setMsg("Google sign-in failed. Try the email code.");
+    if (result.error) return setMsg("Google sign-in failed. Try the code instead.");
     if (result.redirected) return;
     await goAfterLogin();
   }
+
+  const canSend = mode === "email" ? email.includes("@") : phone.replace(/\D/g, "").length === 10;
 
   return (
     <div className="food-grid-bg min-h-screen">
@@ -116,21 +141,56 @@ function AuthPage() {
 
           <div className="mt-6 w-full rounded-3xl bg-card p-4 shadow-lg">
             <p className="text-sm font-black">Log in or sign up</p>
-            <label className="mt-3 block text-[11px] font-semibold text-muted-foreground">Email address</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="mt-1 w-full rounded-xl border border-border px-3 py-3 text-sm outline-none focus:border-primary"
-            />
+            <p className="text-[11px] text-muted-foreground">Customers, stall owners and delivery partners</p>
+
+            <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+              {(["phone", "email"] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => switchMode(m)}
+                  className={`rounded-lg py-2 text-xs font-black ${
+                    mode === m ? "bg-card text-primary shadow-sm" : "text-muted-foreground"
+                  }`}
+                >
+                  {m === "phone" ? "Mobile OTP" : "Email code"}
+                </button>
+              ))}
+            </div>
+
+            {mode === "email" ? (
+              <>
+                <label className="mt-3 block text-[11px] font-semibold text-muted-foreground">Email address</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="mt-1 w-full rounded-xl border border-border px-3 py-3 text-sm outline-none focus:border-primary"
+                />
+              </>
+            ) : (
+              <>
+                <label className="mt-3 block text-[11px] font-semibold text-muted-foreground">Mobile number</label>
+                <div className="mt-1 flex items-center rounded-xl border border-border focus-within:border-primary">
+                  <span className="px-3 text-sm font-bold text-muted-foreground">+91</span>
+                  <input
+                    inputMode="numeric"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    placeholder="10-digit number"
+                    className="w-full rounded-r-xl py-3 pr-3 text-sm outline-none"
+                  />
+                </div>
+              </>
+            )}
+
             {sent ? (
               <>
                 <label className="mt-3 block text-[11px] font-semibold text-muted-foreground">Enter the code</label>
                 <input
                   inputMode="numeric"
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   placeholder="6-digit code"
                   className="mt-1 w-full rounded-xl border border-border px-3 py-3 text-center text-lg font-bold tracking-[0.4em] outline-none focus:border-primary"
                 />
@@ -147,11 +207,11 @@ function AuthPage() {
               </>
             ) : (
               <button
-                disabled={busy || !email.includes("@")}
+                disabled={busy || !canSend}
                 onClick={sendCode}
                 className="press mt-3 w-full rounded-xl bg-primary py-3.5 text-sm font-black text-primary-foreground disabled:opacity-50"
               >
-                Continue
+                {busy ? "Sending…" : "Continue"}
               </button>
             )}
             {msg ? <p className="mt-2 text-xs text-muted-foreground">{msg}</p> : null}
@@ -165,6 +225,15 @@ function AuthPage() {
                 Continue with Google
               </button>
             ) : null}
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Link to="/vendor" className="rounded-xl border border-border py-2.5 text-center text-[11px] font-black text-primary">
+                Stall partner portal
+              </Link>
+              <Link to="/rider" className="rounded-xl border border-border py-2.5 text-center text-[11px] font-black text-primary">
+                Delivery partner portal
+              </Link>
+            </div>
           </div>
 
           <p className="mt-4 px-4 text-center text-[11px] text-muted-foreground">
