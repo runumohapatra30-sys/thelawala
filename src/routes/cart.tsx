@@ -309,6 +309,17 @@ function Cart() {
 
         <div className="card-soft border border-border p-3">
           <p className="text-sm font-bold">Payment method</p>
+          {walletBalance > 0 ? (
+            <button
+              onClick={() => setUseWallet(!useWallet)}
+              className={`mt-2 flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm font-semibold ${useWallet ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+            >
+              Use wallet balance ({inr(walletBalance)})<span>{useWallet ? "ON" : "OFF"}</span>
+            </button>
+          ) : null}
+          {payable === 0 ? (
+            <p className="mt-2 text-xs font-semibold text-primary">Fully paid by your wallet.</p>
+          ) : null}
           <div className="mt-2 grid gap-2">
             {settings?.enable_cod !== false ? (
               <PayBtn active={payment === "COD"} onClick={() => setPayment("COD")} label="Cash on delivery" hint="Pay the delivery partner" />
