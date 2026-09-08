@@ -47,11 +47,10 @@ export type Rider = {
 export type CartLine = { productId: string; qty: number };
 
 export type OrderStatus =
-  | "PLACED"
-  | "VENDOR_ACCEPTED"
+  | "ORDER_PLACED"
   | "PREPARING"
-  | "PACKED"
-  | "PICKED_UP"
+  | "READY_FOR_PICKUP"
+  | "RIDER_ASSIGNED"
   | "OUT_FOR_DELIVERY"
   | "DELIVERED"
   | "CANCELLED";
