@@ -28,15 +28,18 @@ type Item = { id: string; name: string; price: number; mrp: number; in_stock: bo
 
 function VendorPortal() {
   const { user, loading } = useSession();
-  const [vendor, setVendor] = useState<{ id: string; stall_name: string; status: string; is_open: boolean } | null>(null);
+  const [vendor, setVendor] = useState<{ id: string; stall_name: string; status: string; is_open: boolean; fssai_number: string | null } | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [items, setItems] = useState<Item[]>([]);
-  const [form, setForm] = useState({ stall_name: "", owner_name: "", mobile: "", address: "" });
+  const [form, setForm] = useState({ stall_name: "", owner_name: "", mobile: "", address: "", fssai_number: "" });
   const [msg, setMsg] = useState<string | null>(null);
+  const [fssaiDraft, setFssaiDraft] = useState("");
+  const [fssaiMsg, setFssaiMsg] = useState<string | null>(null);
+  const [fssaiSaving, setFssaiSaving] = useState(false);
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("vendors").select("id,stall_name,status,is_open").eq("owner_id", user.id).maybeSingle()
+    supabase.from("vendors").select("id,stall_name,status,is_open,fssai_number").eq("owner_id", user.id).maybeSingle()
       .then(({ data }) => setVendor(data));
   }, [user?.id]);
 
