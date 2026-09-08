@@ -80,6 +80,7 @@ export type Database = {
       delivery_partners: {
         Row: {
           created_at: string
+          dl_number: string | null
           id: string
           is_busy: boolean
           is_online: boolean
@@ -95,6 +96,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          dl_number?: string | null
           id?: string
           is_busy?: boolean
           is_online?: boolean
@@ -110,6 +112,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          dl_number?: string | null
           id?: string
           is_busy?: boolean
           is_online?: boolean
@@ -634,6 +637,7 @@ export type Database = {
         Row: {
           address: string | null
           created_at: string
+          fssai_number: string | null
           id: string
           is_open: boolean
           lat: number
@@ -649,6 +653,7 @@ export type Database = {
         Insert: {
           address?: string | null
           created_at?: string
+          fssai_number?: string | null
           id?: string
           is_open?: boolean
           lat?: number
@@ -664,6 +669,7 @@ export type Database = {
         Update: {
           address?: string | null
           created_at?: string
+          fssai_number?: string | null
           id?: string
           is_open?: boolean
           lat?: number

@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { rejectOffer } from "@/lib/dispatch";
 import { haversineKm, inr, STATUS_LABEL } from "@/lib/fees";
 import { useSession } from "@/lib/session";
+import { dlError, normalizeDl } from "@/lib/validation";
 
 export const Route = createFileRoute("/rider")({
   head: () => ({
@@ -28,7 +29,7 @@ type Order = {
   offered_to: string | null; offer_expires_at: string | null; rejected_partner_ids: string[];
   payment_mode: string;
 };
-type Partner = { id: string; name: string; status: string; is_online: boolean; is_busy: boolean };
+type Partner = { id: string; name: string; status: string; is_online: boolean; is_busy: boolean; dl_number: string | null };
 
 function RiderPortal() {
   const { user, loading } = useSession();
@@ -42,12 +43,15 @@ function RiderPortal() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [earnings, setEarnings] = useState({ trips: 0, total: 0 });
-  const [form, setForm] = useState({ name: "", mobile: "", vehicle_no: "" });
+  const [form, setForm] = useState({ name: "", mobile: "", vehicle_no: "", dl_number: "" });
+  const [dlDraft, setDlDraft] = useState("");
+  const [dlMsg, setDlMsg] = useState<string | null>(null);
+  const [dlSaving, setDlSaving] = useState(false);
   const posRef = useRef<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("delivery_partners").select("id,name,status,is_online,is_busy").eq("user_id", user.id).maybeSingle()
+    supabase.from("delivery_partners").select("id,name,status,is_online,is_busy,dl_number").eq("user_id", user.id).maybeSingle()
       .then(({ data }) => setMe(data));
   }, [user?.id]);
 
@@ -138,11 +142,33 @@ function RiderPortal() {
               />
             </label>
           ))}
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-muted-foreground">Driving licence number</span>
+            <input
+              value={form.dl_number}
+              inputMode="text"
+              autoCapitalize="characters"
+              placeholder="OD02 20210012345"
+              onChange={(e) => setForm({ ...form, dl_number: normalizeDl(e.target.value) })}
+              className={`w-full rounded-xl border px-3 py-2.5 text-sm uppercase outline-none ${
+                form.dl_number && dlError(form.dl_number) ? "border-destructive" : "border-border focus:border-primary"
+              }`}
+            />
+            {form.dl_number && dlError(form.dl_number) ? (
+              <span className="mt-1 block text-[11px] font-semibold text-destructive">{dlError(form.dl_number)}</span>
+            ) : (
+              <span className="mt-1 block text-[11px] text-muted-foreground">Format: 2 letters, 2 digits, then 11 digits.</span>
+            )}
+          </label>
           <button
+            disabled={Boolean(dlError(form.dl_number))}
             onClick={async () => {
+              const bad = dlError(form.dl_number);
+              if (bad) return setMsg(bad);
               const { data, error } = await supabase.from("delivery_partners").insert({
-                user_id: user.id, name: form.name, mobile: form.mobile, vehicle_no: form.vehicle_no, status: "PENDING_APPROVAL",
-              }).select("id,name,status,is_online,is_busy").single();
+                user_id: user.id, name: form.name, mobile: form.mobile, vehicle_no: form.vehicle_no,
+                dl_number: form.dl_number.trim(), status: "PENDING_APPROVAL",
+              }).select("id,name,status,is_online,is_busy,dl_number").single();
               if (error) setMsg(error.message);
               else setMe(data);
             }}
@@ -207,15 +233,71 @@ function RiderPortal() {
           </div>
         </div>
 
-        <button
-          onClick={async () => {
-            await supabase.from("delivery_partners").update({ is_online: !me.is_online }).eq("id", me.id);
-            setMe({ ...me, is_online: !me.is_online });
-          }}
-          className={`w-full rounded-xl border py-3 text-sm font-bold ${me.is_online ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
-        >
-          You are {me.is_online ? "ONLINE" : "OFFLINE"} · tap to change
-        </button>
+        {me.status === "UNDER_REVIEW" ? (
+          <div className="card-soft border-2 border-destructive p-3">
+            <p className="text-sm font-bold text-destructive">Duty locked · licence under review</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              You changed your driving licence, so your account is with the admin team for a check. You can go online again
+              once it is approved.
+            </p>
+          </div>
+        ) : (
+          <button
+            disabled={me.status !== "APPROVED"}
+            onClick={async () => {
+              await supabase.from("delivery_partners").update({ is_online: !me.is_online }).eq("id", me.id);
+              setMe({ ...me, is_online: !me.is_online });
+            }}
+            className={`w-full rounded-xl border py-3 text-sm font-bold disabled:opacity-50 ${me.is_online ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+          >
+            You are {me.is_online ? "ONLINE" : "OFFLINE"} · tap to change
+          </button>
+        )}
+
+        <div className="card-soft border border-border p-3">
+          <p className="text-sm font-bold">Driving licence</p>
+          <p className="text-[11px] text-muted-foreground">
+            Current: {me.dl_number ?? "not added yet"}. Changing it sends your account for review and takes you off duty.
+          </p>
+          <input
+            value={dlDraft || me.dl_number || ""}
+            autoCapitalize="characters"
+            placeholder="OD02 20210012345"
+            onChange={(e) => {
+              setDlDraft(normalizeDl(e.target.value));
+              setDlMsg(null);
+            }}
+            className={`mt-2 w-full rounded-xl border px-3 py-2.5 text-sm uppercase outline-none ${
+              dlDraft && dlError(dlDraft) ? "border-destructive" : "border-border focus:border-primary"
+            }`}
+          />
+          {dlDraft && dlError(dlDraft) ? (
+            <p className="mt-1 text-[11px] font-semibold text-destructive">{dlError(dlDraft)}</p>
+          ) : null}
+          <button
+            disabled={dlSaving || !dlDraft || Boolean(dlError(dlDraft)) || dlDraft === me.dl_number}
+            onClick={async () => {
+              const bad = dlError(dlDraft);
+              if (bad) return setDlMsg(bad);
+              setDlSaving(true);
+              const { data, error } = await supabase
+                .from("delivery_partners")
+                .update({ dl_number: dlDraft.trim() })
+                .eq("id", me.id)
+                .select("id,name,status,is_online,is_busy,dl_number")
+                .single();
+              setDlSaving(false);
+              if (error || !data) return setDlMsg(error?.message ?? "Could not save the licence.");
+              setMe(data);
+              setDlDraft("");
+              setDlMsg("Licence saved. Your account is under review and duty is locked until admin approval.");
+            }}
+            className="mt-2 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+          >
+            {dlSaving ? "Saving…" : "Update licence"}
+          </button>
+          {dlMsg ? <p className="mt-2 text-xs font-semibold text-primary">{dlMsg}</p> : null}
+        </div>
 
         {offer ? (
           <div className="card-soft border-2 border-primary p-3">

@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { offerToNearestPartner } from "@/lib/dispatch";
 import { inr, STATUS_LABEL } from "@/lib/fees";
 import { useSession } from "@/lib/session";
+import { fssaiError, normalizeFssai } from "@/lib/validation";
 
 export const Route = createFileRoute("/vendor")({
   head: () => ({
@@ -28,15 +29,18 @@ type Item = { id: string; name: string; price: number; mrp: number; in_stock: bo
 
 function VendorPortal() {
   const { user, loading } = useSession();
-  const [vendor, setVendor] = useState<{ id: string; stall_name: string; status: string; is_open: boolean } | null>(null);
+  const [vendor, setVendor] = useState<{ id: string; stall_name: string; status: string; is_open: boolean; fssai_number: string | null } | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [items, setItems] = useState<Item[]>([]);
-  const [form, setForm] = useState({ stall_name: "", owner_name: "", mobile: "", address: "" });
+  const [form, setForm] = useState({ stall_name: "", owner_name: "", mobile: "", address: "", fssai_number: "" });
   const [msg, setMsg] = useState<string | null>(null);
+  const [fssaiDraft, setFssaiDraft] = useState("");
+  const [fssaiMsg, setFssaiMsg] = useState<string | null>(null);
+  const [fssaiSaving, setFssaiSaving] = useState(false);
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("vendors").select("id,stall_name,status,is_open").eq("owner_id", user.id).maybeSingle()
+    supabase.from("vendors").select("id,stall_name,status,is_open,fssai_number").eq("owner_id", user.id).maybeSingle()
       .then(({ data }) => setVendor(data));
   }, [user?.id]);
 
@@ -97,8 +101,28 @@ function VendorPortal() {
               />
             </label>
           ))}
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-muted-foreground">FSSAI licence number</span>
+            <input
+              value={form.fssai_number}
+              inputMode="numeric"
+              placeholder="14 digits, e.g. 12345678901234"
+              onChange={(e) => setForm({ ...form, fssai_number: normalizeFssai(e.target.value) })}
+              className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none ${
+                form.fssai_number && fssaiError(form.fssai_number) ? "border-destructive" : "border-border focus:border-primary"
+              }`}
+            />
+            {form.fssai_number && fssaiError(form.fssai_number) ? (
+              <span className="mt-1 block text-[11px] font-semibold text-destructive">{fssaiError(form.fssai_number)}</span>
+            ) : (
+              <span className="mt-1 block text-[11px] text-muted-foreground">Exactly 14 digits, starting with 1 or 2.</span>
+            )}
+          </label>
           <button
+            disabled={Boolean(fssaiError(form.fssai_number))}
             onClick={async () => {
+              const badFssai = fssaiError(form.fssai_number);
+              if (badFssai) return setMsg(badFssai);
               const pos = await new Promise<GeolocationPosition | null>((res) =>
                 navigator.geolocation
                   ? navigator.geolocation.getCurrentPosition((p) => res(p), () => res(null))
@@ -112,8 +136,9 @@ function VendorPortal() {
                 owner_id: user.id,
                 lat: pos?.coords.latitude ?? 20.2961,
                 lng: pos?.coords.longitude ?? 85.8245,
+                fssai_number: form.fssai_number.trim(),
                 status: "PENDING_APPROVAL",
-              }).select("id,stall_name,status,is_open").single();
+              }).select("id,stall_name,status,is_open,fssai_number").single();
               if (error) setMsg(error.message);
               else setVendor(data);
             }}
@@ -140,6 +165,56 @@ function VendorPortal() {
         >
           Stall is {vendor.is_open ? "OPEN" : "CLOSED"} · tap to change
         </button>
+
+        <div className="card-soft border border-border p-3">
+          <p className="text-sm font-bold">FSSAI licence</p>
+          <p className="text-[11px] text-muted-foreground">Current: {vendor.fssai_number ?? "not added yet"}</p>
+          <input
+            value={fssaiDraft || vendor.fssai_number || ""}
+            inputMode="numeric"
+            placeholder="14 digits, e.g. 12345678901234"
+            onChange={(e) => {
+              setFssaiDraft(normalizeFssai(e.target.value));
+              setFssaiMsg(null);
+            }}
+            className={`mt-2 w-full rounded-xl border px-3 py-2.5 text-sm outline-none ${
+              fssaiDraft && fssaiError(fssaiDraft) ? "border-destructive" : "border-border focus:border-primary"
+            }`}
+          />
+          {fssaiDraft && fssaiError(fssaiDraft) ? (
+            <p className="mt-1 text-[11px] font-semibold text-destructive">{fssaiError(fssaiDraft)}</p>
+          ) : null}
+          <button
+            disabled={fssaiSaving || !fssaiDraft || Boolean(fssaiError(fssaiDraft)) || fssaiDraft === vendor.fssai_number}
+            onClick={async () => {
+              const bad = fssaiError(fssaiDraft);
+              if (bad) {
+                setFssaiDraft("");
+                return setFssaiMsg(bad);
+              }
+              setFssaiSaving(true);
+              const { data, error } = await supabase
+                .from("vendors")
+                .update({ fssai_number: fssaiDraft.trim() })
+                .eq("id", vendor.id)
+                .select("id,stall_name,status,is_open,fssai_number")
+                .single();
+              setFssaiSaving(false);
+              if (error || !data) {
+                setFssaiDraft("");
+                return setFssaiMsg("Could not save. Your earlier FSSAI number is unchanged and your stall stays online.");
+              }
+              setVendor(data);
+              setFssaiDraft("");
+              setFssaiMsg("FSSAI number updated.");
+            }}
+            className="mt-2 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+          >
+            {fssaiSaving ? "Saving…" : "Update FSSAI number"}
+          </button>
+          {fssaiMsg ? <p className="mt-2 text-xs font-semibold text-primary">{fssaiMsg}</p> : null}
+        </div>
+
 
         <section className="space-y-2">
           <p className="text-sm font-bold">Live orders</p>
