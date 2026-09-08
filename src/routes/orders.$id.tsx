@@ -35,8 +35,10 @@ type Order = {
   surge_fee: number; penalty_fee: number; distance_km: number; delivery_otp: string;
   drop_lat: number; drop_lng: number; vendor_id: string; partner_id: string | null;
   payment_mode: string; address_line: string; proof_photo_url: string | null; created_at: string;
-  payment_status: string; wallet_paid: number; cancel_reason: string | null;
+  payment_status: string; wallet_paid: number; cancel_reason: string | null; tip_amount: number;
 };
+
+const TIPS = [20, 30, 50];
 
 function Track() {
   const { id } = Route.useParams();
