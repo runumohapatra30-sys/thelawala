@@ -359,26 +359,20 @@ function VendorPortal() {
                 <p className="text-sm font-bold">{inr(Number(o.grand_total))}</p>
               </div>
 
-              {["READY", "ASSIGNED", "ARRIVED_AT_VENDOR"].includes(o.status) ? (
-                <div className="mt-2 rounded-xl bg-muted p-2 text-center">
-                  <p className="text-[11px] font-semibold text-muted-foreground">Pickup OTP for #{o.code}</p>
-                  <p className="text-2xl font-extrabold tracking-[0.3em]">{o.pickup_otp}</p>
-                  <p className="text-[11px] text-muted-foreground">Tell this only to the delivery partner</p>
-                </div>
-              ) : null}
-
-              <div className="mt-2 flex gap-2">
-                {o.status === "PLACED" ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {o.status === "ORDER_PLACED" ? (
                   <>
-                    <button onClick={() => setStatus(o, "VENDOR_ACCEPTED")} className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground">Accept</button>
+                    <button onClick={() => setStatus(o, "PREPARING")} className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground">Accept</button>
                     <button onClick={() => setStatus(o, "CANCELLED")} className="flex-1 rounded-xl border border-border py-2 text-xs font-bold">Reject</button>
                   </>
                 ) : null}
-                {o.status === "VENDOR_ACCEPTED" ? (
-                  <button onClick={() => setStatus(o, "PREPARING")} className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground">Start cooking</button>
-                ) : null}
                 {o.status === "PREPARING" ? (
-                  <button onClick={() => setStatus(o, "READY")} className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground">Food is ready</button>
+                  <button onClick={() => setStatus(o, "READY_FOR_PICKUP")} className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground">Ready for Pickup</button>
+                ) : null}
+                {o.status !== "ORDER_PLACED" && o.status !== "CANCELLED" ? (
+                  <button onClick={() => setSlip(o)} className="flex-1 rounded-xl border border-primary py-2 text-xs font-bold text-primary">
+                    Print / View order slip
+                  </button>
                 ) : null}
               </div>
             </div>
