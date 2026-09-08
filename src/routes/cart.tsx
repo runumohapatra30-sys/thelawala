@@ -227,9 +227,21 @@ function Cart() {
   return (
     <Shell>
       <PortalHeader title="Checkout" subtitle={vendor?.stall_name ?? "Your order"} />
-      <div className="space-y-3 p-4 pb-32">
+      <div className="space-y-3 p-4 pb-36">
+        <div className="card-soft grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border border-border p-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-black">{form.full_name || "Delivering to you"}</p>
+            <p className="truncate text-[11px] text-muted-foreground">{form.line || "Add your full address below"}</p>
+          </div>
+          <a href="#delivery-details" className="press shrink-0 rounded-full border border-primary px-3 py-1.5 text-[11px] font-black text-primary">
+            Change
+          </a>
+        </div>
+
         <div className="card-soft border border-border p-3">
-          <p className="text-sm font-bold">Delivery in 15 minutes</p>
+          <p className="inline-flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-1 text-[11px] font-black text-primary-foreground">
+            ⚡ Free delivery in 15 mins
+          </p>
           <div className="mt-3 space-y-3">
             {lines.map((l) => (
               <div key={l.itemId} className="flex items-center gap-3">
