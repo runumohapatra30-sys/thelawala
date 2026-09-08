@@ -59,7 +59,6 @@ export const Route = createFileRoute("/api/public/payu/callback")({
         const amount = Number(g("amount"));
         const ref = g("mihpayid") || g("txnid");
 
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         if (purpose === "WALLET") {
           await supabaseAdmin.rpc("wallet_credit", {
