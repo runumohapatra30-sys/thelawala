@@ -4,6 +4,7 @@ import { PortalHeader, Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { cart, cartTotals, useCart } from "@/lib/cart";
 import { computeBill, haversineKm, inr, type Settings } from "@/lib/fees";
+import { createPayuPayment } from "@/lib/payments.functions";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/cart")({
