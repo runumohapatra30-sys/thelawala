@@ -296,9 +296,10 @@ function Cart() {
               {bill.handlingFee ? <Row label="Handling fee" value={inr(bill.handlingFee)} /> : null}
               {bill.packingFee ? <Row label="Packing fee" value={inr(bill.packingFee)} /> : null}
               {bill.surgeFee ? <Row label="Surge fee" value={inr(bill.surgeFee)} /> : null}
+              {walletUse > 0 ? <Row label="Paid from wallet" value={`− ${inr(walletUse)}`} good /> : null}
               <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold">
                 <span>To pay</span>
-                <span>{inr(bill.grandTotal)}</span>
+                <span>{inr(payable)}</span>
               </div>
             </dl>
           ) : (
