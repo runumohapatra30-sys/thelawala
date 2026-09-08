@@ -210,6 +210,69 @@ function Admin() {
         </section>
 
         <section className="card-soft border border-border p-3">
+          <p className="text-sm font-bold">Refund requests</p>
+          {refunds.length === 0 ? <p className="mt-1 text-xs text-muted-foreground">Nothing pending.</p> : null}
+          {refunds.map((r) => (
+            <div key={r.id} className="mt-2 flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">{inr(Number(r.amount))} · {r.method === "WALLET" ? "To wallet" : "To bank"}</p>
+                <p className="truncate text-[11px] text-muted-foreground">{r.reason ?? "No reason given"}</p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={async () => {
+                    await supabase.rpc("decide_refund", { _request_id: r.id, _approve: true });
+                    loadMoney();
+                  }}
+                  className="rounded-lg border border-primary px-3 py-1 text-xs font-bold text-primary"
+                >
+                  Approve
+                </button>
+                <button
+                  onClick={async () => {
+                    await supabase.rpc("decide_refund", { _request_id: r.id, _approve: false });
+                    loadMoney();
+                  }}
+                  className="rounded-lg border border-border px-3 py-1 text-xs font-bold text-muted-foreground"
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <section className="card-soft border border-border p-3">
+          <p className="text-sm font-bold">Wallet closure requests</p>
+          {closures.length === 0 ? <p className="mt-1 text-xs text-muted-foreground">Nothing pending.</p> : null}
+          {closures.map((c) => (
+            <div key={c.id} className="mt-2 flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold">Return {inr(Number(c.amount))}</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={async () => {
+                    await supabase.rpc("decide_wallet_closure", { _request_id: c.id, _approve: true });
+                    loadMoney();
+                  }}
+                  className="rounded-lg border border-primary px-3 py-1 text-xs font-bold text-primary"
+                >
+                  Paid &amp; close
+                </button>
+                <button
+                  onClick={async () => {
+                    await supabase.rpc("decide_wallet_closure", { _request_id: c.id, _approve: false });
+                    loadMoney();
+                  }}
+                  className="rounded-lg border border-border px-3 py-1 text-xs font-bold text-muted-foreground"
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <section className="card-soft border border-border p-3">
           <p className="text-sm font-bold">Recent orders</p>
           <div className="mt-2 space-y-2">
             {orders.map((o) => (
