@@ -273,9 +273,10 @@ function Track() {
             {Number(order.packing_fee) ? <Row label="Packing fee" value={inr(Number(order.packing_fee))} /> : null}
             {Number(order.surge_fee) ? <Row label="Surge fee" value={inr(Number(order.surge_fee))} /> : null}
             {Number(order.penalty_fee) ? <Row label="Cancellation fee" value={inr(Number(order.penalty_fee))} /> : null}
+            {Number(order.tip_amount) ? <Row label="Delivery partner tip" value={inr(Number(order.tip_amount))} /> : null}
             <div className="flex justify-between border-t border-border pt-2 text-base font-bold">
               <span>Total ({order.payment_mode === "COD" ? "Cash on delivery" : "Paid online"})</span>
-              <span>{inr(Number(order.grand_total))}</span>
+              <span>{inr(Number(order.grand_total) + Number(order.tip_amount ?? 0))}</span>
             </div>
           </dl>
         </div>
