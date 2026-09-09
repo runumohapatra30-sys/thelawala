@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
-import { createPayuPayment } from "@/lib/payments.functions";
+import { startOnlinePayment } from "@/lib/checkout";
 import { inr, type Settings } from "@/lib/fees";
 import { useSession } from "@/lib/session";
 
@@ -73,28 +73,14 @@ function Wallet() {
     setBusy(true);
     try {
       const { data: p } = await supabase.from("profiles").select("full_name,mobile").eq("id", user.id).maybeSingle();
-      const checkout = await createPayuPayment({
-        data: {
-          amount: amt,
-          purpose: "WALLET",
-          name: p?.full_name ?? "Customer",
-          email: user.email ?? "",
-          mobile: p?.mobile ?? "",
-          origin: window.location.origin,
-        },
+      await startOnlinePayment({
+        gateway: settings?.payment_gateway,
+        amount: amt,
+        purpose: "WALLET",
+        name: p?.full_name ?? "Customer",
+        email: user.email ?? "",
+        mobile: p?.mobile ?? "",
       });
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = checkout.action;
-      Object.entries(checkout.params).forEach(([k, v]) => {
-        const i = document.createElement("input");
-        i.type = "hidden";
-        i.name = k;
-        i.value = v;
-        form.appendChild(i);
-      });
-      document.body.appendChild(form);
-      form.submit();
     } catch (e) {
       setBusy(false);
       setMsg(e instanceof Error ? e.message : "Could not start the payment.");

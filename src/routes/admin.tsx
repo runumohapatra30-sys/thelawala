@@ -168,6 +168,7 @@ function Admin() {
             </section>
 
             <PayuKeys />
+            <CashfreeKeys />
 
             <button
               onClick={async () => {
@@ -548,6 +549,92 @@ function PayuKeys() {
         className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
       >
         {busy ? "Saving…" : "Save gateway keys"}
+      </button>
+    </section>
+  );
+}
+
+function CashfreeKeys() {
+  const [appId, setAppId] = useState("");
+  const [secret, setSecret] = useState("");
+  const [live, setLive] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from("payment_credentials")
+      .select("cashfree_app_id,cashfree_secret,is_live")
+      .eq("id", true)
+      .maybeSingle()
+      .then(({ data }) => {
+        setAppId(data?.cashfree_app_id ?? "");
+        setSecret(data?.cashfree_secret ?? "");
+        setLive(Boolean(data?.is_live));
+        setLoaded(true);
+      });
+  }, []);
+
+  async function save() {
+    if (!appId.trim() || !secret.trim()) {
+      toast.error("Please fill both the App ID and the secret key.");
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.from("payment_credentials").upsert({
+      id: true,
+      cashfree_app_id: appId.trim(),
+      cashfree_secret: secret.trim(),
+      is_live: live,
+      updated_at: new Date().toISOString(),
+    });
+    setBusy(false);
+    if (error) {
+      toast.error("Could not save the Cashfree keys. Please try again.");
+      return;
+    }
+    toast.success(live ? "Cashfree is live now." : "Saved. Cashfree test mode is on.");
+  }
+
+  return (
+    <section className="card-soft space-y-2 border border-border p-3">
+      <p className="text-sm font-bold">Cashfree gateway keys</p>
+      <p className="text-[11px] text-muted-foreground">
+        Only administrators can see or change this. Paste the App ID and secret key from your Cashfree dashboard, then
+        choose Cashfree as the payment gateway above.
+      </p>
+      <label className="block">
+        <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">App ID (client id)</span>
+        <input
+          value={appId}
+          onChange={(e) => setAppId(e.target.value)}
+          placeholder="TEST1234567890abcdef"
+          className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary"
+        />
+      </label>
+      <label className="block">
+        <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">Secret key</span>
+        <input
+          type="password"
+          value={secret}
+          onChange={(e) => setSecret(e.target.value)}
+          placeholder="Paste the secret key"
+          className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary"
+        />
+      </label>
+      <button
+        onClick={() => setLive(!live)}
+        className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm font-semibold ${live ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+      >
+        {live ? "Live mode (real money)" : "Test mode"}
+        <span>{live ? "LIVE" : "TEST"}</span>
+      </button>
+      <button
+        disabled={busy || !loaded}
+        onClick={save}
+        className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+      >
+        {busy ? "Saving…" : "Save Cashfree keys"}
       </button>
     </section>
   );

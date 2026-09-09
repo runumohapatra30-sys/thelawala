@@ -179,18 +179,7 @@ function VendorPortal() {
     }
     setDishSaving(true);
     try {
-      let photoUrl: string | null = null;
-      if (dishFile) {
-        const ext = dishFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
-        const path = `${vendor.id}/${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("dish-photos").upload(path, dishFile, {
-          contentType: dishFile.type || "image/jpeg",
-          upsert: false,
-        });
-        if (upErr) throw upErr;
-        const { data: signed } = await supabase.storage.from("dish-photos").createSignedUrl(path, 60 * 60 * 24 * 3650);
-        photoUrl = signed?.signedUrl ?? null;
-      }
+      const photoUrl = dishFile ? await uploadDishPhoto(vendor.id, dishFile) : null;
       const { error } = await supabase.from("menu_items").insert({
         vendor_id: vendor.id,
         name: dish.name.trim(),
@@ -641,6 +630,9 @@ function VendorPortal() {
                   onChange={(e) => setDishFile(e.target.files?.[0] ?? null)}
                   className="w-full text-xs"
                 />
+                {dishFile ? (
+                  <img src={URL.createObjectURL(dishFile)} alt="Selected dish" className="mt-2 h-24 w-24 rounded-xl object-cover" />
+                ) : null}
               </label>
               <button
                 disabled={dishSaving}
@@ -654,11 +646,35 @@ function VendorPortal() {
 
           {items.map((i) => (
             <div key={i.id} className="mt-2 flex items-center gap-3">
-              <img
-                src={i.photo_url ?? "/food/food-tiffin.jpg"}
-                alt={i.name}
-                className="h-12 w-12 shrink-0 rounded-xl object-cover"
-              />
+              <label className="relative shrink-0 cursor-pointer">
+                <img
+                  src={i.photo_url ?? "/food/food-tiffin.jpg"}
+                  alt={i.name}
+                  className="h-12 w-12 rounded-xl object-cover"
+                />
+                <span className="absolute inset-x-0 bottom-0 rounded-b-xl bg-black/55 text-center text-[8px] font-bold text-white">
+                  {i.photo_url ? "Change" : "Add photo"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (!f || !vendor) return;
+                    try {
+                      const url = await uploadDishPhoto(vendor.id, f);
+                      const { error } = await supabase.from("menu_items").update({ photo_url: url }).eq("id", i.id);
+                      if (error) throw error;
+                      setItems((prev) => prev.map((x) => (x.id === i.id ? { ...x, photo_url: url } : x)));
+                      toast.success("Photo updated. Customers can see it now.");
+                    } catch {
+                      toast.error("Could not upload that photo. Please try again.");
+                    }
+                  }}
+                />
+              </label>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold">
                   <span className={i.food_type === "NONVEG" ? "text-destructive" : "text-primary"}>■</span> {i.name}
@@ -690,6 +706,22 @@ function VendorPortal() {
       {slip ? <OrderSlip order={slip} onClose={() => setSlip(null)} /> : null}
     </Shell>
   );
+}
+
+/** Uploads a dish photo and returns a long-lived link the customer app can show. */
+async function uploadDishPhoto(vendorId: string, file: File): Promise<string> {
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+  const path = `${vendorId}/${crypto.randomUUID()}.${ext}`;
+  const { error: upErr } = await supabase.storage.from("dish-photos").upload(path, file, {
+    contentType: file.type || "image/jpeg",
+    upsert: false,
+  });
+  if (upErr) throw upErr;
+  const { data: signed, error: signErr } = await supabase.storage
+    .from("dish-photos")
+    .createSignedUrl(path, 60 * 60 * 24 * 3650);
+  if (signErr || !signed?.signedUrl) throw signErr ?? new Error("Photo link failed");
+  return signed.signedUrl;
 }
 
 function OrderSlip({ order, onClose }: { order: Order; onClose: () => void }) {
