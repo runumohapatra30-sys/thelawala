@@ -243,6 +243,7 @@ function RiderPortal() {
 
   useEffect(() => {
     if (offer && secs === 0 && me) {
+      console.log(`[Rider Response: TIMEOUT] order ${offer.id} rider ${me.id}`);
       rejectOffer(offer.id, me.id, offer.rejected_partner_ids ?? []);
       setOffer(null);
     }
@@ -466,6 +467,7 @@ function RiderPortal() {
       return;
     }
     await supabase.from("delivery_partners").update({ is_busy: true }).eq("id", me.id);
+    console.log(`[Rider Response: ACCEPTED] order ${offer.id} rider ${me.id}`);
     setActive({ ...offer, partner_id: me.id, status: "RIDER_ASSIGNED" });
     setOffer(null);
   }
@@ -906,6 +908,7 @@ function RiderPortal() {
           secs={secs}
           onAccept={acceptOffer}
           onDecline={async () => {
+            console.log(`[Rider Response: DECLINED] order ${offer.id} rider ${me.id}`);
             await rejectOffer(offer.id, me.id, offer.rejected_partner_ids ?? []);
             setOffer(null);
           }}

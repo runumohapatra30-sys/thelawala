@@ -7,6 +7,7 @@ import { OrderChat } from "@/components/OrderChat";
 import { OrderAlerts } from "@/components/OrderAlerts";
 import { inr, STATUS_LABEL } from "@/lib/fees";
 import { openInvoice, type InvoiceOrder } from "@/lib/invoice";
+import { OrderDeliveredRating } from "@/components/OrderDeliveredRating";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/orders/$id")({
@@ -60,6 +61,7 @@ function Track() {
   const [refundMsg, setRefundMsg] = useState<string | null>(null);
   const [tipMsg, setTipMsg] = useState<string | null>(null);
   const [customTip, setCustomTip] = useState("");
+  const [rateOpen, setRateOpen] = useState(false);
 
   useEffect(() => {
     if (!splash) return;
@@ -132,6 +134,18 @@ function Track() {
     };
   }, [partnerId]);
 
+  useEffect(() => {
+    if (!order || order.status !== "DELIVERED" || !user?.id) return;
+    let alive = true;
+    supabase
+      .from("order_ratings")
+      .select("id")
+      .eq("order_id", order.id)
+      .maybeSingle()
+      .then(({ data }) => { if (alive && !data) setRateOpen(true); });
+    return () => { alive = false; };
+  }, [order?.status, order?.id, user?.id]);
+
   async function cancelOrder() {
     if (!order) return;
     await supabase
@@ -157,6 +171,19 @@ function Track() {
 
   return (
     <Shell>
+      {rateOpen && order.status === "DELIVERED" ? (
+        <OrderDeliveredRating
+          orderId={order.id}
+          userId={user?.id}
+          vendorId={order.vendor_id}
+          partnerId={order.partner_id}
+          riderName={rider?.name ?? "your delivery partner"}
+          stallName={vendor?.stall_name ?? "the stall"}
+          deliveredAt={(order as unknown as { delivered_at: string | null }).delivered_at}
+          onDone={() => setRateOpen(false)}
+        />
+      ) : null}
+
       {splash ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-primary text-primary-foreground">
           <div className="animate-pulse text-center">

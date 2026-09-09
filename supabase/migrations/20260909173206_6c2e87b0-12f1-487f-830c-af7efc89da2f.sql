@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.orders_auto_dispatch() FROM PUBLIC, anon, authenticated;

@@ -416,6 +416,7 @@ export type Database = {
           pan_number: string | null
           photo_url: string | null
           profile_photo_url: string | null
+          rejection_reason: string | null
           status: string
           terms_accepted_at: string | null
           updated_at: string
@@ -450,6 +451,7 @@ export type Database = {
           pan_number?: string | null
           photo_url?: string | null
           profile_photo_url?: string | null
+          rejection_reason?: string | null
           status?: string
           terms_accepted_at?: string | null
           updated_at?: string
@@ -484,6 +486,7 @@ export type Database = {
           pan_number?: string | null
           photo_url?: string | null
           profile_photo_url?: string | null
+          rejection_reason?: string | null
           status?: string
           terms_accepted_at?: string | null
           updated_at?: string
@@ -1478,6 +1481,7 @@ export type Database = {
           owner_name: string | null
           pan_number: string | null
           photo_url: string | null
+          rejection_reason: string | null
           stall_name: string
           stall_photos: string[]
           status: string
@@ -1512,6 +1516,7 @@ export type Database = {
           owner_name?: string | null
           pan_number?: string | null
           photo_url?: string | null
+          rejection_reason?: string | null
           stall_name: string
           stall_photos?: string[]
           status?: string
@@ -1546,6 +1551,7 @@ export type Database = {
           owner_name?: string | null
           pan_number?: string | null
           photo_url?: string | null
+          rejection_reason?: string | null
           stall_name?: string
           stall_photos?: string[]
           status?: string

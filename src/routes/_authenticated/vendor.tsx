@@ -129,7 +129,12 @@ function VendorPortal() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "orders", filter: `vendor_id=eq.${vendor.id}` },
-        () => { load(); loadToday(); },
+        (payload) => {
+          const row = payload.new as { id?: string } | null;
+          console.log(`[Vendor Realtime Received -> Order ID: ${row?.id ?? "unknown"}]`);
+          load();
+          loadToday();
+        },
       )
       .subscribe();
 
@@ -169,7 +174,10 @@ function VendorPortal() {
       toast.error(`Could not update this order: ${error.message}`);
       return;
     }
-    if (effective === "SEARCHING_RIDER") await offerToNearestPartner(o.id);
+    if (effective === "SEARCHING_RIDER") {
+      const riderId = await offerToNearestPartner(o.id);
+      console.log(`[Dispatched to Rider ID: ${riderId ?? "none available"}] order ${o.id}`);
+    }
   }
 
   async function addDish(): Promise<void> {
