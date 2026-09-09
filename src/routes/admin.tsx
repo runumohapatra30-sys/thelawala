@@ -9,6 +9,7 @@ import { AdminReports } from "@/components/AdminReports";
 import { SystemHealthCard } from "@/components/SystemHealthCard";
 import { AdminApprovals } from "@/components/AdminApprovals";
 import { RevenueSplit } from "@/components/RevenueSplit";
+import { CashRemittances } from "@/components/CashRemittances";
 import { supabase } from "@/integrations/supabase/client";
 import { listCoupons, type Coupon } from "@/lib/coupons";
 import { inr, STATUS_LABEL, type Settings } from "@/lib/fees";
@@ -224,6 +225,7 @@ function Admin() {
 
         <SupportQueue adminId={user.id} />
 
+        <CashRemittances />
         <PayoutQueue />
         <LiveOrders />
         <CustomerManager />
