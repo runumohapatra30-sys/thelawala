@@ -9,6 +9,7 @@ import {
   type Campaign,
   type PromoCard,
 } from "@/lib/marketing";
+import { SmartAssetManager } from "@/components/SmartAssetManager";
 
 const inputCls =
   "w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary";
@@ -32,6 +33,7 @@ export function MarketingManager() {
     <div className="space-y-3">
       <BannerManager vendors={vendors} cats={cats} />
       <CampaignBuilder cats={cats} />
+      <SmartAssetManager />
     </div>
   );
 }
