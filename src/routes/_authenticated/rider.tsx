@@ -745,11 +745,7 @@ function RiderPortal() {
             ) : null}
 
             <button
-              onClick={() => {
-                setCancelMsg(null);
-                setCancelReason(trip.cancel_reason ?? CANCEL_REASONS[0]!);
-                setCancelOpen(true);
-              }}
+              onClick={openCancel}
               className="press w-full rounded-xl border-2 border-destructive py-3 text-sm font-bold text-destructive"
             >
               Cancel order
