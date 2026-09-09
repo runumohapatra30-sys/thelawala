@@ -5,6 +5,7 @@ import { Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { cart, cartTotals, useCart } from "@/lib/cart";
 import { inr } from "@/lib/fees";
+import { foodImage } from "@/lib/foodImage";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/")({
@@ -249,24 +250,49 @@ function Home() {
       <section className="px-5 pt-6">
         <h2 className="text-[17px] font-extrabold">Quick bites</h2>
         <p className="mt-0.5 text-xs font-medium text-muted-foreground">Pick a craving, we do the running</p>
-        <div className="mt-3 grid grid-cols-4 gap-2.5">
+        <div className="mt-3 flex snap-x gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <button
             onClick={() => setActive(null)}
             style={{ animationDelay: "0ms" }}
-            className={`press rise-in aspect-square rounded-[1.35rem] p-2 text-center transition-all ${!active ? "ring-2 ring-primary" : ""} ${TINTS[0]} shadow-[0_10px_22px_-16px_rgba(15,23,42,0.7)]`}
+            className="press rise-in w-[74px] shrink-0 snap-start text-center"
           >
-            <span className="mt-1 block text-2xl float-slow">🍽️</span>
-            <span className="mt-1 block text-[10px] font-extrabold leading-tight">All</span>
+            <span
+              className={`relative block aspect-square overflow-hidden rounded-[1.5rem] ${TINTS[0]} shadow-[0_12px_24px_-16px_rgba(15,23,42,0.75)] ring-offset-2 transition-all ${!active ? "ring-2 ring-primary" : ""}`}
+            >
+              <img
+                src="/food/food-thali.jpg"
+                alt="All street food"
+                loading="lazy"
+                className="h-full w-full object-cover"
+              />
+              <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/45 to-transparent" />
+            </span>
+            <span className="mt-1.5 block text-[10.5px] font-extrabold leading-tight">All</span>
           </button>
           {cats.map((c, idx) => (
             <button
               key={c.id}
               onClick={() => setActive(c.id)}
               style={{ animationDelay: `${(idx + 1) * 50}ms` }}
-              className={`press rise-in aspect-square rounded-[1.35rem] p-2 text-center transition-all ${active === c.id ? "ring-2 ring-primary" : ""} ${TINTS[(idx + 1) % TINTS.length]} shadow-[0_10px_22px_-16px_rgba(15,23,42,0.7)]`}
+              className="press rise-in w-[74px] shrink-0 snap-start text-center"
             >
-              <span className="mt-1 block text-2xl float-slow" style={{ animationDelay: `${idx * 0.35}s` }}>{c.emoji ?? "🥘"}</span>
-              <span className="mt-1 block truncate text-[10px] font-extrabold leading-tight">{c.name}</span>
+              <span
+                className={`relative block aspect-square overflow-hidden rounded-[1.5rem] ${TINTS[(idx + 1) % TINTS.length]} shadow-[0_12px_24px_-16px_rgba(15,23,42,0.75)] transition-all ${active === c.id ? "ring-2 ring-primary" : ""}`}
+              >
+                <img
+                  src={foodImage(c.name)}
+                  alt={c.name}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+                <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/45 to-transparent" />
+                {c.emoji ? (
+                  <span className="absolute left-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-card/85 text-[11px] shadow-sm">
+                    {c.emoji}
+                  </span>
+                ) : null}
+              </span>
+              <span className="mt-1.5 block truncate text-[10.5px] font-extrabold leading-tight">{c.name}</span>
             </button>
           ))}
         </div>
