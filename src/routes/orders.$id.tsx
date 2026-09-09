@@ -24,7 +24,7 @@ export const Route = createFileRoute("/orders/$id")({
   component: Track,
 });
 
-const FLOW = ["ORDER_PLACED", "PREPARING", "READY_FOR_PICKUP", "RIDER_ASSIGNED", "OUT_FOR_DELIVERY", "DELIVERED"];
+const FLOW = ["ORDER_PLACED", "PREPARING", "READY_FOR_PICKUP", "SEARCHING_RIDER", "RIDER_ASSIGNED", "OUT_FOR_DELIVERY", "DELIVERED"];
 const REASONS = [
   "Ordered by mistake",
   "Taking too long",

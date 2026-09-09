@@ -30,7 +30,7 @@ function Cart() {
   const navigate = useNavigate();
   const { user } = useSession();
   const lines = useCart();
-  const { foodTotal, mrpTotal } = cartTotals(lines);
+  const { foodTotal, mrpTotal, baseTotal } = cartTotals(lines);
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [vendor, setVendor] = useState<{ id: string; stall_name: string; lat: number; lng: number } | null>(null);
@@ -230,6 +230,7 @@ function Cart() {
         drop_lng: coords.lng,
         distance_km: bill.distanceKm,
         food_total: bill.foodTotal,
+        base_food_total: Math.round(baseTotal * 100) / 100,
         delivery_fee: bill.deliveryFee,
         platform_fee: bill.platformFee,
         handling_fee: bill.handlingFee,

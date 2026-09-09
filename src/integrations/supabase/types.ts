@@ -56,6 +56,102 @@ export type Database = {
         }
         Relationships: []
       }
+      banners: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          id: string
+          image_path: string | null
+          image_url: string
+          is_active: boolean
+          priority: number
+          target_type: string
+          updated_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          image_path?: string | null
+          image_url: string
+          is_active?: boolean
+          priority?: number
+          target_type?: string
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          image_path?: string | null
+          image_url?: string
+          is_active?: boolean
+          priority?: number
+          target_type?: string
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banners_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banners_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          created_at: string
+          deals_section_active: boolean
+          id: string
+          is_active: boolean
+          promo_cards: Json
+          theme_bg_color: string | null
+          theme_bg_image_url: string | null
+          title: string
+          top_tab_icon_url: string | null
+          top_tab_label: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deals_section_active?: boolean
+          id?: string
+          is_active?: boolean
+          promo_cards?: Json
+          theme_bg_color?: string | null
+          theme_bg_image_url?: string | null
+          title: string
+          top_tab_icon_url?: string | null
+          top_tab_label?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deals_section_active?: boolean
+          id?: string
+          is_active?: boolean
+          promo_cards?: Json
+          theme_bg_color?: string | null
+          theme_bg_image_url?: string | null
+          title?: string
+          top_tab_icon_url?: string | null
+          top_tab_label?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           emoji: string | null
@@ -557,6 +653,7 @@ export type Database = {
         Row: {
           accepted_at: string | null
           address_line: string
+          base_food_total: number
           cancel_otp: string | null
           cancel_reason: string | null
           cancel_requested_at: string | null
@@ -610,6 +707,7 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           address_line: string
+          base_food_total?: number
           cancel_otp?: string | null
           cancel_reason?: string | null
           cancel_requested_at?: string | null
@@ -663,6 +761,7 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           address_line?: string
+          base_food_total?: number
           cancel_otp?: string | null
           cancel_reason?: string | null
           cancel_requested_at?: string | null

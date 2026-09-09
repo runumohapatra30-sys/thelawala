@@ -5,9 +5,13 @@ import { Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { cart, cartTotals, useCart } from "@/lib/cart";
 import { inr } from "@/lib/fees";
+import { customerPrice } from "@/lib/pricing";
 import { foodImage } from "@/lib/foodImage";
 import { InstallAppButton } from "@/components/InstallApp";
 import { useSession } from "@/lib/session";
+import { BannerCarousel } from "@/components/BannerCarousel";
+import { FestiveWidget } from "@/components/FestiveWidget";
+import { activeCampaign, type Campaign } from "@/lib/marketing";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -65,8 +69,11 @@ function Home() {
   const [onlyFav, setOnlyFav] = useState(false);
   const [onlyVeg, setOnlyVeg] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [vendorFilter, setVendorFilter] = useState<string | null>(null);
+  const [campaign, setCampaign] = useState<Campaign | null>(null);
 
   useEffect(() => {
+    activeCampaign().then(setCampaign);
     supabase.from("categories").select("id,name,emoji").order("sort_order").then(({ data }) => setCats(data ?? []));
     supabase.from("vendors").select("id,stall_name,is_open").eq("status", "APPROVED").then(({ data }) => setVendors(data ?? []));
     supabase
@@ -121,6 +128,7 @@ function Home() {
   const shown = items.filter(
     (i) =>
       (!active || i.category_id === active) &&
+      (!vendorFilter || i.vendor_id === vendorFilter) &&
       (!q || i.name.toLowerCase().includes(q.toLowerCase())) &&
       (!onlyVeg || i.food_type !== "NONVEG") &&
       (!onlyFav || favs.includes(i.id)),
@@ -133,8 +141,9 @@ function Home() {
       name: i.name,
       photo: i.photo_url,
       unit: i.unit,
-      price: Number(i.price),
-      mrp: Number(i.mrp),
+      base: Number(i.price),
+      price: customerPrice(i.price),
+      mrp: customerPrice(i.mrp),
     });
     if (!res.ok) setToast(res.error);
     else setToast(null);
@@ -249,6 +258,13 @@ function Home() {
         </div>
       ) : null}
 
+      <BannerCarousel
+        onCategory={(id) => { setActive(id); setVendorFilter(null); }}
+        onVendor={(id) => { setVendorFilter(id); setActive(null); }}
+      />
+
+      <FestiveWidget campaign={campaign} onFilter={(v) => { setQ(v); setActive(null); setVendorFilter(null); }} />
+
       <section className="px-5 pt-6">
         <h2 className="text-[17px] font-extrabold">Quick bites</h2>
         <p className="mt-0.5 text-xs font-medium text-muted-foreground">Pick a craving, we do the running</p>
@@ -271,6 +287,23 @@ function Home() {
             </span>
             <span className="mt-1.5 block text-[10.5px] font-extrabold leading-tight">All</span>
           </button>
+          {campaign?.top_tab_label ? (
+            <button
+              onClick={() => { setQ(campaign.top_tab_label ?? ""); setActive(null); setVendorFilter(null); }}
+              className="press rise-in w-[74px] shrink-0 snap-start text-center"
+            >
+              <span className="relative block aspect-square overflow-hidden rounded-[1.5rem] shadow-[0_12px_24px_-16px_rgba(15,23,42,0.75)] ring-2 ring-primary">
+                <img
+                  src={campaign.top_tab_icon_url || "/food/food-sweets.jpg"}
+                  alt={campaign.top_tab_label}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+                <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/45 to-transparent" />
+              </span>
+              <span className="mt-1.5 block truncate text-[10.5px] font-extrabold leading-tight">{campaign.top_tab_label}</span>
+            </button>
+          ) : null}
           {cats.map((c, idx) => (
             <button
               key={c.id}
@@ -302,6 +335,14 @@ function Home() {
 
       <section className="flex items-center gap-2 px-5 pt-7">
         <h2 className="mr-auto text-[17px] font-extrabold">Trending stalls</h2>
+        {vendorFilter ? (
+          <button
+            onClick={() => setVendorFilter(null)}
+            className="press rounded-full border border-primary bg-[color-mix(in_oklab,var(--color-primary)_10%,white)] px-3 py-1.5 text-[11px] font-extrabold text-primary"
+          >
+            {vendorName[vendorFilter] ?? "Stall"} ✕
+          </button>
+        ) : null}
         <button
           onClick={() => setOnlyVeg((v) => !v)}
           className={`press rounded-full border px-3 py-1.5 text-[11px] font-extrabold ${onlyVeg ? "border-primary bg-[color-mix(in_oklab,var(--color-primary)_10%,white)] text-primary" : "border-border text-muted-foreground"}`}
@@ -319,9 +360,9 @@ function Home() {
       <div className="grid grid-cols-2 gap-3.5 px-5 pb-36 pt-3">
         {shown.map((i, idx) => {
           const line = lines.find((l) => l.itemId === i.id);
-          const off = Number(i.mrp) > Number(i.price)
-            ? Math.round(((Number(i.mrp) - Number(i.price)) / Number(i.mrp)) * 100)
-            : 0;
+          const shownPrice = customerPrice(i.price);
+          const shownMrp = customerPrice(i.mrp);
+          const off = shownMrp > shownPrice ? Math.round(((shownMrp - shownPrice) / shownMrp) * 100) : 0;
           return (
             <div key={i.id} style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }} className="press rise-in card-elevated p-2.5 hover:-translate-y-0.5">
               <div className="relative">
@@ -356,9 +397,9 @@ function Home() {
               </p>
               <div className="mt-2.5 flex items-center justify-between px-0.5">
                 <p className="text-[15px] font-extrabold text-primary">
-                  {inr(Number(i.price))}{" "}
+                  {inr(shownPrice)}{" "}
                   {off > 0 ? (
-                    <span className="text-[11px] font-medium text-muted-foreground line-through">{inr(Number(i.mrp))}</span>
+                    <span className="text-[11px] font-medium text-muted-foreground line-through">{inr(shownMrp)}</span>
                   ) : null}
                 </p>
                 {!i.in_stock ? null : line ? (
