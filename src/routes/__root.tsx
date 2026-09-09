@@ -1,3 +1,4 @@
+import { PwaUpdater } from "@/components/PwaUpdater";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -136,6 +137,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      <PwaUpdater />
     </QueryClientProvider>
   );
 }
