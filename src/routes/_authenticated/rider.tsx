@@ -109,7 +109,17 @@ function RiderPortal() {
   const [showComplete, setShowComplete] = useState(false);
   const [earnings, setEarnings] = useState({ trips: 0, total: 0 });
   const [week, setWeek] = useState({ trips: 0, total: 0, rating: 0 });
-  const [form, setForm] = useState({ name: "", mobile: "", vehicle_no: "", dl_number: "" });
+  const [form, setForm] = useState({
+    name: "", mobile: "", emergency_phone: "", address: "", vehicle_no: "", dl_number: "",
+    pan: "", identity_proof_type: "Aadhaar", identity_number: "", vehicle_type: "EV_SCOOTER",
+    bank_holder: "", bank_name: "", bank_account_no: "", bank_ifsc: "", upi_id: "",
+  });
+  const [zones, setZones] = useState<string[]>([]);
+  const [docs, setDocs] = useState<{ photo: File | null; panCard: File | null; idDoc: File | null; dlDoc: File | null; bankProof: File | null }>({
+    photo: null, panCard: null, idDoc: null, dlDoc: null, bankProof: null,
+  });
+  const [terms, setTerms] = useState(false);
+  const [regBusy, setRegBusy] = useState(false);
   const [dlDraft, setDlDraft] = useState("");
   const [dlMsg, setDlMsg] = useState<string | null>(null);
   const [dlSaving, setDlSaving] = useState(false);
