@@ -50,7 +50,6 @@ export function InstallAppButton({ className = "" }: { className?: string }) {
   const { canInstall, installed, isIOS, install } = useInstallApp();
   const [tip, setTip] = useState(false);
   if (installed) return null;
-  if (!canInstall && !isIOS) return null;
 
   return (
     <>
