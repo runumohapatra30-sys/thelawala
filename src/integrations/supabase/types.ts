@@ -712,6 +712,81 @@ export type Database = {
           },
         ]
       }
+      payout_requests: {
+        Row: {
+          admin_note: string | null
+          amount: number
+          bank_account_no: string | null
+          bank_holder: string | null
+          bank_ifsc: string | null
+          created_at: string
+          id: string
+          method: string
+          partner_id: string | null
+          party_type: string
+          payment_reference: string | null
+          processed_at: string | null
+          requested_by: string
+          status: string
+          updated_at: string
+          upi_id: string | null
+          vendor_id: string | null
+        }
+        Insert: {
+          admin_note?: string | null
+          amount: number
+          bank_account_no?: string | null
+          bank_holder?: string | null
+          bank_ifsc?: string | null
+          created_at?: string
+          id?: string
+          method?: string
+          partner_id?: string | null
+          party_type: string
+          payment_reference?: string | null
+          processed_at?: string | null
+          requested_by: string
+          status?: string
+          updated_at?: string
+          upi_id?: string | null
+          vendor_id?: string | null
+        }
+        Update: {
+          admin_note?: string | null
+          amount?: number
+          bank_account_no?: string | null
+          bank_holder?: string | null
+          bank_ifsc?: string | null
+          created_at?: string
+          id?: string
+          method?: string
+          partner_id?: string | null
+          party_type?: string
+          payment_reference?: string | null
+          processed_at?: string | null
+          requested_by?: string
+          status?: string
+          updated_at?: string
+          upi_id?: string | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_requests_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_requests_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -719,6 +794,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          is_blocked: boolean
           mobile: string | null
           referral_code: string | null
           referred_by: string | null
@@ -730,6 +806,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          is_blocked?: boolean
           mobile?: string | null
           referral_code?: string | null
           referred_by?: string | null
@@ -741,6 +818,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          is_blocked?: boolean
           mobile?: string | null
           referral_code?: string | null
           referred_by?: string | null
@@ -1150,6 +1228,15 @@ export type Database = {
         Args: { _order_id: string; _otp: string }
         Returns: undefined
       }
+      decide_payout: {
+        Args: {
+          _approve: boolean
+          _note?: string
+          _reference?: string
+          _request_id: string
+        }
+        Returns: undefined
+      }
       decide_refund: {
         Args: { _admin_note?: string; _approve: boolean; _request_id: string }
         Returns: undefined
@@ -1165,6 +1252,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      partner_balance: { Args: { _partner_id: string }; Returns: number }
+      request_payout: {
+        Args: {
+          _amount: number
+          _bank_account_no?: string
+          _bank_holder?: string
+          _bank_ifsc?: string
+          _method?: string
+          _party_type: string
+          _upi_id?: string
+        }
+        Returns: string
+      }
       request_refund: {
         Args: {
           _amount: number
@@ -1178,6 +1278,7 @@ export type Database = {
         Returns: string
       }
       request_wallet_closure: { Args: never; Returns: string }
+      vendor_balance: { Args: { _vendor_id: string }; Returns: number }
       wallet_credit: {
         Args: {
           _amount: number
