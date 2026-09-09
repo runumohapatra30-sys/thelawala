@@ -37,9 +37,56 @@ export function PageStudio() {
   const [drag, setDrag] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const askCopilot = useServerFn(layoutCopilot);
+  const [prompt, setPrompt] = useState("");
+  const [thinking, setThinking] = useState(false);
+  const [variants, setVariants] = useState<
+    { key: string; label: string; sections: PageSection[]; explanation_od: string }[]
+  >([]);
+  const [chosen, setChosen] = useState<string | null>(null);
+
   useEffect(() => {
     loadLayout(app, page).then((s) => { setSections(s); setPicked(null); });
+    setVariants([]);
+    setChosen(null);
   }, [app, page]);
+
+  async function runCopilot() {
+    if (prompt.trim().length < 2) { toast.error("Kichhi likhantu — kemiti badalibe."); return; }
+    setThinking(true);
+    try {
+      const res = await askCopilot({
+        data: { app, page, prompt: prompt.trim(), sections },
+      });
+      const list = res.variants.map((v) => ({
+        key: v.key,
+        label: v.label,
+        explanation_od: v.explanation_od,
+        sections: (v.sections as PageSection[]).map((s, i) => ({
+          ...s,
+          order: i + 1,
+          config: (s.config ?? {}) as SectionConfig,
+        })),
+      }));
+      setVariants(list);
+      const first = list[0];
+      if (first) { setChosen(first.key); setSections(first.sections); }
+      toast.success(res.ai ? "AI 3 ta design bahara kala." : "Design variant taiyar (offline mode).");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "AI kaam kalanahin. Aau tie try karantu.");
+    } finally {
+      setThinking(false);
+    }
+  }
+
+  function useVariant(key: string) {
+    const v = variants.find((x) => x.key === key);
+    if (!v) return;
+    setChosen(key);
+    setSections(v.sections);
+    setPicked(null);
+  }
+
 
   function switchApp(next: TargetApp) {
     setApp(next);
