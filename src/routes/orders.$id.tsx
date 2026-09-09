@@ -193,21 +193,10 @@ function Track() {
           />
         ) : null}
 
-        {live && order.payment_status !== "PAID" ? (
-          <div className="card-soft grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border border-border p-3">
-            <p className="min-w-0 text-sm font-bold">
-              Pay {inr(Number(order.grand_total) + Number(order.tip_amount ?? 0))} before or on delivery
-            </p>
-            <Link to="/wallet" className="press shrink-0 rounded-full bg-primary px-3 py-1.5 text-[11px] font-black text-primary-foreground">
-              Pay Online
-            </Link>
-          </div>
-        ) : null}
-
         {live && order.cancel_otp ? (
-          <div className="card-soft border-2 border-destructive p-4 text-center">
+          <div className="card-soft border-2 border-destructive p-4 text-center animate-pulse-slow">
             <p className="text-xs font-semibold text-destructive">
-              Your delivery partner is cancelling this order
+              Your delivery partner wants to cancel this order
               {order.cancel_reason ? ` · ${order.cancel_reason}` : ""}
             </p>
             <p className="mt-1 text-xs font-semibold text-muted-foreground">
@@ -233,6 +222,17 @@ function Track() {
                 </span>
               ))}
             </div>
+          </div>
+        ) : null}
+
+        {live && order.payment_status !== "PAID" ? (
+          <div className="card-soft grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border border-border p-3">
+            <p className="min-w-0 text-sm font-bold">
+              Pay {inr(Number(order.grand_total) + Number(order.tip_amount ?? 0))} before or on delivery
+            </p>
+            <Link to="/wallet" className="press shrink-0 rounded-full bg-primary px-3 py-1.5 text-[11px] font-black text-primary-foreground">
+              Pay Online
+            </Link>
           </div>
         ) : null}
 
