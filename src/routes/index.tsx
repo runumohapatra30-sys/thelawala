@@ -142,7 +142,9 @@ function Home() {
       <header className="brand-header sticky top-0 z-30 rounded-b-[2.75rem] px-5 pb-5 pt-5 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)]">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
           <Link to="/cart" className="min-w-0 text-left">
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] opacity-70">Delivery in</p>
+            <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] opacity-80">
+              <span className="live-dot" /> Live · Delivery in
+            </p>
             <p className="text-[22px] font-extrabold leading-tight">15–20 minutes</p>
             <p className="mt-1 flex items-center gap-1 text-xs font-semibold opacity-80">
               <span className="truncate">{address ?? "Bhubaneswar · set your address"}</span>
@@ -208,6 +210,19 @@ function Home() {
             <rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0014 0M12 18v3" strokeLinecap="round" />
           </svg>
         </div>
+
+        <div className="mt-3.5 overflow-hidden rounded-full glass-chip py-1.5">
+          <div className="marquee-track">
+            {[0, 1].map((n) => (
+              <span key={n} aria-hidden={n === 1} className="flex shrink-0 items-center gap-6 pr-6 text-[11px] font-extrabold">
+                <span>⚡ Free delivery on your first order</span>
+                <span>🥘 Fresh from the thela, straight to you</span>
+                <span>🎁 Refer a friend · both earn ₹25</span>
+                <span>🚴 Live tracking on every order</span>
+              </span>
+            ))}
+          </div>
+        </div>
       </header>
 
       {menu ? (
@@ -236,18 +251,20 @@ function Home() {
         <div className="mt-3 grid grid-cols-4 gap-2.5">
           <button
             onClick={() => setActive(null)}
-            className={`press aspect-square rounded-[1.35rem] p-2 text-center transition-all ${!active ? "ring-2 ring-primary" : ""} ${TINTS[0]} shadow-[0_10px_22px_-16px_rgba(15,23,42,0.7)]`}
+            style={{ animationDelay: "0ms" }}
+            className={`press rise-in aspect-square rounded-[1.35rem] p-2 text-center transition-all ${!active ? "ring-2 ring-primary" : ""} ${TINTS[0]} shadow-[0_10px_22px_-16px_rgba(15,23,42,0.7)]`}
           >
-            <span className="mt-1 block text-2xl">🍽️</span>
+            <span className="mt-1 block text-2xl float-slow">🍽️</span>
             <span className="mt-1 block text-[10px] font-extrabold leading-tight">All</span>
           </button>
           {cats.map((c, idx) => (
             <button
               key={c.id}
               onClick={() => setActive(c.id)}
-              className={`press aspect-square rounded-[1.35rem] p-2 text-center transition-all ${active === c.id ? "ring-2 ring-primary" : ""} ${TINTS[(idx + 1) % TINTS.length]} shadow-[0_10px_22px_-16px_rgba(15,23,42,0.7)]`}
+              style={{ animationDelay: `${(idx + 1) * 50}ms` }}
+              className={`press rise-in aspect-square rounded-[1.35rem] p-2 text-center transition-all ${active === c.id ? "ring-2 ring-primary" : ""} ${TINTS[(idx + 1) % TINTS.length]} shadow-[0_10px_22px_-16px_rgba(15,23,42,0.7)]`}
             >
-              <span className="mt-1 block text-2xl">{c.emoji ?? "🥘"}</span>
+              <span className="mt-1 block text-2xl float-slow" style={{ animationDelay: `${idx * 0.35}s` }}>{c.emoji ?? "🥘"}</span>
               <span className="mt-1 block truncate text-[10px] font-extrabold leading-tight">{c.name}</span>
             </button>
           ))}
@@ -271,13 +288,13 @@ function Home() {
       </section>
 
       <div className="grid grid-cols-2 gap-3.5 px-5 pb-36 pt-3">
-        {shown.map((i) => {
+        {shown.map((i, idx) => {
           const line = lines.find((l) => l.itemId === i.id);
           const off = Number(i.mrp) > Number(i.price)
             ? Math.round(((Number(i.mrp) - Number(i.price)) / Number(i.mrp)) * 100)
             : 0;
           return (
-            <div key={i.id} className="press card-elevated p-2.5 hover:-translate-y-0.5">
+            <div key={i.id} style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }} className="press rise-in card-elevated p-2.5 hover:-translate-y-0.5">
               <div className="relative">
                 <img
                   src={i.photo_url ?? "/food/food-tiffin.jpg"}
@@ -324,7 +341,7 @@ function Home() {
                 ) : (
                   <button
                     onClick={() => add(i)}
-                    className="press rounded-full border border-primary bg-[color-mix(in_oklab,var(--color-primary)_8%,white)] px-3.5 py-1.5 text-[11px] font-extrabold text-primary shadow-[0_8px_18px_-12px_var(--color-primary)]"
+                    className="press shine rounded-full border border-primary bg-[color-mix(in_oklab,var(--color-primary)_8%,white)] px-3.5 py-1.5 text-[11px] font-extrabold text-primary shadow-[0_8px_18px_-12px_var(--color-primary)]"
                   >
                     ADD
                   </button>
@@ -345,7 +362,7 @@ function Home() {
         <div className="fixed inset-x-0 bottom-[104px] z-40 mx-auto w-full max-w-[480px] px-3">
           <Link
             to="/cart"
-            className="press flex items-center justify-between rounded-xl bg-primary px-4 py-3 text-primary-foreground shadow-lg"
+            className="press pop-in shine flex items-center justify-between rounded-full bg-primary px-5 py-3.5 text-primary-foreground shadow-[0_18px_36px_-14px_var(--color-primary)]"
           >
             <span className="text-sm font-bold">{count} item{count > 1 ? "s" : ""} · {inr(foodTotal)}</span>
             <span className="text-sm font-bold">View cart ›</span>
