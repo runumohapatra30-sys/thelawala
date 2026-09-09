@@ -11,8 +11,20 @@ import {
 
 const FRAME_W = 375;
 const PAD = 20;
-const MEDIA_W = FRAME_W - PAD * 2;
+const MEDIA_W = Math.round((FRAME_W - PAD * 2) * 0.88);
 const MAX_MB = 5;
+const MIN_H = 100;
+const MAX_H = 220;
+
+const ROUTE_PRESETS = [
+  { label: "No link", value: "" },
+  { label: "Become a delivery partner", value: "/rider" },
+  { label: "Partner with us (stall owner)", value: "/vendor" },
+  { label: "All categories", value: "/categories" },
+  { label: "My orders", value: "/orders" },
+  { label: "Wallet", value: "/wallet" },
+  { label: "Custom link…", value: "__custom" },
+];
 
 const inputCls =
   "w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary";
@@ -25,6 +37,7 @@ export function BannerStudio() {
   const [height, setHeight] = useState(140);
   const [radius, setRadius] = useState(16);
   const [route, setRoute] = useState("");
+  const [custom, setCustom] = useState(false);
   const [order, setOrder] = useState("1");
   const [busy, setBusy] = useState(false);
 
@@ -76,6 +89,7 @@ export function BannerStudio() {
     setFile(null);
     setPreview(null);
     setRoute("");
+    setCustom(false);
     load();
   }
 
@@ -110,8 +124,8 @@ export function BannerStudio() {
             <div style={{ padding: PAD }}>
               <Resizable
                 size={{ width: MEDIA_W, height }}
-                minHeight={80}
-                maxHeight={420}
+                minHeight={MIN_H}
+                maxHeight={MAX_H}
                 enable={{ bottom: true }}
                 onResize={(_e, _d, ref) => setHeight(ref.offsetHeight)}
                 handleComponent={{
@@ -168,8 +182,8 @@ export function BannerStudio() {
             Height ({Math.round(height)}px)
             <input
               type="range"
-              min={80}
-              max={420}
+              min={MIN_H}
+              max={MAX_H}
               value={height}
               onChange={(e) => setHeight(Number(e.target.value))}
               className="mt-2 w-full accent-primary"
@@ -189,13 +203,29 @@ export function BannerStudio() {
           </label>
 
           <label className="block text-xs font-bold text-muted-foreground">
-            Tap destination (e.g. /categories or /orders)
-            <input
-              value={route}
-              onChange={(e) => setRoute(e.target.value)}
-              placeholder="/categories"
+            Tap destination
+            <select
+              value={custom ? "__custom" : route}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "__custom") { setCustom(true); setRoute(""); return; }
+                setCustom(false);
+                setRoute(v);
+              }}
               className={`${inputCls} mt-1`}
-            />
+            >
+              {ROUTE_PRESETS.map((p) => (
+                <option key={p.label} value={p.value}>{p.label}</option>
+              ))}
+            </select>
+            {custom ? (
+              <input
+                value={route}
+                onChange={(e) => setRoute(e.target.value)}
+                placeholder="/categories or https://…"
+                className={`${inputCls} mt-2`}
+              />
+            ) : null}
           </label>
 
           <label className="block text-xs font-bold text-muted-foreground">
