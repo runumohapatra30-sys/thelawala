@@ -11,8 +11,20 @@ import {
 
 const FRAME_W = 375;
 const PAD = 20;
-const MEDIA_W = FRAME_W - PAD * 2;
+const MEDIA_W = Math.round((FRAME_W - PAD * 2) * 0.88);
 const MAX_MB = 5;
+const MIN_H = 100;
+const MAX_H = 220;
+
+const ROUTE_PRESETS = [
+  { label: "No link", value: "" },
+  { label: "Become a delivery partner", value: "/rider" },
+  { label: "Partner with us (stall owner)", value: "/vendor" },
+  { label: "All categories", value: "/categories" },
+  { label: "My orders", value: "/orders" },
+  { label: "Wallet", value: "/wallet" },
+  { label: "Custom link…", value: "__custom" },
+];
 
 const inputCls =
   "w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary";
