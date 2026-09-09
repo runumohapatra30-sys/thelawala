@@ -194,15 +194,15 @@ function Home() {
           </div>
         </div>
 
-        <div className="mt-3 flex items-center gap-2 rounded-full bg-card px-3 py-2.5 shadow-sm">
-          <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2">
+        <div className="mt-4 flex items-center gap-2.5 rounded-3xl bg-card px-4 py-3.5 shadow-[0_14px_30px_-18px_rgba(15,23,42,0.5)]">
+          <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2.2">
             <circle cx="11" cy="11" r="6.5" /><path d="M16 16l4 4" strokeLinecap="round" />
           </svg>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder='Search "dahi bara"'
-            className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none"
+            className="min-w-0 flex-1 bg-transparent text-sm font-medium text-foreground outline-none"
           />
           <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2">
             <rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0014 0M12 18v3" strokeLinecap="round" />
