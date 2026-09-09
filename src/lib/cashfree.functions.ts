@@ -13,10 +13,17 @@ type Input = {
 
 export type CashfreeCheckout = { linkUrl: string };
 
+function parseLive(raw: string | undefined): boolean {
+  const v = (raw ?? "").trim().toLowerCase();
+  if (!v) return false;
+  // Anything that is not clearly "test/sandbox/off" counts as live mode.
+  return !["false", "0", "no", "off", "test", "sandbox"].includes(v);
+}
+
 export async function cashfreeCreds(): Promise<{ appId: string; secret: string; base: string }> {
-  let appId = process.env["CASHFREE_APP_ID"] ?? "";
-  let secret = process.env["CASHFREE_SECRET_KEY"] ?? "";
-  let live = process.env["CASHFREE_LIVE"] === "true";
+  let appId = (process.env["CASHFREE_APP_ID"] ?? "").trim();
+  let secret = (process.env["CASHFREE_SECRET_KEY"] ?? "").trim();
+  let live = parseLive(process.env["CASHFREE_LIVE"]);
 
   if (!appId || !secret) {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -25,13 +32,17 @@ export async function cashfreeCreds(): Promise<{ appId: string; secret: string; 
       .select("cashfree_app_id,cashfree_secret,is_live")
       .eq("id", true)
       .maybeSingle();
-    appId = data?.cashfree_app_id ?? "";
-    secret = data?.cashfree_secret ?? "";
+    appId = (data?.cashfree_app_id ?? "").trim();
+    secret = (data?.cashfree_secret ?? "").trim();
     live = Boolean(data?.is_live);
   }
   if (!appId || !secret) throw new Error("Cashfree is not set up yet. Please ask the team to add the gateway keys.");
+  // Live secrets always start with cfsk_ma_prod_, test secrets with cfsk_ma_test_.
+  if (secret.includes("_prod_")) live = true;
+  if (secret.includes("_test_")) live = false;
   return { appId, secret, base: live ? "https://api.cashfree.com/pg" : "https://sandbox.cashfree.com/pg" };
 }
+
 
 export const createCashfreePayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -77,7 +88,11 @@ export const createCashfreePayment = createServerFn({ method: "POST" })
 
     const body = (await res.json()) as { link_url?: string; message?: string };
     if (!res.ok || !body.link_url) {
-      throw new Error(body.message ?? "Could not start the Cashfree payment.");
+      if (res.status === 401 || res.status === 403) {
+        throw new Error("Payment keys are not valid. Please update the Cashfree App ID and Secret Key.");
+      }
+      throw new Error(body.message ?? "Could not start the payment right now. Please try again.");
     }
+
     return { linkUrl: body.link_url };
   });
