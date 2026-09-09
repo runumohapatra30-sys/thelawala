@@ -114,12 +114,12 @@ function Admin() {
         </div>
 
         {isSuper ? (
-          <div className="grid grid-cols-2 gap-2">
-            {([["ops", "Operations"], ["marketing", "Banner & marketing"]] as const).map(([key, label]) => (
+          <div className="grid grid-cols-3 gap-2">
+            {([["ops", "Operations"], ["marketing", "Banner & marketing"], ["studio", "Visual Page Studio"]] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setTab(key)}
-                className={`rounded-xl border px-3 py-2.5 text-sm font-bold ${tab === key ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+                className={`rounded-xl border px-2 py-2.5 text-[13px] font-bold ${tab === key ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
               >
                 {label}
               </button>
@@ -127,7 +127,7 @@ function Admin() {
           </div>
         ) : null}
 
-        {isSuper && tab === "marketing" ? <MarketingManager /> : (
+        {isSuper && tab === "studio" ? <PageStudio /> : isSuper && tab === "marketing" ? <MarketingManager /> : (
         <>
         <AdminReports />
 
