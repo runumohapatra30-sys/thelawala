@@ -459,7 +459,12 @@ function RiderPortal() {
 
   async function acceptOffer() {
     if (!offer || !me) return;
-    await supabase.from("orders").update({ partner_id: me.id, status: "RIDER_ASSIGNED", offered_to: null, offer_expires_at: null }).eq("id", offer.id);
+    const { error: acceptErr } = await supabase.from("orders").update({ partner_id: me.id, status: "RIDER_ASSIGNED", offered_to: null, offer_expires_at: null, updated_at: new Date().toISOString() }).eq("id", offer.id);
+    if (acceptErr) {
+      console.error("Order status update error:", acceptErr);
+      toast.error(`Could not accept this order: ${acceptErr.message}`);
+      return;
+    }
     await supabase.from("delivery_partners").update({ is_busy: true }).eq("id", me.id);
     setActive({ ...offer, partner_id: me.id, status: "RIDER_ASSIGNED" });
     setOffer(null);
@@ -480,9 +485,15 @@ function RiderPortal() {
       return;
     }
     const now = new Date().toISOString();
-    await supabase.from("orders").update({
-      status: "OUT_FOR_DELIVERY", pickup_scanned_at: now, picked_up_at: now,
+    const { error: pickErr } = await supabase.from("orders").update({
+      status: "OUT_FOR_DELIVERY", pickup_scanned_at: now, picked_up_at: now, updated_at: now,
     }).eq("id", trip.id);
+    if (pickErr) {
+      console.error("Order status update error:", pickErr);
+      chime(false);
+      setScanErr(`Could not update this order: ${pickErr.message}`);
+      return;
+    }
     chime(true);
     setScanErr(null);
     setScanOpen(false);
@@ -544,7 +555,13 @@ function RiderPortal() {
       return;
     }
     const now = new Date().toISOString();
-    await supabase.from("orders").update({ status: "OUT_FOR_DELIVERY", pickup_scanned_at: now, picked_up_at: now }).eq("id", trip.id);
+    const { error: pickErr } = await supabase.from("orders").update({ status: "OUT_FOR_DELIVERY", pickup_scanned_at: now, picked_up_at: now, updated_at: now }).eq("id", trip.id);
+    if (pickErr) {
+      console.error("Order status update error:", pickErr);
+      chime(false);
+      setScanErr(`Could not update this order: ${pickErr.message}`);
+      return;
+    }
     chime(true);
     setScanErr(null);
     setManualCode("");
