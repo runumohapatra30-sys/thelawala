@@ -324,7 +324,7 @@ function Home() {
             <div key={i.id} style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }} className="press rise-in card-elevated p-2.5 hover:-translate-y-0.5">
               <div className="relative">
                 <img
-                  src={i.photo_url ?? "/food/food-tiffin.jpg"}
+                  src={i.photo_url ?? foodImage(i.name)}
                   alt={i.name}
                   className="aspect-[4/5] w-full rounded-[1.4rem] object-cover"
                 />
