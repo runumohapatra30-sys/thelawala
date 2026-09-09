@@ -494,6 +494,9 @@ function VendorPortal() {
                 <div className="space-y-2 p-4">
                   <p className="text-base font-black">{o.customer_name}</p>
                   <p className="text-xs leading-snug text-muted-foreground">{o.address_line}</p>
+                  {o.delivery_instructions ? (
+                    <p className="text-[11px] font-bold">📝 {o.delivery_instructions}</p>
+                  ) : null}
                   <div className="flex gap-2 pt-1">
                     <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold">Pickup OTP {o.pickup_otp}</span>
                   </div>
