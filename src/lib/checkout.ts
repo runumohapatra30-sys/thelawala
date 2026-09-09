@@ -25,9 +25,15 @@ export async function startOnlinePayment(args: PayArgs): Promise<void> {
   };
 
   if ((args.gateway ?? "PAYU").toUpperCase() === "CASHFREE") {
-    const { linkUrl } = await createCashfreePayment({ data });
-    window.location.href = linkUrl;
-    return;
+    try {
+      const { linkUrl } = await createCashfreePayment({ data });
+      window.location.href = linkUrl;
+      return;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      // If Cashfree has no keys saved, fall back to PayU instead of failing.
+      if (!/not set up yet/i.test(msg)) throw err;
+    }
   }
 
   const checkout = await createPayuPayment({ data });
