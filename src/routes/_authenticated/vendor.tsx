@@ -123,7 +123,7 @@ function VendorPortal() {
   }, [vendor?.id]);
 
   async function setStatus(o: Order, status: string) {
-    let patch: Record<string, unknown> = { status };
+    let patch: { status: string; accepted_at?: string; prep_minutes?: number; ready_at?: string } = { status };
     if (status === "PREPARING") {
       const { data: v } = await supabase.from("vendors").select("default_prep_minutes").eq("id", vendor?.id ?? "").maybeSingle();
       const mins = Number(v?.default_prep_minutes ?? 10);

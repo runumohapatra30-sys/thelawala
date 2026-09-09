@@ -36,7 +36,10 @@ export function RiderShifts({ partnerId }: { partnerId: string }) {
       end_time: end,
       zone: zone || null,
     });
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     setZone("");
     toast.success("Shift added");
     await load();
