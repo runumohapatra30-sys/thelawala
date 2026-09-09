@@ -255,7 +255,7 @@ function Cart() {
       .select("id")
       .single();
 
-    if (order) console.log(`[Order Created -> Sent to Stall ID: ${vendorId}] order ${order.id}`);
+    if (order) console.log(`[Order Created -> Sent to Stall ID: ${vendor.id}] order ${order.id}`);
 
     if (error || !order) {
       console.error("[Order Create Failed]", error);
