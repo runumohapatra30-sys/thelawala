@@ -335,6 +335,14 @@ function Home() {
 
       <section className="flex items-center gap-2 px-5 pt-7">
         <h2 className="mr-auto text-[17px] font-extrabold">Trending stalls</h2>
+        {vendorFilter ? (
+          <button
+            onClick={() => setVendorFilter(null)}
+            className="press rounded-full border border-primary bg-[color-mix(in_oklab,var(--color-primary)_10%,white)] px-3 py-1.5 text-[11px] font-extrabold text-primary"
+          >
+            {vendorName[vendorFilter] ?? "Stall"} ✕
+          </button>
+        ) : null}
         <button
           onClick={() => setOnlyVeg((v) => !v)}
           className={`press rounded-full border px-3 py-1.5 text-[11px] font-extrabold ${onlyVeg ? "border-primary bg-[color-mix(in_oklab,var(--color-primary)_10%,white)] text-primary" : "border-border text-muted-foreground"}`}
