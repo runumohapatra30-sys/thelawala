@@ -151,10 +151,10 @@ function Home() {
               </svg>
             </p>
           </Link>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5">
             <Link
               to="/wallet"
-              className="press flex items-center gap-1 rounded-full bg-card px-2.5 py-1.5 text-[11px] font-black shadow-sm"
+              className="press flex items-center gap-1 rounded-full px-2.5 py-2 text-[11px] font-extrabold glass-chip"
             >
               <span aria-hidden="true">👛</span>
               {inr(balance)}
@@ -162,7 +162,7 @@ function Home() {
             <Link
               to="/notifications"
               aria-label="Notifications"
-              className="press relative grid h-9 w-9 place-items-center rounded-full bg-card shadow-sm"
+              className="press relative grid h-10 w-10 place-items-center rounded-2xl glass-chip"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path d="M6 9a6 6 0 1112 0c0 4 1.5 5.5 1.5 5.5h-15S6 13 6 9zM10 19a2 2 0 004 0" strokeLinecap="round" strokeLinejoin="round" />
