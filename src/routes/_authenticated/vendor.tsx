@@ -179,18 +179,7 @@ function VendorPortal() {
     }
     setDishSaving(true);
     try {
-      let photoUrl: string | null = null;
-      if (dishFile) {
-        const ext = dishFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
-        const path = `${vendor.id}/${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("dish-photos").upload(path, dishFile, {
-          contentType: dishFile.type || "image/jpeg",
-          upsert: false,
-        });
-        if (upErr) throw upErr;
-        const { data: signed } = await supabase.storage.from("dish-photos").createSignedUrl(path, 60 * 60 * 24 * 3650);
-        photoUrl = signed?.signedUrl ?? null;
-      }
+      const photoUrl = dishFile ? await uploadDishPhoto(vendor.id, dishFile) : null;
       const { error } = await supabase.from("menu_items").insert({
         vendor_id: vendor.id,
         name: dish.name.trim(),
