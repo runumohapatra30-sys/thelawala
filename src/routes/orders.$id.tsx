@@ -36,6 +36,7 @@ type Order = {
   drop_lat: number; drop_lng: number; vendor_id: string; partner_id: string | null;
   payment_mode: string; address_line: string; proof_photo_url: string | null; created_at: string;
   payment_status: string; wallet_paid: number; cancel_reason: string | null; tip_amount: number;
+  cancel_otp: string | null;
 };
 
 const TIPS = [20, 30, 50];
@@ -200,7 +201,24 @@ function Track() {
           </div>
         ) : null}
 
-        {live ? (
+        {live && order.cancel_otp ? (
+          <div className="card-soft border-2 border-destructive p-4 text-center">
+            <p className="text-xs font-semibold text-destructive">
+              Your delivery partner is cancelling this order
+              {order.cancel_reason ? ` · ${order.cancel_reason}` : ""}
+            </p>
+            <p className="mt-1 text-xs font-semibold text-muted-foreground">
+              Share this cancel PIN with the delivery partner only if you agree to cancel
+            </p>
+            <div className="mt-2 flex justify-center gap-2">
+              {String(order.cancel_otp).split("").map((d, i) => (
+                <span key={i} className="grid h-12 w-11 place-items-center rounded-xl bg-destructive text-2xl font-black text-destructive-foreground">
+                  {d}
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : live ? (
           <div className="card-soft border-2 border-primary p-4 text-center">
             <p className="text-xs font-semibold text-muted-foreground">
               Share this OTP with your delivery partner at delivery

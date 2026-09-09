@@ -33,7 +33,16 @@ type Order = {
   drop_lat: number; drop_lng: number; vendor_id: string; partner_id: string | null;
   offered_to: string | null; offer_expires_at: string | null; rejected_partner_ids: string[];
   payment_mode: string; payment_status: string;
+  cancel_otp?: string | null; cancel_reason?: string | null;
 };
+
+const CANCEL_REASONS = [
+  "Customer not reachable",
+  "Customer refused the order",
+  "Wrong or unreachable address",
+  "Vehicle breakdown",
+  "Other reason",
+];
 type Partner = { id: string; name: string; status: string; is_online: boolean; is_busy: boolean; dl_number: string | null };
 type Vendor = { stall_name: string; lat: number; lng: number; mobile: string | null; address: string | null };
 
@@ -109,6 +118,12 @@ function RiderPortal() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [showComplete, setShowComplete] = useState(false);
+  const [manualCode, setManualCode] = useState("");
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState(CANCEL_REASONS[0]!);
+  const [cancelCode, setCancelCode] = useState("");
+  const [cancelMsg, setCancelMsg] = useState<string | null>(null);
+  const [cancelBusy, setCancelBusy] = useState(false);
   const [earnings, setEarnings] = useState({ trips: 0, total: 0 });
   const [week, setWeek] = useState({ trips: 0, total: 0, rating: 0 });
   const [form, setForm] = useState({
@@ -475,6 +490,67 @@ function RiderPortal() {
     toast.success("Delivery completed · earnings added");
   }
 
+  // Fallback when the QR will not scan: last 4 digits/characters of the order id.
+  async function pickupByCode() {
+    if (!trip) return;
+    const entered = manualCode.trim().toUpperCase();
+    const idTail = trip.id.replace(/-/g, "").slice(-4).toUpperCase();
+    const codeTail = String(trip.code ?? "").slice(-4).toUpperCase();
+    if (entered.length < 4 || (entered !== idTail && entered !== codeTail)) {
+      chime(false);
+      setScanErr("Incorrect parcel! Please verify Order ID");
+      return;
+    }
+    const now = new Date().toISOString();
+    await supabase.from("orders").update({ status: "OUT_FOR_DELIVERY", pickup_scanned_at: now, picked_up_at: now }).eq("id", trip.id);
+    chime(true);
+    setScanErr(null);
+    setManualCode("");
+    setActive({ ...trip, status: "OUT_FOR_DELIVERY" });
+    toast.success("Order verified · out for delivery");
+  }
+
+  async function requestCancel() {
+    if (!trip) return;
+    setCancelBusy(true);
+    const otp = String(Math.floor(1000 + Math.random() * 9000));
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        cancel_otp: otp,
+        cancel_reason: cancelReason,
+        cancel_requested_at: new Date().toISOString(),
+        cancel_requested_by: "PARTNER",
+      })
+      .eq("id", trip.id);
+    setCancelBusy(false);
+    if (error) return setCancelMsg("Could not start the cancellation. Try again.");
+    setActive({ ...trip, cancel_otp: otp, cancel_reason: cancelReason });
+    setCancelMsg("Ask the customer for the cancel PIN shown in their app.");
+  }
+
+  async function confirmCancel() {
+    if (!trip || !me) return;
+    if (cancelCode.trim() !== (trip.cancel_otp ?? "")) {
+      chime(false);
+      return setCancelMsg("Wrong cancel PIN. Ask the customer to read it again.");
+    }
+    setCancelBusy(true);
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: "CANCELLED", cancelled_at: new Date().toISOString(), cancelled_by: "PARTNER", cancel_reason: cancelReason })
+      .eq("id", trip.id);
+    if (!error) await supabase.from("delivery_partners").update({ is_busy: false }).eq("id", me.id);
+    setCancelBusy(false);
+    if (error) return setCancelMsg("Could not cancel the order. Try again.");
+    chime(true);
+    setActive(null);
+    setCancelOpen(false);
+    setCancelCode("");
+    setCancelMsg(null);
+    toast.success("Order cancelled");
+  }
+
   const pos = posRef.current;
   const stallPoint = vendor ? { lat: Number(vendor.lat), lng: Number(vendor.lng) } : null;
   const dropPoint = trip ? { lat: Number(trip.drop_lat), lng: Number(trip.drop_lng) } : null;
@@ -609,6 +685,32 @@ function RiderPortal() {
                 >
                   Scan Order QR to Pickup
                 </button>
+                <div className="card-soft border border-border p-3">
+                  <p className="text-sm font-bold">QR not scanning?</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Type the last 4 digits of the Order ID from the stall&apos;s slip to confirm pickup.
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      value={manualCode}
+                      inputMode="text"
+                      maxLength={4}
+                      placeholder="Last 4"
+                      onChange={(e) => {
+                        setManualCode(e.target.value.replace(/[^a-zA-Z0-9]/g, "").slice(0, 4).toUpperCase());
+                        setScanErr(null);
+                      }}
+                      className="w-28 rounded-xl border border-border px-3 py-2.5 text-center text-base font-black tracking-widest uppercase outline-none focus:border-primary"
+                    />
+                    <button
+                      onClick={pickupByCode}
+                      disabled={manualCode.length < 4}
+                      className="press flex-1 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                    >
+                      Confirm pickup
+                    </button>
+                  </div>
+                </div>
               </>
             ) : null}
 
@@ -620,6 +722,17 @@ function RiderPortal() {
                 Complete delivery
               </button>
             ) : null}
+
+            <button
+              onClick={() => {
+                setCancelMsg(null);
+                setCancelReason(trip.cancel_reason ?? CANCEL_REASONS[0]!);
+                setCancelOpen(true);
+              }}
+              className="press w-full rounded-xl border-2 border-destructive py-3 text-sm font-bold text-destructive"
+            >
+              Cancel order
+            </button>
 
             {msg ? <p className="text-xs font-semibold text-destructive">{msg}</p> : null}
           </>
@@ -708,6 +821,70 @@ function RiderPortal() {
           onClose={() => setShowComplete(false)}
           onConfirm={completeDelivery}
         />
+      ) : null}
+
+      {cancelOpen && trip ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60">
+          <div className="w-full max-w-[480px] rounded-t-3xl bg-card p-4 pb-6">
+            <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-border" />
+            <div className="flex items-start justify-between">
+              <p className="text-base font-extrabold">Cancel order #{trip.code}</p>
+              <button onClick={() => setCancelOpen(false)} className="press text-sm font-bold text-muted-foreground">Close</button>
+            </div>
+
+            {!trip.cancel_otp ? (
+              <>
+                <p className="mt-2 text-xs text-muted-foreground">Choose why you are cancelling this order.</p>
+                <div className="mt-2 space-y-2">
+                  {CANCEL_REASONS.map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setCancelReason(r)}
+                      className={`w-full rounded-xl border px-3 py-2.5 text-left text-sm ${
+                        cancelReason === r ? "border-destructive font-bold text-destructive" : "border-border"
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  disabled={cancelBusy}
+                  onClick={requestCancel}
+                  className="press mt-3 w-full rounded-xl bg-destructive py-3 text-sm font-bold text-destructive-foreground disabled:opacity-50"
+                >
+                  {cancelBusy ? "Please wait…" : "Send cancel PIN to customer"}
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Reason: <span className="font-bold text-foreground">{trip.cancel_reason}</span>. The customer now sees a 4-digit
+                  cancel PIN in their app. Enter it to finish the cancellation.
+                </p>
+                <input
+                  value={cancelCode}
+                  inputMode="numeric"
+                  maxLength={OTP_LEN}
+                  placeholder="0000"
+                  onChange={(e) => {
+                    setCancelCode(e.target.value.replace(/\D/g, "").slice(0, OTP_LEN));
+                    setCancelMsg(null);
+                  }}
+                  className="mt-3 w-full rounded-xl border border-border py-3 text-center text-2xl font-black tracking-[0.5em] outline-none focus:border-destructive"
+                />
+                <button
+                  disabled={cancelBusy || cancelCode.length < OTP_LEN}
+                  onClick={confirmCancel}
+                  className="press mt-3 w-full rounded-xl bg-destructive py-3 text-sm font-bold text-destructive-foreground disabled:opacity-50"
+                >
+                  {cancelBusy ? "Please wait…" : "Confirm & cancel order"}
+                </button>
+              </>
+            )}
+            {cancelMsg ? <p className="mt-2 text-xs font-semibold text-destructive">{cancelMsg}</p> : null}
+          </div>
+        </div>
       ) : null}
     </Shell>
   );

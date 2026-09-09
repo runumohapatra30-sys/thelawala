@@ -522,7 +522,10 @@ export type Database = {
         Row: {
           accepted_at: string | null
           address_line: string
+          cancel_otp: string | null
           cancel_reason: string | null
+          cancel_requested_at: string | null
+          cancel_requested_by: string | null
           cancelled_at: string | null
           cancelled_by: string | null
           code: string
@@ -569,7 +572,10 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           address_line: string
+          cancel_otp?: string | null
           cancel_reason?: string | null
+          cancel_requested_at?: string | null
+          cancel_requested_by?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           code?: string
@@ -616,7 +622,10 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           address_line?: string
+          cancel_otp?: string | null
           cancel_reason?: string | null
+          cancel_requested_at?: string | null
+          cancel_requested_by?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           code?: string
