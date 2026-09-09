@@ -3,7 +3,11 @@ import { useEffect, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { LiveMap } from "@/components/LiveMap";
 import { supabase } from "@/integrations/supabase/client";
+import { OrderChat } from "@/components/OrderChat";
+import { OrderAlerts } from "@/components/OrderAlerts";
 import { inr, STATUS_LABEL } from "@/lib/fees";
+import { openInvoice, type InvoiceOrder } from "@/lib/invoice";
+import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/orders/$id")({
   validateSearch: (s: Record<string, unknown>): { placed?: 1 } => (s['placed'] ? { placed: 1 } : {}),
