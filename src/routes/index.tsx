@@ -15,6 +15,7 @@ import { activeCampaign, type Campaign } from "@/lib/marketing";
 import { VoiceSearch } from "@/components/VoiceSearch";
 import { DynamicAssetBanner } from "@/components/DynamicAssetBanner";
 import { DynamicBanners } from "@/components/DynamicBanners";
+import { DynamicPageRenderer, type SectionRegistry } from "@/components/DynamicPageRenderer";
 
 export const Route = createFileRoute("/")({
   head: () => ({
