@@ -33,7 +33,16 @@ type Order = {
   drop_lat: number; drop_lng: number; vendor_id: string; partner_id: string | null;
   offered_to: string | null; offer_expires_at: string | null; rejected_partner_ids: string[];
   payment_mode: string; payment_status: string;
+  cancel_otp?: string | null; cancel_reason?: string | null;
 };
+
+const CANCEL_REASONS = [
+  "Customer not reachable",
+  "Customer refused the order",
+  "Wrong or unreachable address",
+  "Vehicle breakdown",
+  "Other reason",
+];
 type Partner = { id: string; name: string; status: string; is_online: boolean; is_busy: boolean; dl_number: string | null };
 type Vendor = { stall_name: string; lat: number; lng: number; mobile: string | null; address: string | null };
 
