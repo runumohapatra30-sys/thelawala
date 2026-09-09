@@ -8,6 +8,7 @@ import { inr, STATUS_LABEL } from "@/lib/fees";
 import { useSession } from "@/lib/session";
 import { fssaiError, ifscError, normalizeFssai, panError, phoneError } from "@/lib/validation";
 import { BBSR_ZONES, ID_PROOF_TYPES, uploadKycDoc } from "@/lib/kyc";
+import { useLoudAlarm } from "@/lib/alarm";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 
