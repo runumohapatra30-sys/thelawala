@@ -47,23 +47,23 @@ export function PayoutPanel({ party, id }: { party: "VENDOR" | "PARTNER"; id: st
 
   async function submit() {
     const amount = Number(form.amount);
-    if (!amount || amount <= 0) return toast.error("Enter the amount you want to withdraw.");
-    if (amount > balance) return toast.error("That is more than your available balance.");
-    if (form.method === "UPI" && !form.upi_id.includes("@")) return toast.error("Enter a valid UPI ID, like name@bank.");
+    if (!amount || amount <= 0) { toast.error("Enter the amount you want to withdraw."); return; }
+    if (amount > balance) { toast.error("That is more than your available balance."); return; }
+    if (form.method === "UPI" && !form.upi_id.includes("@")) { toast.error("Enter a valid UPI ID, like name@bank."); return; }
     if (form.method === "BANK" && (form.bank_account_no.length < 8 || form.bank_ifsc.length < 8))
-      return toast.error("Enter the account number and IFSC code.");
+      { toast.error("Enter the account number and IFSC code."); return; }
     setBusy(true);
     const { error } = await supabase.rpc("request_payout", {
       _party_type: party,
       _amount: amount,
       _method: form.method,
-      _bank_holder: form.bank_holder || null,
-      _bank_account_no: form.bank_account_no || null,
-      _bank_ifsc: form.bank_ifsc.toUpperCase() || null,
-      _upi_id: form.upi_id || null,
+      _bank_holder: form.bank_holder || undefined,
+      _bank_account_no: form.bank_account_no || undefined,
+      _bank_ifsc: form.bank_ifsc.toUpperCase() || undefined,
+      _upi_id: form.upi_id || undefined,
     });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Withdrawal requested. You will be paid after admin approval.");
     setForm({ ...EMPTY });
     setOpen(false);

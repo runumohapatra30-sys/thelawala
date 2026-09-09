@@ -39,11 +39,11 @@ export function PayoutQueue() {
     const { error } = await supabase.rpc("decide_payout", {
       _request_id: r.id,
       _approve: approve,
-      _payment_reference: ref || null,
-      _admin_note: null,
+      _payment_reference: ref || undefined,
+      _admin_note: undefined,
     });
     setBusy(null);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success(approve ? "Marked as paid." : "Request rejected.");
     void load();
   }
@@ -102,7 +102,7 @@ export function LiveOrders() {
       .from("orders")
       .update({ partner_id: partnerId, offered_to: null, offer_expires_at: null, status: "RIDER_ASSIGNED" })
       .eq("id", o.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     if (o.partner_id) await supabase.from("delivery_partners").update({ is_busy: false }).eq("id", o.partner_id);
     await supabase.from("delivery_partners").update({ is_busy: true }).eq("id", partnerId);
     toast.success("Delivery partner changed.");
@@ -115,7 +115,7 @@ export function LiveOrders() {
       .from("orders")
       .update({ status: "CANCELLED", cancelled_by: "ADMIN", cancelled_at: new Date().toISOString(), cancel_reason: "Cancelled by support" })
       .eq("id", o.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     if (o.partner_id) await supabase.from("delivery_partners").update({ is_busy: false }).eq("id", o.partner_id);
     toast.success("Order cancelled.");
     void load();
@@ -166,7 +166,7 @@ export function CustomerManager() {
 
   async function toggleBlock(c: Cust) {
     const { error } = await supabase.from("profiles").update({ is_blocked: !c.is_blocked }).eq("id", c.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setRows((prev) => prev.map((x) => (x.id === c.id ? { ...x, is_blocked: !c.is_blocked } : x)));
     toast.success(c.is_blocked ? "Account unblocked." : "Account blocked.");
   }
