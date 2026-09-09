@@ -121,14 +121,18 @@ function VendorPortal() {
   }, [vendor?.id]);
 
   async function setStatus(o: Order, status: string) {
-    const { error } = await supabase
-      .from("orders")
-      .update(
-        status === "PREPARING"
-          ? { status, accepted_at: new Date().toISOString() }
-          : { status },
-      )
-      .eq("id", o.id);
+    let patch: Record<string, unknown> = { status };
+    if (status === "PREPARING") {
+      const { data: v } = await supabase.from("vendors").select("default_prep_minutes").eq("id", vendor?.id ?? "").maybeSingle();
+      const mins = Number(v?.default_prep_minutes ?? 10);
+      patch = {
+        status,
+        accepted_at: new Date().toISOString(),
+        prep_minutes: mins,
+        ready_at: new Date(Date.now() + mins * 60000).toISOString(),
+      };
+    }
+    const { error } = await supabase.from("orders").update(patch).eq("id", o.id);
     if (error) {
       toast.error("Could not update this order. Please try again.");
       return;
