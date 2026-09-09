@@ -348,6 +348,19 @@ function Track() {
           </dl>
         </div>
 
+        <button
+          onClick={() => openInvoice(order as unknown as InvoiceOrder, items.map((i) => ({ name: i.name, qty: i.qty, price: Number(i.price) })), vendor?.stall_name ?? "ThelaWala stall")}
+          className="press w-full rounded-xl border border-primary py-2.5 text-sm font-black text-primary"
+        >
+          🧾 Download bill (PDF)
+        </button>
+
+        {order.partner_id && order.status !== "DELIVERED" && order.status !== "CANCELLED" ? (
+          <OrderChat orderId={order.id} role="CUSTOMER" senderId={user?.id} />
+        ) : null}
+
+        <OrderAlerts userId={user?.id} />
+
         <div className="flex gap-2">
           <Link
             to="/support"
