@@ -5,27 +5,26 @@ function redirect(to: string) {
   return new Response(null, { status: 303, headers: { location: to } });
 }
 
-type LinkStatus = {
-  link_status?: string;
-  link_amount_paid?: number;
-  link_amount?: number;
-  link_notes?: { user_id?: string; purpose?: string; order_id?: string };
-  cf_link_id?: string | number;
+type OrderStatus = {
+  order_status?: string;
+  order_amount?: number;
+  cf_order_id?: string | number;
+  order_tags?: { user_id?: string; purpose?: string; order_id?: string } | null;
 };
 
-async function handle(linkId: string): Promise<Response> {
-  if (!linkId) return redirect("/profile?payment=failed");
+async function handle(cfOrderId: string): Promise<Response> {
+  if (!cfOrderId) return redirect("/profile?payment=failed");
   const { appId, secret, base } = await cashfreeCreds();
 
-  const res = await fetch(`${base}/links/${encodeURIComponent(linkId)}`, {
+  const res = await fetch(`${base}/orders/${encodeURIComponent(cfOrderId)}`, {
     headers: { "x-api-version": "2023-08-01", "x-client-id": appId, "x-client-secret": secret },
   });
-  const link = (await res.json()) as LinkStatus;
-  if (!res.ok || link.link_status !== "PAID") return redirect("/profile?payment=failed");
+  const order = (await res.json()) as OrderStatus;
+  if (!res.ok || order.order_status !== "PAID") return redirect("/profile?payment=failed");
 
-  const notes = link.link_notes ?? {};
-  const amount = Number(link.link_amount_paid ?? link.link_amount ?? 0);
-  const ref = String(link.cf_link_id ?? linkId);
+  const notes = order.order_tags ?? {};
+  const amount = Number(order.order_amount ?? 0);
+  const ref = String(order.cf_order_id ?? cfOrderId);
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   if (notes.purpose === "WALLET" && notes.user_id) {
@@ -60,15 +59,18 @@ async function handle(linkId: string): Promise<Response> {
 export const Route = createFileRoute("/api/public/cashfree/callback")({
   server: {
     handlers: {
-      GET: async ({ request }) => handle(new URL(request.url).searchParams.get("link_id") ?? ""),
+      GET: async ({ request }) => {
+        const p = new URL(request.url).searchParams;
+        return handle(p.get("cf_order_id") ?? p.get("order_id") ?? p.get("link_id") ?? "");
+      },
       POST: async ({ request }) => {
         const url = new URL(request.url);
-        let linkId = url.searchParams.get("link_id") ?? "";
-        if (!linkId) {
+        let id = url.searchParams.get("cf_order_id") ?? url.searchParams.get("order_id") ?? "";
+        if (!id) {
           const form = await request.formData().catch(() => null);
-          linkId = String(form?.get("link_id") ?? "");
+          id = String(form?.get("order_id") ?? form?.get("cf_order_id") ?? "");
         }
-        return handle(linkId);
+        return handle(id);
       },
     },
   },

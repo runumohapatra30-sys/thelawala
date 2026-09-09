@@ -11,6 +11,16 @@ export type PayArgs = {
   mobile: string;
 };
 
+type CashfreeSdk = {
+  checkout: (opts: { paymentSessionId: string; redirectTarget?: string }) => Promise<unknown>;
+};
+
+declare global {
+  interface Window {
+    Cashfree?: (opts: { mode: "production" | "sandbox" }) => CashfreeSdk;
+  }
+}
+
 function submitForm(action: string, fields: Record<string, string>) {
   const form = document.createElement("form");
   form.method = "POST";
@@ -24,6 +34,19 @@ function submitForm(action: string, fields: Record<string, string>) {
   }
   document.body.appendChild(form);
   form.submit();
+}
+
+async function loadCashfreeSdk(): Promise<NonNullable<Window["Cashfree"]>> {
+  if (window.Cashfree) return window.Cashfree;
+  await new Promise<void>((resolve, reject) => {
+    const el = document.createElement("script");
+    el.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
+    el.onload = () => resolve();
+    el.onerror = () => reject(new Error("Payment page could not load. Please check your internet and try again."));
+    document.head.appendChild(el);
+  });
+  if (!window.Cashfree) throw new Error("Payment page could not load. Please try again.");
+  return window.Cashfree;
 }
 
 /** Opens the online payment page for whichever gateway the admin turned on. */
@@ -45,6 +68,8 @@ export async function startOnlinePayment(args: PayArgs): Promise<void> {
     return;
   }
 
-  const { linkUrl } = await createCashfreePayment({ data: payload });
-  window.location.href = linkUrl;
+  const { paymentSessionId, live } = await createCashfreePayment({ data: payload });
+  const factory = await loadCashfreeSdk();
+  const cashfree = factory({ mode: live ? "production" : "sandbox" });
+  await cashfree.checkout({ paymentSessionId, redirectTarget: "_self" });
 }
