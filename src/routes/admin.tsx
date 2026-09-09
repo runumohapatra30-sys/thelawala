@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { SupportQueue } from "@/components/SupportQueue";
+import { PayoutQueue, LiveOrders, CustomerManager } from "@/components/AdminPanels";
 import { supabase } from "@/integrations/supabase/client";
 import { listCoupons, type Coupon } from "@/lib/coupons";
 import { inr, STATUS_LABEL, type Settings } from "@/lib/fees";
@@ -219,6 +220,10 @@ function Admin() {
         </section>
 
         <SupportQueue adminId={user.id} />
+
+        <PayoutQueue />
+        <LiveOrders />
+        <CustomerManager />
 
         <section className="card-soft border border-border p-3">
           <p className="text-sm font-bold">Refund requests</p>

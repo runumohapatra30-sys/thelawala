@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { LogoutButton, Shell } from "@/components/Shell";
+import { PayoutPanel } from "@/components/Payouts";
 import { LiveMap } from "@/components/LiveMap";
 import { supabase } from "@/integrations/supabase/client";
 import { rejectOffer } from "@/lib/dispatch";
@@ -370,6 +371,8 @@ function RiderPortal() {
             <p className="text-sm font-black">{week.rating ? `${week.rating} ★` : "—"}</p>
           </div>
         </div>
+
+        <PayoutPanel party="PARTNER" id={me.id} />
 
         {me.status === "UNDER_REVIEW" ? (
           <div className="card-soft border-2 border-destructive p-3">
