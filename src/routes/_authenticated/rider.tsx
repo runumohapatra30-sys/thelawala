@@ -867,7 +867,7 @@ function RiderPortal() {
                 </div>
                 <button
                   disabled={cancelBusy}
-                  onClick={requestCancel}
+                  onClick={() => requestCancel()}
                   className="press mt-3 w-full rounded-xl bg-destructive py-3 text-sm font-bold text-destructive-foreground disabled:opacity-50"
                 >
                   {cancelBusy ? "Please wait…" : "Send cancel PIN to customer"}
