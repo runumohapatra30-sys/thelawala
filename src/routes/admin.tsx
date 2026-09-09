@@ -220,6 +220,10 @@ function Admin() {
 
         <SupportQueue adminId={user.id} />
 
+        <PayoutQueue />
+        <LiveOrders />
+        <CustomerManager />
+
         <section className="card-soft border border-border p-3">
           <p className="text-sm font-bold">Refund requests</p>
           {refunds.length === 0 ? <p className="mt-1 text-xs text-muted-foreground">Nothing pending.</p> : null}
