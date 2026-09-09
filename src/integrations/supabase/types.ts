@@ -1749,12 +1749,10 @@ export type Database = {
         }[]
       }
       apply_referral: { Args: { _code: string }; Returns: string }
-      complete_delivery:
-        | { Args: { _order_id: string; _otp: string }; Returns: undefined }
-        | {
-            Args: { _order_id: string; _otp: string; _proof_path: string }
-            Returns: undefined
-          }
+      complete_delivery: {
+        Args: { _order_id: string; _otp: string; _proof_path: string }
+        Returns: undefined
+      }
       decide_cash_deposit: {
         Args: {
           _approve: boolean
