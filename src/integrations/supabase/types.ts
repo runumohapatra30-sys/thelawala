@@ -155,6 +155,33 @@ export type Database = {
         }
         Relationships: []
       }
+      app_page_layouts: {
+        Row: {
+          created_at: string
+          id: string
+          page_name: string
+          sections: Json
+          target_app: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          page_name: string
+          sections?: Json
+          target_app: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          page_name?: string
+          sections?: Json
+          target_app?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       banners: {
         Row: {
           category_id: string | null
