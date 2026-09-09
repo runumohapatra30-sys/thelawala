@@ -201,13 +201,29 @@ export function BannerStudio() {
           </label>
 
           <label className="block text-xs font-bold text-muted-foreground">
-            Tap destination (e.g. /categories or /orders)
-            <input
-              value={route}
-              onChange={(e) => setRoute(e.target.value)}
-              placeholder="/categories"
+            Tap destination
+            <select
+              value={custom ? "__custom" : route}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "__custom") { setCustom(true); setRoute(""); return; }
+                setCustom(false);
+                setRoute(v);
+              }}
               className={`${inputCls} mt-1`}
-            />
+            >
+              {ROUTE_PRESETS.map((p) => (
+                <option key={p.label} value={p.value}>{p.label}</option>
+              ))}
+            </select>
+            {custom ? (
+              <input
+                value={route}
+                onChange={(e) => setRoute(e.target.value)}
+                placeholder="/categories or https://…"
+                className={`${inputCls} mt-2`}
+              />
+            ) : null}
           </label>
 
           <label className="block text-xs font-bold text-muted-foreground">
