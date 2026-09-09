@@ -421,7 +421,7 @@ function Cart() {
         {err ? <p className="text-xs font-semibold text-destructive">{err}</p> : null}
       </div>
 
-      <div className="fixed inset-x-0 bottom-[62px] z-40 mx-auto w-full max-w-[480px] px-3">
+      <div className="fixed inset-x-0 bottom-[104px] z-40 mx-auto w-full max-w-[480px] px-3">
         <div className="rounded-2xl bg-card p-2 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-1 pb-2">
             <p className="truncate text-[11px] font-semibold text-muted-foreground">

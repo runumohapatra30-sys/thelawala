@@ -336,13 +336,13 @@ function Home() {
       </div>
 
       {toast ? (
-        <div className="fixed inset-x-0 bottom-32 z-40 mx-auto w-full max-w-[440px] px-4">
+        <div className="fixed inset-x-0 bottom-44 z-40 mx-auto w-full max-w-[440px] px-4">
           <div className="rounded-xl bg-foreground px-4 py-2.5 text-xs font-semibold text-background">{toast}</div>
         </div>
       ) : null}
 
       {count ? (
-        <div className="fixed inset-x-0 bottom-[62px] z-40 mx-auto w-full max-w-[480px] px-3">
+        <div className="fixed inset-x-0 bottom-[104px] z-40 mx-auto w-full max-w-[480px] px-3">
           <Link
             to="/cart"
             className="press flex items-center justify-between rounded-xl bg-primary px-4 py-3 text-primary-foreground shadow-lg"
