@@ -75,8 +75,9 @@ function VendorPortal() {
   const [slip, setSlip] = useState<Order | null>(null);
   const [today, setToday] = useState({ orders: 0, sales: 0, rating: 0 });
 
-  const pending = orders.filter((o) => o.status === "ORDER_PLACED").length;
-  useOrderBell(pending);
+  const newOrders = orders.filter((o) => o.status === "ORDER_PLACED");
+  const pending = newOrders.length;
+  const { muted, setMuted } = useLoudAlarm(pending > 0);
 
   useEffect(() => {
     if (!user) return;
