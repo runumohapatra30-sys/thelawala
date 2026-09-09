@@ -168,6 +168,7 @@ function Admin() {
             </section>
 
             <PayuKeys />
+            <CashfreeKeys />
 
             <button
               onClick={async () => {
