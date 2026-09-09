@@ -430,27 +430,6 @@ function VendorPortal() {
           }}
         />
 
-        <div className="hidden">
-
-          <div className="stat-tile">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Orders today</p>
-            <p className="mt-0.5 text-lg font-black leading-none">{today.orders}</p>
-          </div>
-          <div className="stat-tile">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Sales today</p>
-            <p className="mt-0.5 text-lg font-black leading-none text-primary">{inr(Math.round(today.sales))}</p>
-          </div>
-          <div className="stat-tile">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Rating</p>
-            <p className="mt-0.5 text-lg font-black leading-none">{today.rating ? `${today.rating} ★` : "—"}</p>
-          </div>
-        </div>
-
-        <PayoutPanel party="VENDOR" id={vendor.id} />
-
-        <p className="section-title pt-1">Stall settings</p>
-
-        <VendorHours vendorId={vendor.id} />
 
 
         <div className="portal-panel">
