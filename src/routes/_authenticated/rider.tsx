@@ -510,7 +510,7 @@ function RiderPortal() {
     toast.success("Order verified · out for delivery");
   }
 
-  async function requestCancel() {
+  async function requestCancel(reason = cancelReason) {
     if (!trip) return;
     setCancelBusy(true);
     const otp = String(Math.floor(1000 + Math.random() * 9000));
@@ -518,15 +518,36 @@ function RiderPortal() {
       .from("orders")
       .update({
         cancel_otp: otp,
-        cancel_reason: cancelReason,
+        cancel_reason: reason,
         cancel_requested_at: new Date().toISOString(),
         cancel_requested_by: "PARTNER",
       })
       .eq("id", trip.id);
     setCancelBusy(false);
     if (error) return setCancelMsg("Could not start the cancellation. Try again.");
-    setActive({ ...trip, cancel_otp: otp, cancel_reason: cancelReason });
+    setActive({ ...trip, cancel_otp: otp, cancel_reason: reason });
     setCancelMsg("Ask the customer for the cancel PIN shown in their app.");
+  }
+
+  async function openCancel() {
+    if (!trip) return;
+    setCancelMsg(null);
+    setCancelReason(trip.cancel_reason ?? CANCEL_REASONS[0]!);
+    setCancelOpen(true);
+    if (!trip.cancel_otp) {
+      await requestCancel(trip.cancel_reason ?? CANCEL_REASONS[0]!);
+    }
+  }
+
+  async function updateCancelReason(reason: string) {
+    if (!trip) return;
+    setCancelReason(reason);
+    if (!trip.cancel_otp) return;
+    setCancelBusy(true);
+    const { error } = await supabase.from("orders").update({ cancel_reason: reason }).eq("id", trip.id);
+    setCancelBusy(false);
+    if (error) return setCancelMsg("Could not update the reason. Try again.");
+    setActive({ ...trip, cancel_reason: reason });
   }
 
   async function confirmCancel() {
