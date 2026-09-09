@@ -527,6 +527,10 @@ function VendorPortal() {
                   <p className="text-sm font-bold">#{o.code}</p>
                   <p className="text-[11px] text-muted-foreground">{o.customer_name} · {o.address_line}</p>
                   <p className="mt-1 text-xs font-semibold text-primary">{STATUS_LABEL[o.status] ?? o.status}</p>
+                  {o.delivery_instructions ? (
+                    <p className="mt-1 text-[11px] font-semibold text-foreground">📝 {o.delivery_instructions}</p>
+                  ) : null}
+                  {o.status === "PREPARING" ? <span className="mt-1 inline-block"><PrepCountdown readyAt={o.ready_at} /></span> : null}
                 </div>
                 <p className="text-sm font-bold">{inr(Number(o.grand_total))}</p>
               </div>
