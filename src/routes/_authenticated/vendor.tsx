@@ -46,41 +46,6 @@ const EMPTY_DISH = {
   unit: "1 plate",
 };
 
-function useOrderBell(count: number) {
-  const ctxRef = useRef<AudioContext | null>(null);
-  useEffect(() => {
-    if (count <= 0) return;
-    let stopped = false;
-    const beep = () => {
-      if (stopped) return;
-      try {
-        const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        const ctx = (ctxRef.current ??= new Ctx());
-        if (ctx.state === "suspended") void ctx.resume();
-        [0, 0.22].forEach((offset) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = "sine";
-          osc.frequency.value = 880;
-          gain.gain.setValueAtTime(0.0001, ctx.currentTime + offset);
-          gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + offset + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + offset + 0.18);
-          osc.connect(gain).connect(ctx.destination);
-          osc.start(ctx.currentTime + offset);
-          osc.stop(ctx.currentTime + offset + 0.2);
-        });
-      } catch {
-        /* audio unavailable */
-      }
-    };
-    beep();
-    const t = setInterval(beep, 2500);
-    return () => {
-      stopped = true;
-      clearInterval(t);
-    };
-  }, [count]);
-}
 
 function VendorPortal() {
   const { user, loading } = useSession();
