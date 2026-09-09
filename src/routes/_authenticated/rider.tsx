@@ -228,69 +228,192 @@ function RiderPortal() {
   }
 
   if (!me) {
+    const inputCls = "w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary";
+    const badCls = "w-full rounded-xl border border-destructive px-3 py-2.5 text-sm outline-none";
+    const field = (k: keyof typeof form, label: string, err?: string | null, placeholder?: string) => (
+      <label key={k} className="block">
+        <span className="mb-1 block text-xs font-semibold text-muted-foreground">{label}</span>
+        <input
+          value={form[k]}
+          placeholder={placeholder}
+          onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+          className={err ? badCls : inputCls}
+        />
+        {err ? <span className="mt-1 block text-[11px] font-semibold text-destructive">{err}</span> : null}
+      </label>
+    );
+    const fileRow = (label: string, file: File | null, onPick: (f: File | null) => void) => (
+      <label className="flex items-center justify-between gap-2 rounded-xl border border-dashed border-border px-3 py-2.5">
+        <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+        <span className="max-w-[55%] truncate text-xs font-bold text-primary">{file ? file.name : "Choose file"}</span>
+        <input type="file" accept="image/*" className="hidden" onChange={(e) => onPick(e.target.files?.[0] ?? null)} />
+      </label>
+    );
+    const dlBad = form.dl_number ? dlError(form.dl_number) : null;
+    const panBad = form.pan ? panError(form.pan) : null;
+    const mobileBad = form.mobile ? phoneError(form.mobile) : null;
+    const emBad = form.emergency_phone ? phoneError(form.emergency_phone) : null;
+    const ifscBad = form.bank_ifsc ? ifscError(form.bank_ifsc) : null;
+
+    async function submitRegistration() {
+      if (!form.name.trim()) return setMsg("Add your full name.");
+      if (phoneError(form.mobile)) return setMsg(phoneError(form.mobile));
+      if (phoneError(form.emergency_phone)) return setMsg(`Emergency contact: ${phoneError(form.emergency_phone)}`);
+      if (!form.address.trim()) return setMsg("Add your address.");
+      if (zones.length === 0) return setMsg("Pick at least one delivery zone.");
+      if (dlError(form.dl_number)) return setMsg(dlError(form.dl_number));
+      if (panError(form.pan)) return setMsg(panError(form.pan));
+      if (!form.identity_number.trim()) return setMsg("Add your identity proof number.");
+      if (!docs.idDoc) return setMsg("Upload your identity proof document.");
+      if (!docs.dlDoc) return setMsg("Upload a photo of your driving licence.");
+      if (!form.bank_holder.trim() || !form.bank_account_no.trim()) return setMsg("Add the account holder name and account number.");
+      if (ifscError(form.bank_ifsc)) return setMsg(ifscError(form.bank_ifsc));
+      if (!docs.bankProof) return setMsg("Upload a bank proof (passbook or cancelled cheque).");
+      if (!terms) return setMsg("Please accept the partner terms to continue.");
+      setRegBusy(true);
+      setMsg(null);
+      try {
+        const [photoUrl, panUrl, idUrl, dlUrl, bankUrl] = await Promise.all([
+          docs.photo ? uploadKycDoc(user!.id, docs.photo, "profile-photo") : Promise.resolve(null),
+          docs.panCard ? uploadKycDoc(user!.id, docs.panCard, "pan-card") : Promise.resolve(null),
+          uploadKycDoc(user!.id, docs.idDoc!, "id-proof"),
+          uploadKycDoc(user!.id, docs.dlDoc!, "dl-document"),
+          uploadKycDoc(user!.id, docs.bankProof!, "bank-proof"),
+        ]);
+        const { data, error } = await supabase.from("delivery_partners").insert({
+          user_id: user!.id,
+          name: form.name.trim(),
+          mobile: form.mobile.trim(),
+          emergency_phone: form.emergency_phone.trim(),
+          address: form.address.trim(),
+          assigned_zones: zones,
+          profile_photo_url: photoUrl,
+          pan_number: form.pan.trim(),
+          pan_card_url: panUrl,
+          identity_proof_type: form.identity_proof_type,
+          identity_number: form.identity_number.trim(),
+          identity_document_url: idUrl,
+          vehicle_type: form.vehicle_type,
+          vehicle_no: form.vehicle_no.trim() || null,
+          dl_number: form.dl_number.trim(),
+          dl_document_url: dlUrl,
+          bank_holder: form.bank_holder.trim(),
+          bank_name: form.bank_name.trim() || null,
+          bank_account_no: form.bank_account_no.trim(),
+          bank_ifsc: form.bank_ifsc.trim().toUpperCase(),
+          upi_id: form.upi_id.trim() || null,
+          bank_proof_url: bankUrl,
+          terms_accepted_at: new Date().toISOString(),
+          status: "PENDING",
+        }).select("id,name,status,is_online,is_busy,dl_number").single();
+        if (error) throw error;
+        setMe(data);
+        toast.success("Application submitted! The admin team will review it within a day.");
+      } catch (e: any) {
+        const m = String(e?.message ?? "");
+        toast.error(
+          m.includes("dl_format") ? "Driving licence format is not valid."
+          : m.includes("duplicate") ? "You have already registered as a delivery partner."
+          : m.includes("_check") ? "Some details are not accepted. Please check and try again."
+          : "Could not submit right now. Please try again.",
+        );
+      } finally {
+        setRegBusy(false);
+      }
+    }
+
     return (
       <Shell>
         <RiderHeader subtitle="Join as delivery partner" />
-        <div className="space-y-2 p-4">
-          {([["name", "Your name"], ["mobile", "Mobile number"], ["vehicle_no", "Vehicle number"]] as const).map(([k, label]) => (
-            <label key={k} className="block">
-              <span className="mb-1 block text-xs font-semibold text-muted-foreground">{label}</span>
-              <input
-                value={form[k]}
-                onChange={(e) => setForm({ ...form, [k]: e.target.value })}
-                className="w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
-              />
-            </label>
-          ))}
+        <div className="space-y-2 p-4 pb-40">
+          <p className="text-xs font-black uppercase tracking-wide text-muted-foreground">Personal details</p>
+          {field("name", "Your full name")}
+          {field("mobile", "Mobile number", mobileBad, "+91…")}
+          {field("emergency_phone", "Emergency contact number", emBad, "+91…")}
+          {field("address", "Home address")}
+          {fileRow("Profile photo", docs.photo, (f) => setDocs({ ...docs, photo: f }))}
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-muted-foreground">Preferred delivery zones</span>
+            <div className="flex flex-wrap gap-1.5">
+              {BBSR_ZONES.map((z) => (
+                <button
+                  key={z}
+                  type="button"
+                  onClick={() => setZones((prev) => prev.includes(z) ? prev.filter((x) => x !== z) : [...prev, z])}
+                  className={`rounded-full border px-3 py-1 text-[11px] font-bold ${zones.includes(z) ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+                >
+                  {z}
+                </button>
+              ))}
+            </div>
+          </label>
+
+          <p className="pt-2 text-xs font-black uppercase tracking-wide text-muted-foreground">Licence & vehicle</p>
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-muted-foreground">Driving licence number</span>
             <input
               value={form.dl_number}
-              inputMode="text"
               autoCapitalize="characters"
               placeholder="OD02 20210012345"
               onChange={(e) => setForm({ ...form, dl_number: normalizeDl(e.target.value) })}
-              className={`w-full rounded-xl border px-3 py-2.5 text-sm uppercase outline-none ${
-                form.dl_number && dlError(form.dl_number) ? "border-destructive" : "border-border focus:border-primary"
-              }`}
+              className={dlBad ? badCls : inputCls}
             />
-            {form.dl_number && dlError(form.dl_number) ? (
-              <span className="mt-1 block text-[11px] font-semibold text-destructive">{dlError(form.dl_number)}</span>
-            ) : (
-              <span className="mt-1 block text-[11px] text-muted-foreground">Format: 2 letters, 2 digits, then 11 digits.</span>
-            )}
+            {dlBad ? <span className="mt-1 block text-[11px] font-semibold text-destructive">{dlBad}</span> : null}
           </label>
-          <button
-            disabled={Boolean(dlError(form.dl_number))}
-            onClick={async () => {
-              const bad = dlError(form.dl_number);
-              if (bad) return setMsg(bad);
-              setMsg("");
-              try {
-                const { data, error } = await supabase.from("delivery_partners").insert({
-                  user_id: user.id, name: form.name, mobile: form.mobile, vehicle_no: form.vehicle_no,
-                  dl_number: form.dl_number.trim(), status: "PENDING",
-                }).select("id,name,status,is_online,is_busy,dl_number").single();
-                if (error) throw error;
-                setMe(data);
-                toast.success("Details submitted for review!");
-              } catch (e: any) {
-                const m = String(e?.message ?? "");
-                toast.error(
-                  m.includes("dl_format") ? "Driving licence format is not valid."
-                  : m.includes("duplicate") ? "You have already registered as a delivery partner."
-                  : m.includes("_check") ? "Some details are not accepted. Please check and try again."
-                  : "Could not submit right now. Please try again.",
-                );
-                setMsg("");
-              }
-            }}
+          {fileRow("Driving licence photo", docs.dlDoc, (f) => setDocs({ ...docs, dlDoc: f }))}
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-muted-foreground">Vehicle type</span>
+            <select value={form.vehicle_type} onChange={(e) => setForm({ ...form, vehicle_type: e.target.value })} className={inputCls}>
+              {VEHICLE_TYPES.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+            </select>
+          </label>
+          {field("vehicle_no", "Vehicle number (optional)", null, "OD 02 AB 1234")}
 
+          <p className="pt-2 text-xs font-black uppercase tracking-wide text-muted-foreground">Identity</p>
+          {field("pan", "PAN number", panBad, "ABCDE1234F")}
+          {fileRow("PAN card photo", docs.panCard, (f) => setDocs({ ...docs, panCard: f }))}
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-muted-foreground">Identity proof type</span>
+            <select value={form.identity_proof_type} onChange={(e) => setForm({ ...form, identity_proof_type: e.target.value })} className={inputCls}>
+              {ID_PROOF_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </label>
+          {field("identity_number", "Identity proof number")}
+          {fileRow("Identity proof document", docs.idDoc, (f) => setDocs({ ...docs, idDoc: f }))}
+
+          <p className="pt-2 text-xs font-black uppercase tracking-wide text-muted-foreground">Bank details for payouts</p>
+          {field("bank_holder", "Account holder name")}
+          {field("bank_name", "Bank name")}
+          {field("bank_account_no", "Account number")}
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-muted-foreground">IFSC code</span>
+            <input
+              value={form.bank_ifsc}
+              autoCapitalize="characters"
+              placeholder="HDFC0001234"
+              onChange={(e) => setForm({ ...form, bank_ifsc: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 11) })}
+              className={ifscBad ? badCls : inputCls}
+            />
+            {ifscBad ? <span className="mt-1 block text-[11px] font-semibold text-destructive">{ifscBad}</span> : null}
+          </label>
+          {field("upi_id", "UPI ID (optional)", null, "name@bank")}
+          {fileRow("Bank proof (passbook / cancelled cheque)", docs.bankProof, (f) => setDocs({ ...docs, bankProof: f }))}
+
+          <label className="flex items-start gap-2 rounded-xl border border-border p-3">
+            <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} className="mt-0.5" />
+            <span className="text-xs text-muted-foreground">
+              I agree to ThelaWala&apos;s <Link to="/terms" className="font-bold text-primary">partner terms</Link> and confirm these details are correct.
+            </span>
+          </label>
+
+          <button
+            disabled={regBusy}
+            onClick={submitRegistration}
             className="press w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
           >
-            Send for approval
+            {regBusy ? "Uploading documents…" : "Send for approval"}
           </button>
-          {msg ? <p className="text-xs text-destructive">{msg}</p> : null}
+          {msg ? <p className="text-xs font-semibold text-destructive">{msg}</p> : null}
         </div>
       </Shell>
     );
