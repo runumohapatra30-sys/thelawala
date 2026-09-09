@@ -33,8 +33,7 @@ export function AdminApprovals() {
   useEffect(() => { void load(); }, []);
 
   async function decide(kind: Kind, id: string, status: string, reason?: string) {
-    const patch: Record<string, unknown> = { status };
-    if (status === "REJECTED") patch['rejection_reason'] = reason ?? null;
+    const patch = { status, ...(status === "REJECTED" ? { rejection_reason: reason ?? null } : {}) };
     const { error } = kind === "VENDOR"
       ? await supabase.from("vendors").update(patch).eq("id", id)
       : await supabase.from("delivery_partners").update(patch).eq("id", id);
