@@ -6,7 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { offerToNearestPartner } from "@/lib/dispatch";
 import { inr, STATUS_LABEL } from "@/lib/fees";
 import { useSession } from "@/lib/session";
-import { fssaiError, normalizeFssai } from "@/lib/validation";
+import { fssaiError, ifscError, normalizeFssai, panError, phoneError } from "@/lib/validation";
+import { BBSR_ZONES, ID_PROOF_TYPES, uploadKycDoc } from "@/lib/kyc";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 
@@ -86,7 +87,17 @@ function VendorPortal() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
-  const [form, setForm] = useState({ stall_name: "", owner_name: "", mobile: "", address: "", fssai_number: "" });
+  const [form, setForm] = useState({
+    stall_name: "", owner_name: "", mobile: "", zone: "", address: "",
+    fssai_number: "", pan: "", identity_proof_type: "Aadhaar", identity_number: "",
+    bank_holder: "", bank_name: "", bank_account_no: "", bank_ifsc: "", upi_id: "",
+  });
+  const [cuisines, setCuisines] = useState<string[]>([]);
+  const [docs, setDocs] = useState<{ idDoc: File | null; fssaiCert: File | null; stallPhotos: File[]; bankProof: File | null }>({
+    idDoc: null, fssaiCert: null, stallPhotos: [], bankProof: null,
+  });
+  const [terms, setTerms] = useState(false);
+  const [regBusy, setRegBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [fssaiDraft, setFssaiDraft] = useState("");
   const [fssaiMsg, setFssaiMsg] = useState<string | null>(null);
@@ -220,79 +231,194 @@ function VendorPortal() {
   }
 
   if (!vendor) {
+    const inputCls = "w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary";
+    const badCls = "w-full rounded-xl border border-destructive px-3 py-2.5 text-sm outline-none";
+    const field = (k: keyof typeof form, label: string, err?: string | null, placeholder?: string) => (
+      <label key={k} className="block">
+        <span className="mb-1 block text-xs font-semibold text-muted-foreground">{label}</span>
+        <input
+          value={form[k]}
+          placeholder={placeholder}
+          onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+          className={err ? badCls : inputCls}
+        />
+        {err ? <span className="mt-1 block text-[11px] font-semibold text-destructive">{err}</span> : null}
+      </label>
+    );
+    const fileRow = (label: string, file: File | null, onPick: (f: File | null) => void, accept = "image/*") => (
+      <label className="flex items-center justify-between gap-2 rounded-xl border border-dashed border-border px-3 py-2.5">
+        <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+        <span className="max-w-[55%] truncate text-xs font-bold text-primary">{file ? file.name : "Choose file"}</span>
+        <input type="file" accept={accept} className="hidden" onChange={(e) => onPick(e.target.files?.[0] ?? null)} />
+      </label>
+    );
+    const fssaiBad = form.fssai_number ? fssaiError(form.fssai_number) : null;
+    const panBad = form.pan ? panError(form.pan) : null;
+    const mobileBad = form.mobile ? phoneError(form.mobile) : null;
+    const ifscBad = form.bank_ifsc ? ifscError(form.bank_ifsc) : null;
+
+    async function submitRegistration() {
+      if (!form.stall_name.trim() || !form.owner_name.trim()) return setMsg("Add your stall name and owner name.");
+      if (!form.zone) return setMsg("Pick your delivery zone.");
+      if (phoneError(form.mobile)) return setMsg(phoneError(form.mobile));
+      if (fssaiError(form.fssai_number)) return setMsg(fssaiError(form.fssai_number));
+      if (panError(form.pan)) return setMsg(panError(form.pan));
+      if (!form.identity_number.trim()) return setMsg("Add your identity proof number.");
+      if (!form.address.trim()) return setMsg("Add your stall address.");
+      if (!docs.idDoc) return setMsg("Upload your identity proof document.");
+      if (!docs.fssaiCert) return setMsg("Upload your FSSAI certificate.");
+      if (docs.stallPhotos.length === 0) return setMsg("Add at least one stall photo.");
+      if (!form.bank_holder.trim() || !form.bank_account_no.trim()) return setMsg("Add the account holder name and account number.");
+      if (ifscError(form.bank_ifsc)) return setMsg(ifscError(form.bank_ifsc));
+      if (!docs.bankProof) return setMsg("Upload a bank proof (passbook or cancelled cheque).");
+      if (!terms) return setMsg("Please accept the partner terms to continue.");
+      setRegBusy(true);
+      setMsg(null);
+      try {
+        const [idUrl, certUrl, bankUrl, stallUrls] = await Promise.all([
+          uploadKycDoc(user!.id, docs.idDoc!, "id-proof"),
+          uploadKycDoc(user!.id, docs.fssaiCert!, "fssai-certificate"),
+          uploadKycDoc(user!.id, docs.bankProof!, "bank-proof"),
+          Promise.all(docs.stallPhotos.map((f) => uploadKycDoc(user!.id, f, "stall-photo"))),
+        ]);
+        const pos = await new Promise<GeolocationPosition | null>((res) =>
+          navigator.geolocation ? navigator.geolocation.getCurrentPosition((p) => res(p), () => res(null)) : res(null),
+        );
+        const { data, error } = await supabase.from("vendors").insert({
+          stall_name: form.stall_name.trim(),
+          owner_name: form.owner_name.trim(),
+          mobile: form.mobile.trim(),
+          address: form.address.trim(),
+          zone: form.zone,
+          owner_id: user!.id,
+          lat: pos?.coords.latitude ?? 20.2961,
+          lng: pos?.coords.longitude ?? 85.8245,
+          fssai_number: form.fssai_number.trim(),
+          pan_number: form.pan.trim(),
+          identity_proof_type: form.identity_proof_type,
+          identity_number: form.identity_number.trim(),
+          id_document_url: idUrl,
+          fssai_certificate_url: certUrl,
+          cuisine_types: cuisines,
+          stall_photos: stallUrls,
+          bank_holder: form.bank_holder.trim(),
+          bank_name: form.bank_name.trim() || null,
+          bank_account_no: form.bank_account_no.trim(),
+          bank_ifsc: form.bank_ifsc.trim().toUpperCase(),
+          upi_id: form.upi_id.trim() || null,
+          bank_proof_url: bankUrl,
+          terms_accepted_at: new Date().toISOString(),
+          status: "PENDING",
+        }).select("id,stall_name,status,is_open,fssai_number").single();
+        if (error) throw error;
+        setVendor(data);
+        toast.success("Stall application submitted! The admin team will review it within a day.");
+      } catch (e: any) {
+        const m = String(e?.message ?? "");
+        toast.error(
+          m.includes("fssai_format") ? "FSSAI number must be 14 digits starting with 1 or 2."
+          : m.includes("duplicate") ? "You have already registered a stall."
+          : m.includes("_check") ? "Some details are not accepted. Please check and try again."
+          : "Could not submit right now. Please try again.",
+        );
+      } finally {
+        setRegBusy(false);
+      }
+    }
+
     return (
       <Shell>
         <PortalHeader title="Register your stall" subtitle="Approval usually takes a day" />
-        <div className="space-y-2 p-4">
-          {([["stall_name", "Stall name"], ["owner_name", "Owner name"], ["mobile", "Mobile number"], ["address", "Stall address"]] as const).map(([k, label]) => (
-            <label key={k} className="block">
-              <span className="mb-1 block text-xs font-semibold text-muted-foreground">{label}</span>
-              <input
-                value={form[k]}
-                onChange={(e) => setForm({ ...form, [k]: e.target.value })}
-                className="w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
-              />
-            </label>
-          ))}
+        <div className="space-y-2 p-4 pb-40">
+          <p className="text-xs font-black uppercase tracking-wide text-muted-foreground">Stall details</p>
+          {field("stall_name", "Stall name")}
+          {field("owner_name", "Owner full name")}
+          {field("mobile", "Mobile number", mobileBad, "+91…")}
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-muted-foreground">Delivery zone</span>
+            <select value={form.zone} onChange={(e) => setForm({ ...form, zone: e.target.value })} className={inputCls}>
+              <option value="">Choose zone…</option>
+              {BBSR_ZONES.map((z) => <option key={z} value={z}>{z}</option>)}
+            </select>
+          </label>
+          {field("address", "Stall address")}
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-muted-foreground">Cuisine types</span>
+            <div className="flex flex-wrap gap-1.5">
+              {["Morning Tiffin", "Chaat & Snacks", "Sweets & Desserts", "Rolls & Wraps", "Beverages", "Meals"].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCuisines((prev) => prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c])}
+                  className={`rounded-full border px-3 py-1 text-[11px] font-bold ${cuisines.includes(c) ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </label>
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-muted-foreground">FSSAI licence number</span>
             <input
               value={form.fssai_number}
               inputMode="numeric"
-              placeholder="14 digits, e.g. 12345678901234"
+              placeholder="14 digits, e.g. 22024001000891"
               onChange={(e) => setForm({ ...form, fssai_number: normalizeFssai(e.target.value) })}
-              className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none ${
-                form.fssai_number && fssaiError(form.fssai_number) ? "border-destructive" : "border-border focus:border-primary"
-              }`}
+              className={fssaiBad ? badCls : inputCls}
             />
-            {form.fssai_number && fssaiError(form.fssai_number) ? (
-              <span className="mt-1 block text-[11px] font-semibold text-destructive">{fssaiError(form.fssai_number)}</span>
-            ) : (
-              <span className="mt-1 block text-[11px] text-muted-foreground">Exactly 14 digits, starting with 1 or 2.</span>
-            )}
+            {fssaiBad ? <span className="mt-1 block text-[11px] font-semibold text-destructive">{fssaiBad}</span> : null}
           </label>
-          <button
-            disabled={Boolean(fssaiError(form.fssai_number))}
-            onClick={async () => {
-              const badFssai = fssaiError(form.fssai_number);
-              if (badFssai) return setMsg(badFssai);
-              setMsg("");
-              const pos = await new Promise<GeolocationPosition | null>((res) =>
-                navigator.geolocation
-                  ? navigator.geolocation.getCurrentPosition((p) => res(p), () => res(null))
-                  : res(null),
-              );
-              try {
-                const { data, error } = await supabase.from("vendors").insert({
-                  stall_name: form.stall_name,
-                  owner_name: form.owner_name,
-                  mobile: form.mobile,
-                  address: form.address,
-                  owner_id: user.id,
-                  lat: pos?.coords.latitude ?? 20.2961,
-                  lng: pos?.coords.longitude ?? 85.8245,
-                  fssai_number: form.fssai_number.trim(),
-                  status: "PENDING",
-                }).select("id,stall_name,status,is_open,fssai_number").single();
-                if (error) throw error;
-                setVendor(data);
-                toast.success("Stall details submitted for review!");
-              } catch (e: any) {
-                const m = String(e?.message ?? "");
-                toast.error(
-                  m.includes("fssai_format") ? "FSSAI number must be 14 digits starting with 1 or 2."
-                  : m.includes("duplicate") ? "You have already registered a stall."
-                  : m.includes("_check") ? "Some details are not accepted. Please check and try again."
-                  : "Could not submit right now. Please try again.",
-                );
-              }
-            }}
+          {fileRow("FSSAI certificate (photo/PDF)", docs.fssaiCert, (f) => setDocs({ ...docs, fssaiCert: f }), "image/*,application/pdf")}
+          <label className="flex items-center justify-between gap-2 rounded-xl border border-dashed border-border px-3 py-2.5">
+            <span className="text-xs font-semibold text-muted-foreground">Stall photos ({docs.stallPhotos.length} chosen)</span>
+            <span className="text-xs font-bold text-primary">Add photos</span>
+            <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => setDocs({ ...docs, stallPhotos: Array.from(e.target.files ?? []).slice(0, 5) })} />
+          </label>
 
-            className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground"
+          <p className="pt-2 text-xs font-black uppercase tracking-wide text-muted-foreground">Owner identity</p>
+          {field("pan", "PAN number", panBad, "ABCPS1234F")}
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-muted-foreground">Identity proof type</span>
+            <select value={form.identity_proof_type} onChange={(e) => setForm({ ...form, identity_proof_type: e.target.value })} className={inputCls}>
+              {ID_PROOF_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </label>
+          {field("identity_number", "Identity proof number")}
+          {fileRow("Identity proof document", docs.idDoc, (f) => setDocs({ ...docs, idDoc: f }))}
+
+          <p className="pt-2 text-xs font-black uppercase tracking-wide text-muted-foreground">Bank details for payouts</p>
+          {field("bank_holder", "Account holder name")}
+          {field("bank_name", "Bank name")}
+          {field("bank_account_no", "Account number")}
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-muted-foreground">IFSC code</span>
+            <input
+              value={form.bank_ifsc}
+              autoCapitalize="characters"
+              placeholder="SBIN0001234"
+              onChange={(e) => setForm({ ...form, bank_ifsc: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 11) })}
+              className={ifscBad ? badCls : inputCls}
+            />
+            {ifscBad ? <span className="mt-1 block text-[11px] font-semibold text-destructive">{ifscBad}</span> : null}
+          </label>
+          {field("upi_id", "UPI ID (optional)", null, "name@bank")}
+          {fileRow("Bank proof (passbook / cancelled cheque)", docs.bankProof, (f) => setDocs({ ...docs, bankProof: f }))}
+
+          <label className="flex items-start gap-2 rounded-xl border border-border p-3">
+            <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} className="mt-0.5" />
+            <span className="text-xs text-muted-foreground">
+              I agree to ThelaWala&apos;s <Link to="/terms" className="font-bold text-primary">partner terms</Link> and confirm these details are correct.
+            </span>
+          </label>
+
+          <button
+            disabled={regBusy}
+            onClick={submitRegistration}
+            className="press w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
           >
-            Send for approval
+            {regBusy ? "Uploading documents…" : "Send for approval"}
           </button>
-          {msg ? <p className="text-xs text-destructive">{msg}</p> : null}
+          {msg ? <p className="text-xs font-semibold text-destructive">{msg}</p> : null}
         </div>
       </Shell>
     );
