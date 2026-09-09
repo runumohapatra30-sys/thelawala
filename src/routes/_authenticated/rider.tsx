@@ -822,6 +822,70 @@ function RiderPortal() {
           onConfirm={completeDelivery}
         />
       ) : null}
+
+      {cancelOpen && trip ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60">
+          <div className="w-full max-w-[480px] rounded-t-3xl bg-card p-4 pb-6">
+            <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-border" />
+            <div className="flex items-start justify-between">
+              <p className="text-base font-extrabold">Cancel order #{trip.code}</p>
+              <button onClick={() => setCancelOpen(false)} className="press text-sm font-bold text-muted-foreground">Close</button>
+            </div>
+
+            {!trip.cancel_otp ? (
+              <>
+                <p className="mt-2 text-xs text-muted-foreground">Choose why you are cancelling this order.</p>
+                <div className="mt-2 space-y-2">
+                  {CANCEL_REASONS.map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setCancelReason(r)}
+                      className={`w-full rounded-xl border px-3 py-2.5 text-left text-sm ${
+                        cancelReason === r ? "border-destructive font-bold text-destructive" : "border-border"
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  disabled={cancelBusy}
+                  onClick={requestCancel}
+                  className="press mt-3 w-full rounded-xl bg-destructive py-3 text-sm font-bold text-destructive-foreground disabled:opacity-50"
+                >
+                  {cancelBusy ? "Please wait…" : "Send cancel PIN to customer"}
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Reason: <span className="font-bold text-foreground">{trip.cancel_reason}</span>. The customer now sees a 4-digit
+                  cancel PIN in their app. Enter it to finish the cancellation.
+                </p>
+                <input
+                  value={cancelCode}
+                  inputMode="numeric"
+                  maxLength={OTP_LEN}
+                  placeholder="0000"
+                  onChange={(e) => {
+                    setCancelCode(e.target.value.replace(/\D/g, "").slice(0, OTP_LEN));
+                    setCancelMsg(null);
+                  }}
+                  className="mt-3 w-full rounded-xl border border-border py-3 text-center text-2xl font-black tracking-[0.5em] outline-none focus:border-destructive"
+                />
+                <button
+                  disabled={cancelBusy || cancelCode.length < OTP_LEN}
+                  onClick={confirmCancel}
+                  className="press mt-3 w-full rounded-xl bg-destructive py-3 text-sm font-bold text-destructive-foreground disabled:opacity-50"
+                >
+                  {cancelBusy ? "Please wait…" : "Confirm & cancel order"}
+                </button>
+              </>
+            )}
+            {cancelMsg ? <p className="mt-2 text-xs font-semibold text-destructive">{cancelMsg}</p> : null}
+          </div>
+        </div>
+      ) : null}
     </Shell>
   );
 }
