@@ -32,6 +32,7 @@ export function MarketingManager() {
 
   return (
     <div className="space-y-3">
+      <BannerStudio />
       <BannerManager vendors={vendors} cats={cats} />
       <CampaignBuilder cats={cats} />
       <SmartAssetManager />
