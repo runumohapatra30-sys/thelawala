@@ -230,46 +230,47 @@ function Home() {
         </div>
       ) : null}
 
-      <section className="px-4 pt-4">
-        <h2 className="text-sm font-black">Thela categories</h2>
-        <div className="mt-2 grid grid-cols-4 gap-2">
+      <section className="px-5 pt-6">
+        <h2 className="text-[17px] font-extrabold">Quick bites</h2>
+        <p className="mt-0.5 text-xs font-medium text-muted-foreground">Pick a craving, we do the running</p>
+        <div className="mt-3 grid grid-cols-4 gap-2.5">
           <button
             onClick={() => setActive(null)}
-            className={`press rounded-2xl border p-2 text-center ${!active ? "border-primary" : "border-transparent"} ${TINTS[0]}`}
+            className={`press aspect-square rounded-[1.35rem] p-2 text-center transition-all ${!active ? "ring-2 ring-primary" : ""} ${TINTS[0]} shadow-[0_10px_22px_-16px_rgba(15,23,42,0.7)]`}
           >
-            <span className="block text-xl">🍽️</span>
-            <span className="mt-1 block text-[10px] font-bold leading-tight">All</span>
+            <span className="mt-1 block text-2xl">🍽️</span>
+            <span className="mt-1 block text-[10px] font-extrabold leading-tight">All</span>
           </button>
           {cats.map((c, idx) => (
             <button
               key={c.id}
               onClick={() => setActive(c.id)}
-              className={`press rounded-2xl border p-2 text-center ${active === c.id ? "border-primary" : "border-transparent"} ${TINTS[(idx + 1) % TINTS.length]}`}
+              className={`press aspect-square rounded-[1.35rem] p-2 text-center transition-all ${active === c.id ? "ring-2 ring-primary" : ""} ${TINTS[(idx + 1) % TINTS.length]} shadow-[0_10px_22px_-16px_rgba(15,23,42,0.7)]`}
             >
-              <span className="block text-xl">{c.emoji ?? "🥘"}</span>
-              <span className="mt-1 block text-[10px] font-bold leading-tight">{c.name}</span>
+              <span className="mt-1 block text-2xl">{c.emoji ?? "🥘"}</span>
+              <span className="mt-1 block truncate text-[10px] font-extrabold leading-tight">{c.name}</span>
             </button>
           ))}
         </div>
       </section>
 
-      <section className="flex items-center gap-2 px-4 pt-5">
-        <h2 className="mr-auto text-sm font-black">Hot from the thela</h2>
+      <section className="flex items-center gap-2 px-5 pt-7">
+        <h2 className="mr-auto text-[17px] font-extrabold">Trending stalls</h2>
         <button
           onClick={() => setOnlyVeg((v) => !v)}
-          className={`press rounded-full border px-2.5 py-1 text-[11px] font-black ${onlyVeg ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+          className={`press rounded-full border px-3 py-1.5 text-[11px] font-extrabold ${onlyVeg ? "border-primary bg-[color-mix(in_oklab,var(--color-primary)_10%,white)] text-primary" : "border-border text-muted-foreground"}`}
         >
           Veg only
         </button>
         <button
           onClick={() => setOnlyFav((v) => !v)}
-          className={`press rounded-full border px-2.5 py-1 text-[11px] font-black ${onlyFav ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+          className={`press rounded-full border px-3 py-1.5 text-[11px] font-extrabold ${onlyFav ? "border-primary bg-[color-mix(in_oklab,var(--color-primary)_10%,white)] text-primary" : "border-border text-muted-foreground"}`}
         >
           ♥ Favourites
         </button>
       </section>
 
-      <div className="grid grid-cols-2 gap-3 px-4 pb-32 pt-2">
+      <div className="grid grid-cols-2 gap-3.5 px-5 pb-36 pt-3">
         {shown.map((i) => {
           const line = lines.find((l) => l.itemId === i.id);
           const off = Number(i.mrp) > Number(i.price)
