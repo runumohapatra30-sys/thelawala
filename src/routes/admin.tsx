@@ -341,6 +341,8 @@ function Admin() {
             {orders.length === 0 ? <p className="text-xs text-muted-foreground">No orders yet.</p> : null}
           </div>
         </section>
+        </>
+        )}
       </div>
     </Shell>
   );
