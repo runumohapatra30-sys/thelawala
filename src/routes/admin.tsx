@@ -27,7 +27,7 @@ export const Route = createFileRoute("/admin")({
 
 type OrderRow = { id: string; code: string; status: string; grand_total: number; delivery_fee: number; platform_fee: number; food_total: number; created_at: string };
 
-const SUPERADMIN_EMAIL = "runumohapatra808@gmail.com";
+
 
 function Admin() {
   const { user, loading } = useSession();
@@ -40,7 +40,7 @@ function Admin() {
   const [closures, setClosures] = useState<{ id: string; amount: number; status: string }[]>([]);
   const [saved, setSaved] = useState(false);
   const [tab, setTab] = useState<"ops" | "marketing">("ops");
-  const isSuper = (user?.email ?? "").toLowerCase() === SUPERADMIN_EMAIL;
+  const isSuper = isAdmin;
 
   const loadMoney = () => {
     supabase.from("refund_requests").select("id,amount,reason,method,status").eq("status", "PENDING").then(({ data }) => setRefunds(data ?? []));
