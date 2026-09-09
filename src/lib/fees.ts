@@ -1,4 +1,5 @@
 import type { Tables } from "@/integrations/supabase/types";
+import { deliveryFeeForDistance } from "@/lib/pricing";
 
 export type Settings = Tables<"system_settings">;
 
@@ -47,12 +48,8 @@ export function computeBill({
   distanceKm,
   penaltyFee = 0,
 }: BillInput): Bill {
-  const base = Number(s.base_delivery_fee);
-  const baseKm = Number(s.base_delivery_distance_km);
-  const perKm = Number(s.extra_fee_per_km);
-
-  let deliveryFee =
-    distanceKm <= baseKm ? base : base + (distanceKm - baseKm) * perKm;
+  // Hyperlocal slab pricing: ₹15 / ₹18 / ₹22 / ₹25 by distance.
+  let deliveryFee = deliveryFeeForDistance(distanceKm);
   const threshold = s.free_delivery_threshold;
   if (threshold != null && foodTotal >= Number(threshold)) deliveryFee = 0;
   deliveryFee = r2(deliveryFee);

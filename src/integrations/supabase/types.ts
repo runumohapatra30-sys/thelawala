@@ -56,6 +56,60 @@ export type Database = {
         }
         Relationships: []
       }
+      app_dynamic_assets: {
+        Row: {
+          activated_at: string | null
+          ai_reason: string | null
+          banner_image_url: string
+          category_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          is_enabled: boolean
+          lottie_url: string | null
+          subtitle: string | null
+          time_slots: string[]
+          title: string
+          updated_at: string
+          vendor_id: string | null
+          weather_tags: string[]
+        }
+        Insert: {
+          activated_at?: string | null
+          ai_reason?: string | null
+          banner_image_url: string
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_enabled?: boolean
+          lottie_url?: string | null
+          subtitle?: string | null
+          time_slots?: string[]
+          title: string
+          updated_at?: string
+          vendor_id?: string | null
+          weather_tags?: string[]
+        }
+        Update: {
+          activated_at?: string | null
+          ai_reason?: string | null
+          banner_image_url?: string
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_enabled?: boolean
+          lottie_url?: string | null
+          subtitle?: string | null
+          time_slots?: string[]
+          title?: string
+          updated_at?: string
+          vendor_id?: string | null
+          weather_tags?: string[]
+        }
+        Relationships: []
+      }
       banners: {
         Row: {
           category_id: string | null

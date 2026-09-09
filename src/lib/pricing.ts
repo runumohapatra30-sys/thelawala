@@ -12,3 +12,66 @@ export const customerPrice = (base: number | string | null | undefined) =>
 /** Amount credited to the stall when the order is delivered. */
 export const vendorEarning = (base: number | string | null | undefined) =>
   Math.round(Number(base ?? 0) * VENDOR_PAYOUT_RATE);
+
+/** Hard delivery radius. Nothing is delivered beyond this. */
+export const MAX_DELIVERY_KM = 5.0;
+
+/** Minimum cart value (vendor base total) for the given distance. */
+export function minimumOrderValue(distanceKm: number): number {
+  return distanceKm > 4.0 ? 199 : 99;
+}
+
+/** Flat, distance-slab delivery fee. */
+export function deliveryFeeForDistance(distanceKm: number): number {
+  if (distanceKm <= 1.5) return 15;
+  if (distanceKm <= 3.0) return 18;
+  if (distanceKm <= 4.0) return 22;
+  return 25;
+}
+
+/** Fixed profit the platform keeps from the margin pool. */
+export function platformRetainedProfit(distanceKm: number): number {
+  if (distanceKm <= 3.0) return 7;
+  if (distanceKm <= 4.0) return 5;
+  return 10;
+}
+
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
+/** Full margin split for an order, from the stall's base total. */
+export function marginSplit(baseTotal: number, distanceKm: number) {
+  const customerItemTotal = r2(baseTotal * PRICE_MARKUP);
+  const vendorPayout = r2(baseTotal * VENDOR_PAYOUT_RATE);
+  const marginPool = r2(customerItemTotal - vendorPayout);
+  const retained = platformRetainedProfit(distanceKm);
+  const riderGift = Math.max(0, r2(marginPool - retained));
+  const deliveryFee = deliveryFeeForDistance(distanceKm);
+  return {
+    customerItemTotal,
+    vendorPayout,
+    marginPool,
+    platformProfit: retained,
+    riderGift,
+    deliveryFee,
+    riderPayout: r2(deliveryFee + riderGift),
+  };
+}
+
+export type CheckoutGate =
+  | { ok: true }
+  | { ok: false; reason: string };
+
+/** Radius cap + distance-based minimum order value. */
+export function checkoutGate(distanceKm: number, baseTotal: number): CheckoutGate {
+  if (distanceKm > MAX_DELIVERY_KM) return { ok: false, reason: "Delivery unavailable beyond 5 km." };
+  const mov = minimumOrderValue(distanceKm);
+  if (baseTotal < mov)
+    return {
+      ok: false,
+      reason:
+        distanceKm > 4.0
+          ? "Minimum order for 4-5 km is ₹199."
+          : "Minimum order for this distance is ₹99.",
+    };
+  return { ok: true };
+}
