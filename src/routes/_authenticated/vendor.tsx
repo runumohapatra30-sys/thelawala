@@ -96,7 +96,7 @@ function VendorPortal() {
     if (!vendor) return;
     const load = () => {
       supabase.from("orders")
-        .select("id,code,status,grand_total,food_total,pickup_otp,qr_hash,customer_name,address_line,partner_id")
+        .select("id,code,status,grand_total,food_total,pickup_otp,qr_hash,customer_name,address_line,partner_id,delivery_instructions,ready_at")
         .eq("vendor_id", vendor.id).order("created_at", { ascending: false }).limit(30)
         .then(({ data }) => setOrders((data ?? []) as Order[]));
     };
