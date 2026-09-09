@@ -480,9 +480,34 @@ function RiderPortal() {
   async function completeDelivery() {
     if (!trip || !me) return;
     if (!photo) return setMsg("Take the handover photo first.");
-    await supabase.from("orders").update({ proof_photo_url: photo }).eq("id", trip.id);
+    setMsg(null);
+
+    // Store the handover photo as a real file (a base64 photo is too big for the orders row).
+    let proofPath = photo;
+    try {
+      const blob = await (await fetch(photo)).blob();
+      const path = `${trip.id}/proof-${Date.now()}.jpg`;
+      const up = await supabase.storage.from("delivery-proofs").upload(path, blob, {
+        contentType: blob.type || "image/jpeg",
+        upsert: true,
+      });
+      if (!up.error) proofPath = path;
+    } catch {
+      /* keep going — the PIN check matters more than the photo upload */
+    }
+
+    const { error: upErr } = await supabase.from("orders").update({ proof_photo_url: proofPath }).eq("id", trip.id);
+    if (upErr) return setMsg(`Could not save the handover photo: ${upErr.message}`);
+
     const { error } = await supabase.rpc("complete_delivery", { _order_id: trip.id, _otp: dropCode.trim() });
-    if (error) return setMsg("Wrong delivery PIN. Ask the customer to read it again.");
+    if (error) {
+      const m = error.message ?? "";
+      return setMsg(
+        m.toLowerCase().includes("wrong delivery pin")
+          ? "Wrong delivery PIN. Ask the customer to read it again."
+          : `Could not complete delivery: ${m}`,
+      );
+    }
     chime(true);
     setMsg(null);
     setActive(null);
@@ -491,6 +516,7 @@ function RiderPortal() {
     setShowComplete(false);
     toast.success("Delivery completed · earnings added");
   }
+
 
   // Fallback when the QR will not scan: last 4 digits/characters of the order id.
   async function pickupByCode() {
