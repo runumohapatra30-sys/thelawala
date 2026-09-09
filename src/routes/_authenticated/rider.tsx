@@ -13,6 +13,7 @@ import { dlError, ifscError, normalizeDl, panError, phoneError } from "@/lib/val
 import { BBSR_ZONES, ID_PROOF_TYPES, VEHICLE_TYPES, uploadKycDoc } from "@/lib/kyc";
 import { useLoudAlarm } from "@/lib/alarm";
 import { toast } from "sonner";
+import { DynamicPageRenderer } from "@/components/DynamicPageRenderer";
 import { Html5Qrcode } from "html5-qrcode";
 
 export const Route = createFileRoute("/_authenticated/rider")({

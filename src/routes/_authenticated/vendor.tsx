@@ -12,6 +12,8 @@ import { BBSR_ZONES, ID_PROOF_TYPES, uploadKycDoc } from "@/lib/kyc";
 import { useLoudAlarm } from "@/lib/alarm";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
+import { SectionList } from "@/components/DynamicPageRenderer";
+import { usePageLayout } from "@/lib/pageLayout";
 
 export const Route = createFileRoute("/_authenticated/vendor")({
   head: () => ({
@@ -539,7 +541,7 @@ function VendorPortal() {
           </section>
         ) : null}
 
-        <section className="space-y-2">
+        <section className={`space-y-2 ${vLayout.find((x) => x.type === "vendor_active_orders")?.is_visible === false ? "hidden" : ""}`}>
           <p className="section-title">Live orders</p>
           {orders.length === 0 ? (
             <div className="portal-panel border-dashed text-center">
