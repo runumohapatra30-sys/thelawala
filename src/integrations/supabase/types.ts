@@ -1708,6 +1708,7 @@ export type Database = {
         Args: { _approve: boolean; _refund_ref?: string; _request_id: string }
         Returns: undefined
       }
+      dispatch_order: { Args: { _order_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1741,6 +1742,7 @@ export type Database = {
         Returns: string
       }
       request_wallet_closure: { Args: never; Returns: string }
+      sweep_dispatch: { Args: never; Returns: number }
       vendor_balance: { Args: { _vendor_id: string }; Returns: number }
       wallet_credit: {
         Args: {
