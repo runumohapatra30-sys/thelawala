@@ -9,6 +9,7 @@ import { haversineKm, inr } from "@/lib/fees";
 import { useSession } from "@/lib/session";
 import { dlError, ifscError, normalizeDl, panError, phoneError } from "@/lib/validation";
 import { BBSR_ZONES, ID_PROOF_TYPES, VEHICLE_TYPES, uploadKycDoc } from "@/lib/kyc";
+import { useLoudAlarm } from "@/lib/alarm";
 import { toast } from "sonner";
 import { Html5Qrcode } from "html5-qrcode";
 
