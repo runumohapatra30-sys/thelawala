@@ -161,7 +161,7 @@ const LayoutSection = z.object({
   type: z.string(),
   is_visible: z.boolean(),
   order: z.number(),
-  config: z.record(z.string(), z.unknown()).default({}),
+  config: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).default({}),
 });
 
 const LayoutCopilotInput = z.object({
@@ -171,7 +171,8 @@ const LayoutCopilotInput = z.object({
   sections: z.array(LayoutSection).min(1).max(30),
 });
 
-type LayoutSectionT = { id: string; type: string; is_visible: boolean; order: number; config: Record<string, unknown> };
+type CfgValue = Record<string, string | number | boolean>;
+type LayoutSectionT = { id: string; type: string; is_visible: boolean; order: number; config: CfgValue };
 type LayoutVariant = { key: string; label: string; sections: LayoutSectionT[]; explanation_od: string };
 type CopilotResult = { variants: LayoutVariant[]; ai: boolean };
 
@@ -183,7 +184,7 @@ const VARIANTS = [
 
 function localVariant(sections: LayoutSectionT[], v: (typeof VARIANTS)[number]): LayoutSectionT[] {
   return sections.map((s) => {
-    const cfg = s.config as Record<string, unknown>;
+    const cfg = s.config as CfgValue;
     const height = Number(cfg["height"] ?? 140);
     return {
       ...s,
@@ -250,7 +251,7 @@ export const layoutCopilot = createServerFn({ method: "POST" })
                   ...s,
                   order: i + 1,
                   is_visible: s.is_visible !== false,
-                  config: (s.config ?? {}) as Record<string, unknown>,
+                  config: (s.config ?? {}) as CfgValue,
                 }))
               : localVariant(data.sections, v),
           explanation_od: hit?.explanation_od?.trim() || fallback.find((f) => f.key === v.key)!.explanation_od,
