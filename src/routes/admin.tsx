@@ -175,6 +175,9 @@ function Admin() {
 
             <CashfreeKeys />
 
+            <PayuKeys />
+
+
             <button
               onClick={async () => {
                 const { error } = await supabase.from("system_settings").update(s).eq("id", true);
