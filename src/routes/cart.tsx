@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cart, cartTotals, useCart } from "@/lib/cart";
 import { couponDiscount, findCoupon, listCoupons, type Coupon } from "@/lib/coupons";
 import { computeBill, haversineKm, inr, type Settings } from "@/lib/fees";
+import { checkoutGate, minimumOrderValue } from "@/lib/pricing";
 import { startOnlinePayment } from "@/lib/checkout";
 import { useSession } from "@/lib/session";
 
@@ -157,6 +158,8 @@ function Cart() {
   }, []);
 
   const distanceKm = vendor && coords ? haversineKm(coords, { lat: Number(vendor.lat), lng: Number(vendor.lng) }) : 0;
+  const gate = vendor && coords ? checkoutGate(distanceKm, baseTotal) : ({ ok: true } as const);
+  const blockedReason = gate.ok ? null : gate.reason;
   const bill = settings ? computeBill({ settings, foodTotal, mrpTotal, distanceKm }) : null;
   const couponOff = coupon ? couponDiscount(coupon, foodTotal) : 0;
   const netTotal = bill ? Math.max(0, Math.round((bill.grandTotal - couponOff + tip) * 100) / 100) : 0;
