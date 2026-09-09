@@ -407,15 +407,8 @@ function VendorPortal() {
 
         <PayoutPanel party="VENDOR" id={vendor.id} />
 
-        <button
-          onClick={async () => {
-            await supabase.from("vendors").update({ is_open: !vendor.is_open }).eq("id", vendor.id);
-            setVendor({ ...vendor, is_open: !vendor.is_open });
-          }}
-          className={`w-full rounded-xl border px-3 py-2.5 text-sm font-bold ${vendor.is_open ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
-        >
-          Stall is {vendor.is_open ? "OPEN" : "CLOSED"} · tap to change
-        </button>
+        <VendorHours vendorId={vendor.id} />
+
 
         <div className="card-soft border border-border p-3">
           <p className="text-sm font-bold">FSSAI licence</p>
