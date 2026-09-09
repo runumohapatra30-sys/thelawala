@@ -26,7 +26,7 @@ export const askHomeBot = createServerFn({ method: "POST" })
         .select(
           "id,code,status,payment_mode,payment_status,grand_total,food_total,delivery_fee,tip_amount,address_line,pincode,created_at,delivered_at,cancel_reason,delivery_otp",
         )
-        .eq("customer_id", userId)
+        .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
