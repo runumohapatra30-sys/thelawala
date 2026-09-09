@@ -45,7 +45,7 @@ const CANCEL_REASONS = [
   "Vehicle breakdown",
   "Other reason",
 ];
-type Partner = { id: string; name: string; status: string; is_online: boolean; is_busy: boolean; dl_number: string | null };
+type Partner = { id: string; name: string; status: string; is_online: boolean; is_busy: boolean; dl_number: string | null; assigned_zones: string[] | null };
 type Vendor = { stall_name: string; lat: number; lng: number; mobile: string | null; address: string | null };
 
 const OTP_LEN = 4;
@@ -147,7 +147,7 @@ function RiderPortal() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("delivery_partners").select("id,name,status,is_online,is_busy,dl_number").eq("user_id", user.id).maybeSingle()
+    supabase.from("delivery_partners").select("id,name,status,is_online,is_busy,dl_number,assigned_zones").eq("user_id", user.id).maybeSingle()
       .then(({ data }) => setMe(data));
   }, [user?.id]);
 
@@ -172,6 +172,8 @@ function RiderPortal() {
       setActive((mine ?? null) as Order | null);
 
       if (!mine) {
+        // On duty and free: pick up any order still waiting for a rider in my zones.
+        if (me.is_online && !me.is_busy) await sweepSearchingOrders(me.id, me.assigned_zones ?? []);
         const { data: off } = await supabase.from("orders").select("*")
           .eq("offered_to", me.id).is("partner_id", null).limit(1).maybeSingle();
         setOffer((off ?? null) as Order | null);
@@ -326,7 +328,7 @@ function RiderPortal() {
           bank_proof_url: bankUrl,
           terms_accepted_at: new Date().toISOString(),
           status: "PENDING",
-        }).select("id,name,status,is_online,is_busy,dl_number").single();
+        }).select("id,name,status,is_online,is_busy,dl_number,assigned_zones").single();
         if (error) throw error;
         setMe(data);
         toast.success("Application submitted! The admin team will review it within a day.");
@@ -613,8 +615,10 @@ function RiderPortal() {
         dutyLocked={me.status !== "APPROVED"}
         earnings={earnings}
         onToggleDuty={async () => {
-          await supabase.from("delivery_partners").update({ is_online: !me.is_online }).eq("id", me.id);
-          setMe({ ...me, is_online: !me.is_online });
+          const nowOnline = !me.is_online;
+          await supabase.from("delivery_partners").update({ is_online: nowOnline }).eq("id", me.id);
+          setMe({ ...me, is_online: nowOnline });
+          if (nowOnline) await sweepSearchingOrders(me.id, me.assigned_zones ?? []);
         }}
       />
 
@@ -835,7 +839,7 @@ function RiderPortal() {
                 .from("delivery_partners")
                 .update({ dl_number: dlDraft.trim() })
                 .eq("id", me.id)
-                .select("id,name,status,is_online,is_busy,dl_number")
+                .select("id,name,status,is_online,is_busy,dl_number,assigned_zones")
                 .single();
               setDlSaving(false);
               if (error || !data) return setDlMsg(error?.message ?? "Could not save the licence.");
