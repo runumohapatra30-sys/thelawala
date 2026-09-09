@@ -47,6 +47,7 @@ const TIPS = [20, 30, 50];
 
 function Track() {
   const { id } = Route.useParams();
+  const { user } = useSession();
   const { placed } = Route.useSearch();
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<{ id: string; name: string; qty: number; price: number; photo_url: string | null }[]>([]);
