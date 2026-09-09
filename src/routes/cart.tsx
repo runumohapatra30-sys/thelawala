@@ -192,6 +192,7 @@ function Cart() {
     if (!form.full_name || form.mobile.length < 10 || form.pincode.length < 6 || !form.line)
       return setErr("Please fill name, 10-digit mobile, 6-digit pincode and full address.");
     if (!coords) return setErr("Please set your delivery location on the map.");
+    if (blockedReason) return setErr(blockedReason);
     if (!bill || !vendor) return;
 
     setBusy(true);
@@ -402,7 +403,7 @@ function Cart() {
           </button>
           {coords && vendor ? (
             <p className="text-xs text-muted-foreground">
-              {distanceKm} km from {vendor.stall_name}
+              {distanceKm} km from {vendor.stall_name} · minimum order {inr(minimumOrderValue(distanceKm))} · we deliver up to 5 km
             </p>
           ) : null}
         </div>
@@ -530,13 +531,18 @@ function Cart() {
               <span className="shrink-0 text-[11px] font-black text-primary">{distanceKm} km away</span>
             ) : null}
           </div>
+          {blockedReason ? (
+            <p className="px-1 pb-2 text-[11px] font-bold text-destructive">{blockedReason}</p>
+          ) : null}
           <button
-            disabled={busy || !bill}
+            disabled={busy || !bill || !!blockedReason}
             onClick={place}
             className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-3.5 text-primary-foreground disabled:opacity-50"
           >
             <span className="text-sm font-black">{bill ? inr(payable) : "—"}</span>
-            <span className="text-sm font-black">{busy ? "PLACING…" : "Select Payment Method ›"}</span>
+            <span className="text-sm font-black">
+              {busy ? "PLACING…" : blockedReason ? "Not available" : "Select Payment Method ›"}
+            </span>
           </button>
         </div>
       </div>
