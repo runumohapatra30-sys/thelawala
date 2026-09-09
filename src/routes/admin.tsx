@@ -113,7 +113,25 @@ function Admin() {
           <Stat label="Platform earning" value={inr(Math.round(commission + feeIncome))} />
         </div>
 
+        {isSuper ? (
+          <div className="grid grid-cols-2 gap-2">
+            {([["ops", "Operations"], ["marketing", "Banner & marketing"]] as const).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className={`rounded-xl border px-3 py-2.5 text-sm font-bold ${tab === key ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {isSuper && tab === "marketing" ? <MarketingManager /> : (
+        <>
         <AdminReports />
+
+
 
 
         {s ? (
