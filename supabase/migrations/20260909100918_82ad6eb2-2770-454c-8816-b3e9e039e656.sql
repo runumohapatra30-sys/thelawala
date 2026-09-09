@@ -1,0 +1,4 @@
+CREATE POLICY "Banner images are viewable by everyone" ON storage.objects FOR SELECT USING (bucket_id = 'banners');
+CREATE POLICY "Admins upload banner images" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'banners' AND public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "Admins update banner images" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'banners' AND public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "Admins delete banner images" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'banners' AND public.has_role(auth.uid(), 'admin'));
