@@ -36,6 +36,7 @@ type Order = {
   drop_lat: number; drop_lng: number; vendor_id: string; partner_id: string | null;
   payment_mode: string; address_line: string; proof_photo_url: string | null; created_at: string;
   payment_status: string; wallet_paid: number; cancel_reason: string | null; tip_amount: number;
+  cancel_otp: string | null;
 };
 
 const TIPS = [20, 30, 50];
