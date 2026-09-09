@@ -25,6 +25,7 @@ import { Route as OrdersIndexRouteImport } from './routes/orders.index'
 import { Route as OrdersIdRouteImport } from './routes/orders.$id'
 import { Route as SupportIndexRouteImport } from './routes/support.index'
 import { Route as SupportIdRouteImport } from './routes/support.$id'
+import { Route as ApiPublicCashfreeCallbackRouteImport } from './routes/api/public/cashfree/callback'
 import { Route as ApiPublicPayuCallbackRouteImport } from './routes/api/public/payu/callback'
 
 const IndexRoute = IndexRouteImport.update({
@@ -106,6 +107,12 @@ const SupportIdRoute = SupportIdRouteImport.update({
   path: '/support/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCashfreeCallbackRoute =
+  ApiPublicCashfreeCallbackRouteImport.update({
+    id: '/api/public/cashfree/callback',
+    path: '/api/public/cashfree/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicPayuCallbackRoute = ApiPublicPayuCallbackRouteImport.update({
   id: '/api/public/payu/callback',
   path: '/api/public/payu/callback',
@@ -128,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/support/$id': typeof SupportIdRoute
   '/orders/': typeof OrdersIndexRoute
   '/support/': typeof SupportIndexRoute
+  '/api/public/cashfree/callback': typeof ApiPublicCashfreeCallbackRoute
   '/api/public/payu/callback': typeof ApiPublicPayuCallbackRoute
 }
 export interface FileRoutesByTo {
@@ -146,6 +154,7 @@ export interface FileRoutesByTo {
   '/support/$id': typeof SupportIdRoute
   '/orders': typeof OrdersIndexRoute
   '/support': typeof SupportIndexRoute
+  '/api/public/cashfree/callback': typeof ApiPublicCashfreeCallbackRoute
   '/api/public/payu/callback': typeof ApiPublicPayuCallbackRoute
 }
 export interface FileRoutesById {
@@ -166,6 +175,7 @@ export interface FileRoutesById {
   '/support/$id': typeof SupportIdRoute
   '/orders/': typeof OrdersIndexRoute
   '/support/': typeof SupportIndexRoute
+  '/api/public/cashfree/callback': typeof ApiPublicCashfreeCallbackRoute
   '/api/public/payu/callback': typeof ApiPublicPayuCallbackRoute
 }
 export interface FileRouteTypes {
@@ -186,6 +196,7 @@ export interface FileRouteTypes {
     | '/support/$id'
     | '/orders/'
     | '/support/'
+    | '/api/public/cashfree/callback'
     | '/api/public/payu/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -204,6 +215,7 @@ export interface FileRouteTypes {
     | '/support/$id'
     | '/orders'
     | '/support'
+    | '/api/public/cashfree/callback'
     | '/api/public/payu/callback'
   id:
     | '__root__'
@@ -223,6 +235,7 @@ export interface FileRouteTypes {
     | '/support/$id'
     | '/orders/'
     | '/support/'
+    | '/api/public/cashfree/callback'
     | '/api/public/payu/callback'
   fileRoutesById: FileRoutesById
 }
@@ -241,6 +254,7 @@ export interface RootRouteChildren {
   SupportIdRoute: typeof SupportIdRoute
   OrdersIndexRoute: typeof OrdersIndexRoute
   SupportIndexRoute: typeof SupportIndexRoute
+  ApiPublicCashfreeCallbackRoute: typeof ApiPublicCashfreeCallbackRoute
   ApiPublicPayuCallbackRoute: typeof ApiPublicPayuCallbackRoute
 }
 
@@ -358,6 +372,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SupportIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cashfree/callback': {
+      id: '/api/public/cashfree/callback'
+      path: '/api/public/cashfree/callback'
+      fullPath: '/api/public/cashfree/callback'
+      preLoaderRoute: typeof ApiPublicCashfreeCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/payu/callback': {
       id: '/api/public/payu/callback'
       path: '/api/public/payu/callback'
@@ -396,6 +417,7 @@ const rootRouteChildren: RootRouteChildren = {
   SupportIdRoute: SupportIdRoute,
   OrdersIndexRoute: OrdersIndexRoute,
   SupportIndexRoute: SupportIndexRoute,
+  ApiPublicCashfreeCallbackRoute: ApiPublicCashfreeCallbackRoute,
   ApiPublicPayuCallbackRoute: ApiPublicPayuCallbackRoute,
 }
 export const routeTree = rootRouteImport
