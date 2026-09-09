@@ -53,15 +53,12 @@ export function PayoutPanel({ party, id }: { party: "VENDOR" | "PARTNER"; id: st
     if (form.method === "BANK" && (form.bank_account_no.length < 8 || form.bank_ifsc.length < 8))
       { toast.error("Enter the account number and IFSC code."); return; }
     setBusy(true);
-    const { error } = await supabase.rpc("request_payout", {
-      _party_type: party,
-      _amount: amount,
-      _method: form.method,
-      _bank_holder: form.bank_holder || undefined,
-      _bank_account_no: form.bank_account_no || undefined,
-      _bank_ifsc: form.bank_ifsc.toUpperCase() || undefined,
-      _upi_id: form.upi_id || undefined,
-    });
+    const args: Record<string, unknown> = { _party_type: party, _amount: amount, _method: form.method };
+    if (form.bank_holder) args["_bank_holder"] = form.bank_holder;
+    if (form.bank_account_no) args["_bank_account_no"] = form.bank_account_no;
+    if (form.bank_ifsc) args["_bank_ifsc"] = form.bank_ifsc.toUpperCase();
+    if (form.upi_id) args["_upi_id"] = form.upi_id;
+    const { error } = await supabase.rpc("request_payout", args as never);
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Withdrawal requested. You will be paid after admin approval.");
