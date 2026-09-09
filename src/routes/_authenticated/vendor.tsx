@@ -86,7 +86,17 @@ function VendorPortal() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
-  const [form, setForm] = useState({ stall_name: "", owner_name: "", mobile: "", address: "", fssai_number: "" });
+  const [form, setForm] = useState({
+    stall_name: "", owner_name: "", mobile: "", zone: "", address: "",
+    fssai_number: "", pan: "", identity_proof_type: "Aadhaar", identity_number: "",
+    bank_holder: "", bank_name: "", bank_account_no: "", bank_ifsc: "", upi_id: "",
+  });
+  const [cuisines, setCuisines] = useState<string[]>([]);
+  const [docs, setDocs] = useState<{ idDoc: File | null; fssaiCert: File | null; stallPhotos: File[]; bankProof: File | null }>({
+    idDoc: null, fssaiCert: null, stallPhotos: [], bankProof: null,
+  });
+  const [terms, setTerms] = useState(false);
+  const [regBusy, setRegBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [fssaiDraft, setFssaiDraft] = useState("");
   const [fssaiMsg, setFssaiMsg] = useState<string | null>(null);
