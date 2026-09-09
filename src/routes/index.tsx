@@ -152,6 +152,171 @@ function Home() {
     else setToast(null);
   }
 
+  const registry: SectionRegistry = {
+    smart_asset: () => <DynamicAssetBanner />,
+    dynamic_banner: () => <DynamicBanners />,
+    banner_carousel: () => (
+      <BannerCarousel
+        onCategory={(id) => { setActive(id); setVendorFilter(null); }}
+        onVendor={(id) => { setVendorFilter(id); setActive(null); }}
+      />
+    ),
+    festive: () => (
+      <FestiveWidget campaign={campaign} onFilter={(v) => { setQ(v); setActive(null); setVendorFilter(null); }} />
+    ),
+    quick_bites: (cfg) => (
+      <section className="px-5 pt-6">
+        <h2 className="text-[17px] font-extrabold">{cfg.title ?? "Quick bites"}</h2>
+        <p className="mt-0.5 text-xs font-medium text-muted-foreground">Pick a craving, we do the running</p>
+        <div className="mt-3 flex snap-x gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <button
+            onClick={() => setActive(null)}
+            style={{ animationDelay: "0ms" }}
+            className="press rise-in w-[74px] shrink-0 snap-start text-center"
+          >
+            <span
+              className={`relative block aspect-square overflow-hidden rounded-[1.5rem] ${TINTS[0]} shadow-[0_12px_24px_-16px_rgba(15,23,42,0.75)] ring-offset-2 transition-all ${!active ? "ring-2 ring-primary" : ""}`}
+            >
+              <img src="/food/food-thali.jpg" alt="All street food" loading="lazy" className="h-full w-full object-cover" />
+              <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/45 to-transparent" />
+            </span>
+            <span className="mt-1.5 block text-[10.5px] font-extrabold leading-tight">All</span>
+          </button>
+          {campaign?.top_tab_label ? (
+            <button
+              onClick={() => { setQ(campaign.top_tab_label ?? ""); setActive(null); setVendorFilter(null); }}
+              className="press rise-in w-[74px] shrink-0 snap-start text-center"
+            >
+              <span className="relative block aspect-square overflow-hidden rounded-[1.5rem] shadow-[0_12px_24px_-16px_rgba(15,23,42,0.75)] ring-2 ring-primary">
+                <img
+                  src={campaign.top_tab_icon_url || "/food/food-sweets.jpg"}
+                  alt={campaign.top_tab_label}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+                <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/45 to-transparent" />
+              </span>
+              <span className="mt-1.5 block truncate text-[10.5px] font-extrabold leading-tight">{campaign.top_tab_label}</span>
+            </button>
+          ) : null}
+          {cats.map((c, idx) => (
+            <button
+              key={c.id}
+              onClick={() => setActive(c.id)}
+              style={{ animationDelay: `${(idx + 1) * 50}ms` }}
+              className="press rise-in w-[74px] shrink-0 snap-start text-center"
+            >
+              <span
+                className={`relative block aspect-square overflow-hidden rounded-[1.5rem] ${TINTS[(idx + 1) % TINTS.length]} shadow-[0_12px_24px_-16px_rgba(15,23,42,0.75)] transition-all ${active === c.id ? "ring-2 ring-primary" : ""}`}
+              >
+                <img src={foodImage(c.name)} alt={c.name} loading="lazy" className="h-full w-full object-cover" />
+                <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/45 to-transparent" />
+                {c.emoji ? (
+                  <span className="absolute left-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-card/85 text-[11px] shadow-sm">
+                    {c.emoji}
+                  </span>
+                ) : null}
+              </span>
+              <span className="mt-1.5 block truncate text-[10.5px] font-extrabold leading-tight">{c.name}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+    ),
+    trending_stalls: (cfg) => (
+      <>
+        <section className="flex items-center gap-2 px-5 pt-7">
+          <h2 className="mr-auto text-[17px] font-extrabold">{cfg.title ?? "Trending stalls"}</h2>
+          {vendorFilter ? (
+            <button
+              onClick={() => setVendorFilter(null)}
+              className="press rounded-full border border-primary bg-[color-mix(in_oklab,var(--color-primary)_10%,white)] px-3 py-1.5 text-[11px] font-extrabold text-primary"
+            >
+              {vendorName[vendorFilter] ?? "Stall"} ✕
+            </button>
+          ) : null}
+          <button
+            onClick={() => setOnlyVeg((v) => !v)}
+            className={`press rounded-full border px-3 py-1.5 text-[11px] font-extrabold ${onlyVeg ? "border-primary bg-[color-mix(in_oklab,var(--color-primary)_10%,white)] text-primary" : "border-border text-muted-foreground"}`}
+          >
+            Veg only
+          </button>
+          <button
+            onClick={() => setOnlyFav((v) => !v)}
+            className={`press rounded-full border px-3 py-1.5 text-[11px] font-extrabold ${onlyFav ? "border-primary bg-[color-mix(in_oklab,var(--color-primary)_10%,white)] text-primary" : "border-border text-muted-foreground"}`}
+          >
+            ♥ Favourites
+          </button>
+        </section>
+
+        <div className="grid grid-cols-2 gap-3.5 px-5 pb-36 pt-3">
+          {shown.map((i, idx) => {
+            const line = lines.find((l) => l.itemId === i.id);
+            const shownPrice = customerPrice(i.price);
+            const shownMrp = customerPrice(i.mrp);
+            const off = shownMrp > shownPrice ? Math.round(((shownMrp - shownPrice) / shownMrp) * 100) : 0;
+            return (
+              <div key={i.id} style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }} className="press rise-in card-elevated p-2.5 hover:-translate-y-0.5">
+                <div className="relative">
+                  <img
+                    src={i.photo_url ?? foodImage(i.name)}
+                    alt={i.name}
+                    className="aspect-[4/5] w-full rounded-[1.4rem] object-cover"
+                  />
+                  {off > 0 ? (
+                    <span className="absolute left-2 top-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-extrabold text-primary-foreground shadow-md">
+                      {off}% OFF
+                    </span>
+                  ) : null}
+                  {!i.in_stock ? (
+                    <span className="absolute inset-0 grid place-items-center rounded-[1.4rem] bg-black/55 text-xs font-bold text-white">
+                      Out of stock
+                    </span>
+                  ) : null}
+                  {user ? (
+                    <button
+                      aria-label={favs.includes(i.id) ? "Remove from favourites" : "Add to favourites"}
+                      onClick={() => toggleFav(i.id, i.vendor_id)}
+                      className={`press absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-card/90 text-sm shadow-md ${favs.includes(i.id) ? "text-destructive" : "text-muted-foreground"}`}
+                    >
+                      {favs.includes(i.id) ? "♥" : "♡"}
+                    </button>
+                  ) : null}
+                </div>
+                <p className="mt-2.5 truncate px-0.5 text-[13px] font-extrabold">{i.name}</p>
+                <p className="truncate px-0.5 text-[11px] font-medium text-muted-foreground">
+                  {vendorName[i.vendor_id] ?? "Stall"} · {i.unit}
+                </p>
+                <div className="mt-2.5 flex items-center justify-between px-0.5">
+                  <p className="text-[15px] font-extrabold text-primary">
+                    {inr(shownPrice)}{" "}
+                    {off > 0 ? (
+                      <span className="text-[11px] font-medium text-muted-foreground line-through">{inr(shownMrp)}</span>
+                    ) : null}
+                  </p>
+                  {!i.in_stock ? null : line ? (
+                    <div className="flex items-center gap-1.5 rounded-full bg-primary px-2 py-1 text-primary-foreground shadow-[0_8px_18px_-10px_var(--color-primary)]">
+                      <button aria-label="Remove one" onClick={() => cart.remove(i.id)} className="press px-1 font-bold">−</button>
+                      <span className="text-xs font-extrabold">{line.qty}</span>
+                      <button aria-label="Add one" onClick={() => add(i)} className="press px-1 font-bold">+</button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => add(i)}
+                      className="press shine rounded-full border border-primary bg-[color-mix(in_oklab,var(--color-primary)_8%,white)] px-3.5 py-1.5 text-[11px] font-extrabold text-primary shadow-[0_8px_18px_-12px_var(--color-primary)]"
+                    >
+                      ADD
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    ),
+  };
+
   return (
     <Shell>
       <header className="brand-header sticky top-0 z-30 rounded-b-[2.75rem] px-5 pb-5 pt-5 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)]">
