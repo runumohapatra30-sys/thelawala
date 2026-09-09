@@ -171,7 +171,9 @@ const LayoutCopilotInput = z.object({
   sections: z.array(LayoutSection).min(1).max(30),
 });
 
-type LayoutSectionT = z.infer<typeof LayoutSection>;
+type LayoutSectionT = { id: string; type: string; is_visible: boolean; order: number; config: Record<string, unknown> };
+type LayoutVariant = { key: string; label: string; sections: LayoutSectionT[]; explanation_od: string };
+type CopilotResult = { variants: LayoutVariant[]; ai: boolean };
 
 const VARIANTS = [
   { key: "compact", label: "Compact", scale: 0.8, gap: 6, padding: 8, font: 0.92 },
@@ -179,7 +181,7 @@ const VARIANTS = [
   { key: "roomy", label: "Roomy", scale: 1.22, gap: 16, padding: 18, font: 1.08 },
 ] as const;
 
-function localVariant(sections: LayoutSectionT[], v: (typeof VARIANTS)[number]) {
+function localVariant(sections: LayoutSectionT[], v: (typeof VARIANTS)[number]): LayoutSectionT[] {
   return sections.map((s) => {
     const cfg = s.config as Record<string, unknown>;
     const height = Number(cfg["height"] ?? 140);
@@ -199,8 +201,8 @@ function localVariant(sections: LayoutSectionT[], v: (typeof VARIANTS)[number]) 
 /** Turns an admin's Odia / Hinglish / English feedback into 3 layout variants for one screen. */
 export const layoutCopilot = createServerFn({ method: "POST" })
   .inputValidator((raw: unknown) => LayoutCopilotInput.parse(raw))
-  .handler(async ({ data }) => {
-    const fallback = VARIANTS.map((v) => ({
+  .handler(async ({ data }): Promise<CopilotResult> => {
+    const fallback: LayoutVariant[] = VARIANTS.map((v) => ({
       key: v.key,
       label: v.label,
       sections: localVariant(data.sections, v),
@@ -208,7 +210,7 @@ export const layoutCopilot = createServerFn({ method: "POST" })
     }));
 
     const key = process.env["LOVABLE_API_KEY"];
-    if (!key) return { variants: fallback, ai: false as const };
+    if (!key) return { variants: fallback, ai: false };
 
     try {
       const gateway = createLovableAiGatewayProvider(key);
@@ -230,12 +232,12 @@ export const layoutCopilot = createServerFn({ method: "POST" })
         ].join("\n"),
       });
       const match = text.match(/\{[\s\S]*\}/);
-      if (!match) return { variants: fallback, ai: false as const };
+      if (!match) return { variants: fallback, ai: false };
       const parsed = JSON.parse(match[0]) as {
         variants?: { key?: string; sections?: unknown; explanation_od?: string }[];
       };
       const ids = new Set(data.sections.map((s) => s.id));
-      const out = VARIANTS.map((v) => {
+      const out: LayoutVariant[] = VARIANTS.map((v) => {
         const hit = parsed.variants?.find((p) => p.key === v.key);
         const arr = Array.isArray(hit?.sections) ? (hit!.sections as LayoutSectionT[]) : null;
         const clean = arr?.filter((s) => s && typeof s.type === "string" && ids.has(s.id));
@@ -254,8 +256,8 @@ export const layoutCopilot = createServerFn({ method: "POST" })
           explanation_od: hit?.explanation_od?.trim() || fallback.find((f) => f.key === v.key)!.explanation_od,
         };
       });
-      return { variants: out, ai: true as const };
+      return { variants: out, ai: true };
     } catch {
-      return { variants: fallback, ai: false as const };
+      return { variants: fallback, ai: false };
     }
   });
