@@ -4,6 +4,7 @@ import { PortalHeader, Shell } from "@/components/Shell";
 import { SupportQueue } from "@/components/SupportQueue";
 import { PayoutQueue, LiveOrders, CustomerManager } from "@/components/AdminPanels";
 import { MarketingManager } from "@/components/MarketingManager";
+import { PageStudio } from "@/components/PageStudio";
 import { AdminReports } from "@/components/AdminReports";
 import { supabase } from "@/integrations/supabase/client";
 import { listCoupons, type Coupon } from "@/lib/coupons";
@@ -39,7 +40,7 @@ function Admin() {
   const [refunds, setRefunds] = useState<{ id: string; amount: number; reason: string | null; method: string; status: string }[]>([]);
   const [closures, setClosures] = useState<{ id: string; amount: number; status: string }[]>([]);
   const [saved, setSaved] = useState(false);
-  const [tab, setTab] = useState<"ops" | "marketing">("ops");
+  const [tab, setTab] = useState<"ops" | "marketing" | "studio">("ops");
   const isSuper = isAdmin;
 
   const loadMoney = () => {
