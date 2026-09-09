@@ -371,6 +371,8 @@ function RiderPortal() {
           </div>
         </div>
 
+        <PayoutPanel party="PARTNER" id={me.id} />
+
         {me.status === "UNDER_REVIEW" ? (
           <div className="card-soft border-2 border-destructive p-3">
             <p className="text-sm font-bold text-destructive">Duty locked · licence under review</p>
