@@ -510,7 +510,7 @@ function RiderPortal() {
     toast.success("Order verified · out for delivery");
   }
 
-  async function requestCancel() {
+  async function requestCancel(reason = cancelReason) {
     if (!trip) return;
     setCancelBusy(true);
     const otp = String(Math.floor(1000 + Math.random() * 9000));
@@ -518,15 +518,36 @@ function RiderPortal() {
       .from("orders")
       .update({
         cancel_otp: otp,
-        cancel_reason: cancelReason,
+        cancel_reason: reason,
         cancel_requested_at: new Date().toISOString(),
         cancel_requested_by: "PARTNER",
       })
       .eq("id", trip.id);
     setCancelBusy(false);
     if (error) return setCancelMsg("Could not start the cancellation. Try again.");
-    setActive({ ...trip, cancel_otp: otp, cancel_reason: cancelReason });
+    setActive({ ...trip, cancel_otp: otp, cancel_reason: reason });
     setCancelMsg("Ask the customer for the cancel PIN shown in their app.");
+  }
+
+  async function openCancel() {
+    if (!trip) return;
+    setCancelMsg(null);
+    setCancelReason(trip.cancel_reason ?? CANCEL_REASONS[0]!);
+    setCancelOpen(true);
+    if (!trip.cancel_otp) {
+      await requestCancel(trip.cancel_reason ?? CANCEL_REASONS[0]!);
+    }
+  }
+
+  async function updateCancelReason(reason: string) {
+    if (!trip) return;
+    setCancelReason(reason);
+    if (!trip.cancel_otp) return;
+    setCancelBusy(true);
+    const { error } = await supabase.from("orders").update({ cancel_reason: reason }).eq("id", trip.id);
+    setCancelBusy(false);
+    if (error) return setCancelMsg("Could not update the reason. Try again.");
+    setActive({ ...trip, cancel_reason: reason });
   }
 
   async function confirmCancel() {
@@ -724,11 +745,7 @@ function RiderPortal() {
             ) : null}
 
             <button
-              onClick={() => {
-                setCancelMsg(null);
-                setCancelReason(trip.cancel_reason ?? CANCEL_REASONS[0]!);
-                setCancelOpen(true);
-              }}
+              onClick={openCancel}
               className="press w-full rounded-xl border-2 border-destructive py-3 text-sm font-bold text-destructive"
             >
               Cancel order
@@ -839,7 +856,7 @@ function RiderPortal() {
                   {CANCEL_REASONS.map((r) => (
                     <button
                       key={r}
-                      onClick={() => setCancelReason(r)}
+                      onClick={() => updateCancelReason(r)}
                       className={`w-full rounded-xl border px-3 py-2.5 text-left text-sm ${
                         cancelReason === r ? "border-destructive font-bold text-destructive" : "border-border"
                       }`}
@@ -850,7 +867,7 @@ function RiderPortal() {
                 </div>
                 <button
                   disabled={cancelBusy}
-                  onClick={requestCancel}
+                  onClick={() => requestCancel()}
                   className="press mt-3 w-full rounded-xl bg-destructive py-3 text-sm font-bold text-destructive-foreground disabled:opacity-50"
                 >
                   {cancelBusy ? "Please wait…" : "Send cancel PIN to customer"}
