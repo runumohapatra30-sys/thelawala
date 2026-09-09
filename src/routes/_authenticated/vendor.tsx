@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { PayoutPanel } from "@/components/Payouts";
+import { VendorHours, PrepCountdown } from "@/components/VendorHours";
 import { supabase } from "@/integrations/supabase/client";
 import { offerToNearestPartner } from "@/lib/dispatch";
 import { inr, STATUS_LABEL } from "@/lib/fees";
@@ -29,6 +30,7 @@ export const Route = createFileRoute("/_authenticated/vendor")({
 type Order = {
   id: string; code: string; status: string; grand_total: number; food_total: number;
   pickup_otp: string; qr_hash: string | null; customer_name: string; address_line: string; partner_id: string | null;
+  delivery_instructions?: string | null; ready_at?: string | null;
 };
 type Item = {
   id: string; name: string; price: number; mrp: number; in_stock: boolean;
@@ -94,7 +96,7 @@ function VendorPortal() {
     if (!vendor) return;
     const load = () => {
       supabase.from("orders")
-        .select("id,code,status,grand_total,food_total,pickup_otp,qr_hash,customer_name,address_line,partner_id")
+        .select("id,code,status,grand_total,food_total,pickup_otp,qr_hash,customer_name,address_line,partner_id,delivery_instructions,ready_at")
         .eq("vendor_id", vendor.id).order("created_at", { ascending: false }).limit(30)
         .then(({ data }) => setOrders((data ?? []) as Order[]));
     };
@@ -121,14 +123,18 @@ function VendorPortal() {
   }, [vendor?.id]);
 
   async function setStatus(o: Order, status: string) {
-    const { error } = await supabase
-      .from("orders")
-      .update(
-        status === "PREPARING"
-          ? { status, accepted_at: new Date().toISOString() }
-          : { status },
-      )
-      .eq("id", o.id);
+    let patch: { status: string; accepted_at?: string; prep_minutes?: number; ready_at?: string } = { status };
+    if (status === "PREPARING") {
+      const { data: v } = await supabase.from("vendors").select("default_prep_minutes").eq("id", vendor?.id ?? "").maybeSingle();
+      const mins = Number(v?.default_prep_minutes ?? 10);
+      patch = {
+        status,
+        accepted_at: new Date().toISOString(),
+        prep_minutes: mins,
+        ready_at: new Date(Date.now() + mins * 60000).toISOString(),
+      };
+    }
+    const { error } = await supabase.from("orders").update(patch).eq("id", o.id);
     if (error) {
       toast.error("Could not update this order. Please try again.");
       return;
@@ -407,15 +413,8 @@ function VendorPortal() {
 
         <PayoutPanel party="VENDOR" id={vendor.id} />
 
-        <button
-          onClick={async () => {
-            await supabase.from("vendors").update({ is_open: !vendor.is_open }).eq("id", vendor.id);
-            setVendor({ ...vendor, is_open: !vendor.is_open });
-          }}
-          className={`w-full rounded-xl border px-3 py-2.5 text-sm font-bold ${vendor.is_open ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
-        >
-          Stall is {vendor.is_open ? "OPEN" : "CLOSED"} · tap to change
-        </button>
+        <VendorHours vendorId={vendor.id} />
+
 
         <div className="card-soft border border-border p-3">
           <p className="text-sm font-bold">FSSAI licence</p>
@@ -497,6 +496,9 @@ function VendorPortal() {
                 <div className="space-y-2 p-4">
                   <p className="text-base font-black">{o.customer_name}</p>
                   <p className="text-xs leading-snug text-muted-foreground">{o.address_line}</p>
+                  {o.delivery_instructions ? (
+                    <p className="text-[11px] font-bold">📝 {o.delivery_instructions}</p>
+                  ) : null}
                   <div className="flex gap-2 pt-1">
                     <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold">Pickup OTP {o.pickup_otp}</span>
                   </div>
@@ -530,6 +532,10 @@ function VendorPortal() {
                   <p className="text-sm font-bold">#{o.code}</p>
                   <p className="text-[11px] text-muted-foreground">{o.customer_name} · {o.address_line}</p>
                   <p className="mt-1 text-xs font-semibold text-primary">{STATUS_LABEL[o.status] ?? o.status}</p>
+                  {o.delivery_instructions ? (
+                    <p className="mt-1 text-[11px] font-semibold text-foreground">📝 {o.delivery_instructions}</p>
+                  ) : null}
+                  {o.status === "PREPARING" ? <span className="mt-1 inline-block"><PrepCountdown readyAt={o.ready_at} /></span> : null}
                 </div>
                 <p className="text-sm font-bold">{inr(Number(o.grand_total))}</p>
               </div>

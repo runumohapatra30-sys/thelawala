@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { SupportQueue } from "@/components/SupportQueue";
 import { PayoutQueue, LiveOrders, CustomerManager } from "@/components/AdminPanels";
+import { AdminReports } from "@/components/AdminReports";
 import { supabase } from "@/integrations/supabase/client";
 import { listCoupons, type Coupon } from "@/lib/coupons";
 import { inr, STATUS_LABEL, type Settings } from "@/lib/fees";
@@ -106,6 +107,9 @@ function Admin() {
           <Stat label="Sales" value={inr(Math.round(gmv))} />
           <Stat label="Platform earning" value={inr(Math.round(commission + feeIncome))} />
         </div>
+
+        <AdminReports />
+
 
         {s ? (
           <>

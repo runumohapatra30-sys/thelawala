@@ -412,6 +412,41 @@ export type Database = {
           },
         ]
       }
+      order_chats: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          order_id: string
+          sender_id: string | null
+          sender_role: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          order_id: string
+          sender_id?: string | null
+          sender_role: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          order_id?: string
+          sender_id?: string | null
+          sender_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_chats_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           id: string
@@ -536,6 +571,7 @@ export type Database = {
           customer_name: string
           delivered_at: string | null
           delivery_fee: number
+          delivery_instructions: string | null
           delivery_otp: string
           discount_amount: number
           distance_km: number
@@ -558,8 +594,10 @@ export type Database = {
           pickup_scanned_at: string | null
           pincode: string
           platform_fee: number
+          prep_minutes: number | null
           proof_photo_url: string | null
           qr_hash: string | null
+          ready_at: string | null
           rejected_partner_ids: string[]
           status: string
           surge_fee: number
@@ -586,6 +624,7 @@ export type Database = {
           customer_name: string
           delivered_at?: string | null
           delivery_fee?: number
+          delivery_instructions?: string | null
           delivery_otp?: string
           discount_amount?: number
           distance_km?: number
@@ -608,8 +647,10 @@ export type Database = {
           pickup_scanned_at?: string | null
           pincode: string
           platform_fee?: number
+          prep_minutes?: number | null
           proof_photo_url?: string | null
           qr_hash?: string | null
+          ready_at?: string | null
           rejected_partner_ids?: string[]
           status?: string
           surge_fee?: number
@@ -636,6 +677,7 @@ export type Database = {
           customer_name?: string
           delivered_at?: string | null
           delivery_fee?: number
+          delivery_instructions?: string | null
           delivery_otp?: string
           discount_amount?: number
           distance_km?: number
@@ -658,8 +700,10 @@ export type Database = {
           pickup_scanned_at?: string | null
           pincode?: string
           platform_fee?: number
+          prep_minutes?: number | null
           proof_photo_url?: string | null
           qr_hash?: string | null
+          ready_at?: string | null
           rejected_partner_ids?: string[]
           status?: string
           surge_fee?: number
@@ -951,6 +995,47 @@ export type Database = {
           },
         ]
       }
+      rider_shifts: {
+        Row: {
+          created_at: string
+          end_time: string
+          id: string
+          partner_id: string
+          shift_date: string
+          start_time: string
+          status: string
+          zone: string | null
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          id?: string
+          partner_id: string
+          shift_date: string
+          start_time: string
+          status?: string
+          zone?: string | null
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          id?: string
+          partner_id?: string
+          shift_date?: string
+          start_time?: string
+          status?: string
+          zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rider_shifts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_messages: {
         Row: {
           body: string
@@ -1149,8 +1234,10 @@ export type Database = {
           bank_ifsc: string | null
           bank_name: string | null
           bank_proof_url: string | null
+          close_time: string
           created_at: string
           cuisine_types: string[]
+          default_prep_minutes: number
           fssai_certificate_url: string | null
           fssai_number: string | null
           id: string
@@ -1161,6 +1248,7 @@ export type Database = {
           lat: number
           lng: number
           mobile: string | null
+          open_time: string
           owner_id: string | null
           owner_name: string | null
           pan_number: string | null
@@ -1180,8 +1268,10 @@ export type Database = {
           bank_ifsc?: string | null
           bank_name?: string | null
           bank_proof_url?: string | null
+          close_time?: string
           created_at?: string
           cuisine_types?: string[]
+          default_prep_minutes?: number
           fssai_certificate_url?: string | null
           fssai_number?: string | null
           id?: string
@@ -1192,6 +1282,7 @@ export type Database = {
           lat?: number
           lng?: number
           mobile?: string | null
+          open_time?: string
           owner_id?: string | null
           owner_name?: string | null
           pan_number?: string | null
@@ -1211,8 +1302,10 @@ export type Database = {
           bank_ifsc?: string | null
           bank_name?: string | null
           bank_proof_url?: string | null
+          close_time?: string
           created_at?: string
           cuisine_types?: string[]
+          default_prep_minutes?: number
           fssai_certificate_url?: string | null
           fssai_number?: string | null
           id?: string
@@ -1223,6 +1316,7 @@ export type Database = {
           lat?: number
           lng?: number
           mobile?: string | null
+          open_time?: string
           owner_id?: string | null
           owner_name?: string | null
           pan_number?: string | null
@@ -1337,6 +1431,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_daily_report: {
+        Args: { _from: string; _to: string }
+        Returns: {
+          charges: number
+          collected: number
+          day: string
+          discounts: number
+          food_total: number
+          orders_count: number
+          profit: number
+          rider_payout: number
+          vendor_payout: number
+        }[]
+      }
       apply_referral: { Args: { _code: string }; Returns: string }
       complete_delivery: {
         Args: { _order_id: string; _otp: string }

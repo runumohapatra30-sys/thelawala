@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
+import { AddressBook } from "@/components/AddressBook";
 import { supabase } from "@/integrations/supabase/client";
 import { cart, cartTotals, useCart } from "@/lib/cart";
 import { couponDiscount, findCoupon, listCoupons, type Coupon } from "@/lib/coupons";
@@ -44,6 +45,8 @@ function Cart() {
   const [coupon, setCoupon] = useState<Coupon | null>(null);
   const [couponMsg, setCouponMsg] = useState<string | null>(null);
   const [offers, setOffers] = useState<Coupon[]>([]);
+  const [tip, setTip] = useState(0);
+  const [instructions, setInstructions] = useState("");
 
   useEffect(() => {
     listCoupons().then((cs) => setOffers(cs.filter((c) => c.is_active).slice(0, 3)));
@@ -105,7 +108,7 @@ function Cart() {
   const distanceKm = vendor && coords ? haversineKm(coords, { lat: Number(vendor.lat), lng: Number(vendor.lng) }) : 0;
   const bill = settings ? computeBill({ settings, foodTotal, mrpTotal, distanceKm }) : null;
   const couponOff = coupon ? couponDiscount(coupon, foodTotal) : 0;
-  const netTotal = bill ? Math.max(0, Math.round((bill.grandTotal - couponOff) * 100) / 100) : 0;
+  const netTotal = bill ? Math.max(0, Math.round((bill.grandTotal - couponOff + tip) * 100) / 100) : 0;
   const walletUse = bill && useWallet ? Math.min(walletBalance, netTotal) : 0;
   const payable = bill ? Math.round((netTotal - walletUse) * 100) / 100 : 0;
 
@@ -138,17 +141,29 @@ function Cart() {
     if (!bill || !vendor) return;
 
     setBusy(true);
-    await supabase.from("addresses").insert({
-      user_id: user.id,
-      full_name: form.full_name,
-      mobile: form.mobile,
-      pincode: form.pincode,
-      line: form.line,
-      landmark: form.landmark || null,
-      lat: coords.lat,
-      lng: coords.lng,
-      is_default: true,
-    });
+    const { data: sameAddr } = await supabase
+      .from("addresses")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("line", form.line)
+      .eq("pincode", form.pincode)
+      .maybeSingle();
+    await supabase.from("addresses").update({ is_default: false }).eq("user_id", user.id);
+    if (sameAddr) {
+      await supabase.from("addresses").update({ is_default: true }).eq("id", sameAddr.id);
+    } else {
+      await supabase.from("addresses").insert({
+        user_id: user.id,
+        full_name: form.full_name,
+        mobile: form.mobile,
+        pincode: form.pincode,
+        line: form.line,
+        landmark: form.landmark || null,
+        lat: coords.lat,
+        lng: coords.lng,
+        is_default: true,
+      });
+    }
 
     const { data: order, error } = await supabase
       .from("orders")
@@ -173,6 +188,8 @@ function Cart() {
         coupon_code: coupon?.code ?? null,
         discount_amount: couponOff,
         wallet_paid: walletUse,
+        tip_amount: tip,
+        delivery_instructions: instructions.trim() || null,
         payment_mode: payable === 0 ? "WALLET" : payment,
         payment_status: payable === 0 ? "PAID" : "PENDING",
         pickup_otp: otp(),
@@ -281,7 +298,16 @@ function Cart() {
           </div>
         </div>
 
+        <AddressBook
+          userId={user?.id}
+          onPick={(a) => {
+            setForm({ full_name: a.full_name, mobile: a.mobile, pincode: a.pincode, line: a.line, landmark: a.landmark ?? "" });
+            setCoords({ lat: Number(a.lat), lng: Number(a.lng) });
+          }}
+        />
+
         <div id="delivery-details" className="card-elevated rise-in space-y-2 border border-border p-3">
+
           <p className="text-sm font-bold">Delivery details</p>
           {([
             ["full_name", "Full name", "text"],
@@ -316,6 +342,29 @@ function Cart() {
               {distanceKm} km from {vendor.stall_name}
             </p>
           ) : null}
+        </div>
+
+        <div className="card-elevated rise-in space-y-2 p-3">
+          <p className="text-sm font-bold">Tip &amp; delivery note</p>
+          <p className="text-[11px] text-muted-foreground">A tip goes fully to your delivery partner.</p>
+          <div className="flex flex-wrap gap-2">
+            {[0, 10, 20, 30, 50].map((t) => (
+              <button
+                key={t}
+                onClick={() => setTip(t)}
+                className={`press rounded-full border px-3 py-1.5 text-[11px] font-black ${tip === t ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+              >
+                {t === 0 ? "No tip" : `₹${t}`}
+              </button>
+            ))}
+          </div>
+          <textarea
+            rows={2}
+            value={instructions}
+            onChange={(e) => setInstructions(e.target.value)}
+            placeholder="Delivery instructions (e.g. ring the bell, less spicy)"
+            className="w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
+          />
         </div>
 
         <div className="card-elevated rise-in p-3">
@@ -368,6 +417,7 @@ function Cart() {
               {bill.packingFee ? <Row label="Packing fee" value={inr(bill.packingFee)} /> : null}
               {bill.surgeFee ? <Row label="Surge fee" value={inr(bill.surgeFee)} /> : null}
               {couponOff > 0 ? <Row label={`Coupon ${coupon?.code}`} value={`− ${inr(couponOff)}`} good /> : null}
+              {tip > 0 ? <Row label="Tip for delivery partner" value={inr(tip)} /> : null}
               {walletUse > 0 ? <Row label="Paid from wallet" value={`− ${inr(walletUse)}`} good /> : null}
               <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold">
                 <span>To pay</span>

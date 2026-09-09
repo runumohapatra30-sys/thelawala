@@ -3,7 +3,11 @@ import { useEffect, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { LiveMap } from "@/components/LiveMap";
 import { supabase } from "@/integrations/supabase/client";
+import { OrderChat } from "@/components/OrderChat";
+import { OrderAlerts } from "@/components/OrderAlerts";
 import { inr, STATUS_LABEL } from "@/lib/fees";
+import { openInvoice, type InvoiceOrder } from "@/lib/invoice";
+import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/orders/$id")({
   validateSearch: (s: Record<string, unknown>): { placed?: 1 } => (s['placed'] ? { placed: 1 } : {}),
@@ -43,6 +47,7 @@ const TIPS = [20, 30, 50];
 
 function Track() {
   const { id } = Route.useParams();
+  const { user } = useSession();
   const { placed } = Route.useSearch();
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<{ id: string; name: string; qty: number; price: number; photo_url: string | null }[]>([]);
@@ -347,6 +352,19 @@ function Track() {
             </div>
           </dl>
         </div>
+
+        <button
+          onClick={() => openInvoice(order as unknown as InvoiceOrder, items.map((i) => ({ name: i.name, qty: i.qty, price: Number(i.price) })), vendor?.stall_name ?? "ThelaWala stall")}
+          className="press w-full rounded-xl border border-primary py-2.5 text-sm font-black text-primary"
+        >
+          🧾 Download bill (PDF)
+        </button>
+
+        {order.partner_id && order.status !== "DELIVERED" && order.status !== "CANCELLED" ? (
+          <OrderChat orderId={order.id} role="CUSTOMER" senderId={user?.id} />
+        ) : null}
+
+        <OrderAlerts userId={user?.id} />
 
         <div className="flex gap-2">
           <Link

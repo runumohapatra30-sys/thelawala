@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { LogoutButton, Shell } from "@/components/Shell";
 import { PayoutPanel } from "@/components/Payouts";
+import { OrderChat } from "@/components/OrderChat";
+import { RiderShifts } from "@/components/RiderShifts";
 import { LiveMap } from "@/components/LiveMap";
 import { supabase } from "@/integrations/supabase/client";
 import { rejectOffer } from "@/lib/dispatch";
@@ -607,6 +609,12 @@ function RiderPortal() {
         </div>
 
         <PayoutPanel party="PARTNER" id={me.id} />
+
+        {active ? <OrderChat orderId={active.id} role="RIDER" senderId={user?.id} title="Chat with customer" /> : null}
+
+        <RiderShifts partnerId={me.id} />
+
+
 
         {me.status === "UNDER_REVIEW" ? (
           <div className="card-soft border-2 border-destructive p-3">
