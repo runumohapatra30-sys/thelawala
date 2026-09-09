@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
+import { foodImage } from "@/lib/foodImage";
 
 export const Route = createFileRoute("/categories")({
   head: () => ({
