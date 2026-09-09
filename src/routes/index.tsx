@@ -277,16 +277,20 @@ function Home() {
             ? Math.round(((Number(i.mrp) - Number(i.price)) / Number(i.mrp)) * 100)
             : 0;
           return (
-            <div key={i.id} className="card-soft border border-border p-2">
+            <div key={i.id} className="press card-elevated p-2.5 hover:-translate-y-0.5">
               <div className="relative">
-                <img src={i.photo_url ?? "/food/food-tiffin.jpg"} alt={i.name} className="h-28 w-full rounded-xl object-cover" />
+                <img
+                  src={i.photo_url ?? "/food/food-tiffin.jpg"}
+                  alt={i.name}
+                  className="aspect-[4/5] w-full rounded-[1.4rem] object-cover"
+                />
                 {off > 0 ? (
-                  <span className="absolute left-1 top-1 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-black text-primary-foreground">
+                  <span className="absolute left-2 top-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-extrabold text-primary-foreground shadow-md">
                     {off}% OFF
                   </span>
                 ) : null}
                 {!i.in_stock ? (
-                  <span className="absolute inset-0 grid place-items-center rounded-xl bg-black/55 text-xs font-bold text-white">
+                  <span className="absolute inset-0 grid place-items-center rounded-[1.4rem] bg-black/55 text-xs font-bold text-white">
                     Out of stock
                   </span>
                 ) : null}
@@ -294,29 +298,34 @@ function Home() {
                   <button
                     aria-label={favs.includes(i.id) ? "Remove from favourites" : "Add to favourites"}
                     onClick={() => toggleFav(i.id, i.vendor_id)}
-                    className={`press absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-card/90 text-sm shadow-sm ${favs.includes(i.id) ? "text-destructive" : "text-muted-foreground"}`}
+                    className={`press absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-card/90 text-sm shadow-md ${favs.includes(i.id) ? "text-destructive" : "text-muted-foreground"}`}
                   >
                     {favs.includes(i.id) ? "♥" : "♡"}
                   </button>
                 ) : null}
               </div>
-              <p className="mt-2 truncate text-sm font-bold">{i.name}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{vendorName[i.vendor_id] ?? "Stall"} · {i.unit}</p>
-              <div className="mt-2 flex items-center justify-between">
-                <p className="text-sm font-bold">
+              <p className="mt-2.5 truncate px-0.5 text-[13px] font-extrabold">{i.name}</p>
+              <p className="truncate px-0.5 text-[11px] font-medium text-muted-foreground">
+                {vendorName[i.vendor_id] ?? "Stall"} · {i.unit}
+              </p>
+              <div className="mt-2.5 flex items-center justify-between px-0.5">
+                <p className="text-[15px] font-extrabold text-primary">
                   {inr(Number(i.price))}{" "}
                   {off > 0 ? (
-                    <span className="text-[11px] font-normal text-muted-foreground line-through">{inr(Number(i.mrp))}</span>
+                    <span className="text-[11px] font-medium text-muted-foreground line-through">{inr(Number(i.mrp))}</span>
                   ) : null}
                 </p>
                 {!i.in_stock ? null : line ? (
-                  <div className="press flex items-center gap-2 rounded-lg bg-primary px-2 py-1 text-primary-foreground">
-                    <button aria-label="Remove one" onClick={() => cart.remove(i.id)} className="px-1 font-bold">−</button>
-                    <span className="text-xs font-bold">{line.qty}</span>
-                    <button aria-label="Add one" onClick={() => add(i)} className="px-1 font-bold">+</button>
+                  <div className="flex items-center gap-1.5 rounded-full bg-primary px-2 py-1 text-primary-foreground shadow-[0_8px_18px_-10px_var(--color-primary)]">
+                    <button aria-label="Remove one" onClick={() => cart.remove(i.id)} className="press px-1 font-bold">−</button>
+                    <span className="text-xs font-extrabold">{line.qty}</span>
+                    <button aria-label="Add one" onClick={() => add(i)} className="press px-1 font-bold">+</button>
                   </div>
                 ) : (
-                  <button onClick={() => add(i)} className="press rounded-lg border border-primary bg-[color-mix(in_oklab,var(--color-primary)_8%,white)] px-3 py-1 text-xs font-black text-primary">
+                  <button
+                    onClick={() => add(i)}
+                    className="press rounded-full border border-primary bg-[color-mix(in_oklab,var(--color-primary)_8%,white)] px-3.5 py-1.5 text-[11px] font-extrabold text-primary shadow-[0_8px_18px_-12px_var(--color-primary)]"
+                  >
                     ADD
                   </button>
                 )}
