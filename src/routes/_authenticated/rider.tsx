@@ -118,6 +118,12 @@ function RiderPortal() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [showComplete, setShowComplete] = useState(false);
+  const [manualCode, setManualCode] = useState("");
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState(CANCEL_REASONS[0]!);
+  const [cancelCode, setCancelCode] = useState("");
+  const [cancelMsg, setCancelMsg] = useState<string | null>(null);
+  const [cancelBusy, setCancelBusy] = useState(false);
   const [earnings, setEarnings] = useState({ trips: 0, total: 0 });
   const [week, setWeek] = useState({ trips: 0, total: 0, rating: 0 });
   const [form, setForm] = useState({
