@@ -608,6 +608,12 @@ function RiderPortal() {
 
         <PayoutPanel party="PARTNER" id={me.id} />
 
+        {active ? <OrderChat orderId={active.id} role="RIDER" senderId={user?.id} title="Chat with customer" /> : null}
+
+        <RiderShifts partnerId={me.id} />
+
+
+
         {me.status === "UNDER_REVIEW" ? (
           <div className="card-soft border-2 border-destructive p-3">
             <p className="text-sm font-bold text-destructive">Duty locked · licence under review</p>
