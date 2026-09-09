@@ -176,7 +176,7 @@ function Home() {
             <Link
               to={user ? "/profile" : "/auth"}
               aria-label="Your account"
-              className="press grid h-9 w-9 place-items-center rounded-full bg-card shadow-sm"
+              className="press grid h-10 w-10 place-items-center rounded-2xl glass-chip"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <circle cx="12" cy="8" r="3.4" /><path d="M4.5 20a7.5 7.5 0 0115 0" strokeLinecap="round" />
@@ -185,7 +185,7 @@ function Home() {
             <button
               aria-label="More options"
               onClick={() => setMenu((m) => !m)}
-              className="press grid h-9 w-9 place-items-center rounded-full bg-card shadow-sm"
+              className="press grid h-10 w-10 place-items-center rounded-2xl glass-chip"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
                 <circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" />
