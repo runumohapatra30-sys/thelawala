@@ -169,52 +169,106 @@ export type Database = {
       }
       delivery_partners: {
         Row: {
+          address: string | null
+          assigned_zones: string[]
+          bank_account_no: string | null
+          bank_holder: string | null
+          bank_ifsc: string | null
+          bank_name: string | null
+          bank_proof_url: string | null
           created_at: string
+          dl_document_url: string | null
           dl_number: string | null
+          emergency_phone: string | null
           id: string
+          identity_document_url: string | null
+          identity_number: string | null
+          identity_proof_type: string | null
           is_busy: boolean
           is_online: boolean
           lat: number | null
           lng: number | null
           mobile: string | null
           name: string
+          pan_card_url: string | null
+          pan_number: string | null
           photo_url: string | null
+          profile_photo_url: string | null
           status: string
+          terms_accepted_at: string | null
           updated_at: string
+          upi_id: string | null
           user_id: string | null
           vehicle_no: string | null
+          vehicle_type: string | null
         }
         Insert: {
+          address?: string | null
+          assigned_zones?: string[]
+          bank_account_no?: string | null
+          bank_holder?: string | null
+          bank_ifsc?: string | null
+          bank_name?: string | null
+          bank_proof_url?: string | null
           created_at?: string
+          dl_document_url?: string | null
           dl_number?: string | null
+          emergency_phone?: string | null
           id?: string
+          identity_document_url?: string | null
+          identity_number?: string | null
+          identity_proof_type?: string | null
           is_busy?: boolean
           is_online?: boolean
           lat?: number | null
           lng?: number | null
           mobile?: string | null
           name: string
+          pan_card_url?: string | null
+          pan_number?: string | null
           photo_url?: string | null
+          profile_photo_url?: string | null
           status?: string
+          terms_accepted_at?: string | null
           updated_at?: string
+          upi_id?: string | null
           user_id?: string | null
           vehicle_no?: string | null
+          vehicle_type?: string | null
         }
         Update: {
+          address?: string | null
+          assigned_zones?: string[]
+          bank_account_no?: string | null
+          bank_holder?: string | null
+          bank_ifsc?: string | null
+          bank_name?: string | null
+          bank_proof_url?: string | null
           created_at?: string
+          dl_document_url?: string | null
           dl_number?: string | null
+          emergency_phone?: string | null
           id?: string
+          identity_document_url?: string | null
+          identity_number?: string | null
+          identity_proof_type?: string | null
           is_busy?: boolean
           is_online?: boolean
           lat?: number | null
           lng?: number | null
           mobile?: string | null
           name?: string
+          pan_card_url?: string | null
+          pan_number?: string | null
           photo_url?: string | null
+          profile_photo_url?: string | null
           status?: string
+          terms_accepted_at?: string | null
           updated_at?: string
+          upi_id?: string | null
           user_id?: string | null
           vehicle_no?: string | null
+          vehicle_type?: string | null
         }
         Relationships: []
       }
@@ -1075,51 +1129,96 @@ export type Database = {
       vendors: {
         Row: {
           address: string | null
+          bank_account_no: string | null
+          bank_holder: string | null
+          bank_ifsc: string | null
+          bank_name: string | null
+          bank_proof_url: string | null
           created_at: string
+          cuisine_types: string[]
+          fssai_certificate_url: string | null
           fssai_number: string | null
           id: string
+          id_document_url: string | null
+          identity_number: string | null
+          identity_proof_type: string | null
           is_open: boolean
           lat: number
           lng: number
           mobile: string | null
           owner_id: string | null
           owner_name: string | null
+          pan_number: string | null
           photo_url: string | null
           stall_name: string
+          stall_photos: string[]
           status: string
+          terms_accepted_at: string | null
           updated_at: string
+          upi_id: string | null
+          zone: string | null
         }
         Insert: {
           address?: string | null
+          bank_account_no?: string | null
+          bank_holder?: string | null
+          bank_ifsc?: string | null
+          bank_name?: string | null
+          bank_proof_url?: string | null
           created_at?: string
+          cuisine_types?: string[]
+          fssai_certificate_url?: string | null
           fssai_number?: string | null
           id?: string
+          id_document_url?: string | null
+          identity_number?: string | null
+          identity_proof_type?: string | null
           is_open?: boolean
           lat?: number
           lng?: number
           mobile?: string | null
           owner_id?: string | null
           owner_name?: string | null
+          pan_number?: string | null
           photo_url?: string | null
           stall_name: string
+          stall_photos?: string[]
           status?: string
+          terms_accepted_at?: string | null
           updated_at?: string
+          upi_id?: string | null
+          zone?: string | null
         }
         Update: {
           address?: string | null
+          bank_account_no?: string | null
+          bank_holder?: string | null
+          bank_ifsc?: string | null
+          bank_name?: string | null
+          bank_proof_url?: string | null
           created_at?: string
+          cuisine_types?: string[]
+          fssai_certificate_url?: string | null
           fssai_number?: string | null
           id?: string
+          id_document_url?: string | null
+          identity_number?: string | null
+          identity_proof_type?: string | null
           is_open?: boolean
           lat?: number
           lng?: number
           mobile?: string | null
           owner_id?: string | null
           owner_name?: string | null
+          pan_number?: string | null
           photo_url?: string | null
           stall_name?: string
+          stall_photos?: string[]
           status?: string
+          terms_accepted_at?: string | null
           updated_at?: string
+          upi_id?: string | null
+          zone?: string | null
         }
         Relationships: []
       }
