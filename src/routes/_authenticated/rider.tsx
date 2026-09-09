@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { LogoutButton, Shell } from "@/components/Shell";
 import { PayoutPanel } from "@/components/Payouts";
 import { OrderChat } from "@/components/OrderChat";
-import { RiderShifts } from "@/components/RiderShifts";
+
 import { LiveMap } from "@/components/LiveMap";
 import { supabase } from "@/integrations/supabase/client";
 import { rejectOffer, sweepSearchingOrders } from "@/lib/dispatch";
@@ -684,12 +684,7 @@ function RiderPortal() {
                 {cfg.title ? <p className="section-title pt-1">{cfg.title}</p> : null}
               </>
             ),
-            rider_shifts: (cfg) => (
-              <>
-                <p className="section-title pt-1">{cfg.title ?? "Your shifts"}</p>
-                <RiderShifts partnerId={me.id} />
-              </>
-            ),
+            rider_shifts: () => null,
           }}
         />
 
