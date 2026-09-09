@@ -40,21 +40,26 @@ export const createPayuPayment = createServerFn({ method: "POST" })
       live = Boolean(creds?.is_live);
     }
 
+    key = key.trim();
+    salt = salt.trim();
     if (!key || !salt) throw new Error("Online payment is not set up yet. Please ask the team to add the gateway keys.");
 
     const action = live ? "https://secure.payu.in/_payment" : "https://test.payu.in/_payment";
 
+    const clean = (v: string) => v.replace(/[|^~`]/g, " ").replace(/\s+/g, " ").trim();
     const amount = data.amount.toFixed(2);
     const txnid = `TW${Date.now()}${Math.floor(Math.random() * 1000)}`;
-    const productinfo = data.purpose === "WALLET" ? "ThelaWala wallet top-up" : "ThelaWala order";
-    const firstname = (data.name || "Customer").slice(0, 40);
-    const email = data.email;
+    const productinfo = clean(data.purpose === "WALLET" ? "ThelaWala wallet top-up" : "ThelaWala order") || "ThelaWala order";
+    const firstname = clean((data.name || "Customer").slice(0, 40)) || "Customer";
+    const email = clean(data.email) || "customer@thelawala.in";
     const udf1 = context.userId;
     const udf2 = data.purpose;
     const udf3 = data.orderId ?? "";
 
     const { createHash } = await import("crypto");
-    const seq = [key, txnid, amount, productinfo, firstname, email, udf1, udf2, udf3, "", "", "", "", "", "", salt];
+    // PayU standard: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt
+    // udf4..udf10 stay empty -> exactly 7 empty fields between udf3 and salt.
+    const seq = [key, txnid, amount, productinfo, firstname, email, udf1, udf2, udf3, "", "", "", "", "", "", "", salt];
     const hash = createHash("sha512").update(seq.join("|")).digest("hex");
 
     const origin = data.origin.replace(/\/$/, "");
