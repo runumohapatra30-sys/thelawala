@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { AddressBook } from "@/components/AddressBook";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,6 +47,12 @@ function Cart() {
   const [offers, setOffers] = useState<Coupon[]>([]);
   const [tip, setTip] = useState(0);
   const [instructions, setInstructions] = useState("");
+  const [locating, setLocating] = useState(false);
+  const autoTried = useRef(false);
+  const coordsRef = useRef(coords);
+  const formRef = useRef(form);
+  coordsRef.current = coords;
+  formRef.current = form;
 
   useEffect(() => {
     listCoupons().then((cs) => setOffers(cs.filter((c) => c.is_active).slice(0, 3)));
@@ -97,13 +103,58 @@ function Cart() {
       });
   }, [user?.id]);
 
-  function locate() {
+  async function fillFromCoords(lat: number, lng: number, overwrite: boolean) {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`,
+        { headers: { Accept: "application/json" } },
+      );
+      if (!res.ok) return;
+      const json = (await res.json()) as {
+        display_name?: string;
+        address?: Record<string, string>;
+      };
+      const a = json.address ?? {};
+      const line = [a["house_number"], a["road"], a["neighbourhood"], a["suburb"], a["city_district"], a["city"] ?? a["town"] ?? a["village"]]
+        .filter(Boolean)
+        .join(", ");
+      const pin = a["postcode"] ?? "";
+      setForm((f) => ({
+        ...f,
+        line: overwrite || !f.line ? line || json.display_name || f.line : f.line,
+        landmark: f.landmark || a["neighbourhood"] || a["suburb"] || "",
+        pincode: overwrite || !f.pincode ? pin || f.pincode : f.pincode,
+      }));
+    } catch {
+      /* reverse geocoding is best-effort */
+    }
+  }
+
+  function locate(overwrite = true) {
+    setLocating(true);
     navigator.geolocation?.getCurrentPosition(
-      (p) => setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }),
-      () => setErr("Could not read your location. Please allow location access."),
-      { enableHighAccuracy: true },
+      async (p) => {
+        setCoords({ lat: p.coords.latitude, lng: p.coords.longitude });
+        await fillFromCoords(p.coords.latitude, p.coords.longitude, overwrite);
+        setLocating(false);
+      },
+      () => {
+        setLocating(false);
+        setErr("Could not read your location. Please allow location access.");
+      },
+      { enableHighAccuracy: true, timeout: 15000 },
     );
   }
+
+  useEffect(() => {
+    if (autoTried.current) return;
+    autoTried.current = true;
+    const t = setTimeout(() => {
+      if (!coordsRef.current && !formRef.current.line) locate(true);
+    }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const distanceKm = vendor && coords ? haversineKm(coords, { lat: Number(vendor.lat), lng: Number(vendor.lng) }) : 0;
   const bill = settings ? computeBill({ settings, foodTotal, mrpTotal, distanceKm }) : null;
@@ -334,8 +385,16 @@ function Cart() {
               className="w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
             />
           </label>
-          <button onClick={locate} className="w-full rounded-xl border border-primary py-2.5 text-sm font-bold text-primary">
-            {coords ? `Location set (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}) · Update` : "Use my current location"}
+          <button
+            onClick={() => locate(true)}
+            disabled={locating}
+            className="w-full rounded-xl border border-primary py-2.5 text-sm font-bold text-primary disabled:opacity-60"
+          >
+            {locating
+              ? "Finding your address…"
+              : coords
+                ? `Location set (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}) · Update`
+                : "Use my current location"}
           </button>
           {coords && vendor ? (
             <p className="text-xs text-muted-foreground">
