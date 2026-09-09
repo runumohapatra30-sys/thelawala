@@ -27,7 +27,7 @@ export const Route = createFileRoute("/admin")({
 
 type OrderRow = { id: string; code: string; status: string; grand_total: number; delivery_fee: number; platform_fee: number; food_total: number; created_at: string };
 
-const SUPERADMIN_EMAIL = "runumohapatra808@gmail.com";
+
 
 function Admin() {
   const { user, loading } = useSession();
