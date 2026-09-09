@@ -5,6 +5,7 @@ import { Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { cart, cartTotals, useCart } from "@/lib/cart";
 import { inr } from "@/lib/fees";
+import { customerPrice } from "@/lib/pricing";
 import { foodImage } from "@/lib/foodImage";
 import { InstallAppButton } from "@/components/InstallApp";
 import { useSession } from "@/lib/session";
@@ -133,8 +134,9 @@ function Home() {
       name: i.name,
       photo: i.photo_url,
       unit: i.unit,
-      price: Number(i.price),
-      mrp: Number(i.mrp),
+      base: Number(i.price),
+      price: customerPrice(i.price),
+      mrp: customerPrice(i.mrp),
     });
     if (!res.ok) setToast(res.error);
     else setToast(null);
@@ -319,9 +321,9 @@ function Home() {
       <div className="grid grid-cols-2 gap-3.5 px-5 pb-36 pt-3">
         {shown.map((i, idx) => {
           const line = lines.find((l) => l.itemId === i.id);
-          const off = Number(i.mrp) > Number(i.price)
-            ? Math.round(((Number(i.mrp) - Number(i.price)) / Number(i.mrp)) * 100)
-            : 0;
+          const shownPrice = customerPrice(i.price);
+          const shownMrp = customerPrice(i.mrp);
+          const off = shownMrp > shownPrice ? Math.round(((shownMrp - shownPrice) / shownMrp) * 100) : 0;
           return (
             <div key={i.id} style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }} className="press rise-in card-elevated p-2.5 hover:-translate-y-0.5">
               <div className="relative">
@@ -356,9 +358,9 @@ function Home() {
               </p>
               <div className="mt-2.5 flex items-center justify-between px-0.5">
                 <p className="text-[15px] font-extrabold text-primary">
-                  {inr(Number(i.price))}{" "}
+                  {inr(shownPrice)}{" "}
                   {off > 0 ? (
-                    <span className="text-[11px] font-medium text-muted-foreground line-through">{inr(Number(i.mrp))}</span>
+                    <span className="text-[11px] font-medium text-muted-foreground line-through">{inr(shownMrp)}</span>
                   ) : null}
                 </p>
                 {!i.in_stock ? null : line ? (

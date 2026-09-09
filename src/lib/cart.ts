@@ -8,6 +8,8 @@ export type CartLine = {
   unit: string | null;
   price: number;
   mrp: number;
+  /** Stall's own base price, before the customer markup. */
+  base?: number;
   qty: number;
 };
 
@@ -79,4 +81,5 @@ export const cartTotals = (ls: CartLine[]) => ({
   count: ls.reduce((s, l) => s + l.qty, 0),
   foodTotal: ls.reduce((s, l) => s + l.price * l.qty, 0),
   mrpTotal: ls.reduce((s, l) => s + (l.mrp || l.price) * l.qty, 0),
+  baseTotal: ls.reduce((s, l) => s + (l.base ?? l.price / 1.1) * l.qty, 0),
 });
