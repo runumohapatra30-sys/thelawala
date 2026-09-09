@@ -47,12 +47,16 @@ export function SmartAssetManager() {
   }
 
   async function save() {
-    if (!title.trim() || !file) return toast.error("Add a title and a banner picture.");
+    if (!title.trim() || !file) {
+      toast.error("Add a title and a banner picture.");
+      return;
+    }
     setBusy(true);
     const up = await uploadBannerImage(file);
     if ("error" in up) {
       setBusy(false);
-      return toast.error(up.error);
+      toast.error(up.error);
+      return;
     }
     const { error } = await supabase.from("app_dynamic_assets").insert({
       title: title.trim(),
@@ -63,7 +67,10 @@ export function SmartAssetManager() {
       weather_tags: tags,
     });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     setTitle("");
     setSubtitle("");
     setLottie("");
