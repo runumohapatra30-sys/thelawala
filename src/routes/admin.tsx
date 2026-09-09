@@ -40,7 +40,7 @@ function Admin() {
   const [closures, setClosures] = useState<{ id: string; amount: number; status: string }[]>([]);
   const [saved, setSaved] = useState(false);
   const [tab, setTab] = useState<"ops" | "marketing">("ops");
-  const isSuper = (user?.email ?? "").toLowerCase() === SUPERADMIN_EMAIL;
+  const isSuper = isAdmin;
 
   const loadMoney = () => {
     supabase.from("refund_requests").select("id,amount,reason,method,status").eq("status", "PENDING").then(({ data }) => setRefunds(data ?? []));
