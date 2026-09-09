@@ -10,6 +10,7 @@ import {
   type PromoCard,
 } from "@/lib/marketing";
 import { SmartAssetManager } from "@/components/SmartAssetManager";
+import { BannerStudio } from "@/components/BannerStudio";
 
 const inputCls =
   "w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary";
