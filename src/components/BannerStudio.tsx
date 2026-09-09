@@ -37,6 +37,7 @@ export function BannerStudio() {
   const [height, setHeight] = useState(140);
   const [radius, setRadius] = useState(16);
   const [route, setRoute] = useState("");
+  const [custom, setCustom] = useState(false);
   const [order, setOrder] = useState("1");
   const [busy, setBusy] = useState(false);
 
@@ -88,6 +89,7 @@ export function BannerStudio() {
     setFile(null);
     setPreview(null);
     setRoute("");
+    setCustom(false);
     load();
   }
 
@@ -122,8 +124,8 @@ export function BannerStudio() {
             <div style={{ padding: PAD }}>
               <Resizable
                 size={{ width: MEDIA_W, height }}
-                minHeight={80}
-                maxHeight={420}
+                minHeight={MIN_H}
+                maxHeight={MAX_H}
                 enable={{ bottom: true }}
                 onResize={(_e, _d, ref) => setHeight(ref.offsetHeight)}
                 handleComponent={{
@@ -180,8 +182,8 @@ export function BannerStudio() {
             Height ({Math.round(height)}px)
             <input
               type="range"
-              min={80}
-              max={420}
+              min={MIN_H}
+              max={MAX_H}
               value={height}
               onChange={(e) => setHeight(Number(e.target.value))}
               className="mt-2 w-full accent-primary"
