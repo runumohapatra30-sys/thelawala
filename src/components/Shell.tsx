@@ -84,9 +84,9 @@ export function LogoutButton({ className = "" }: { className?: string }) {
 
 export function PortalHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <header className="brand-header sticky top-0 z-30 px-4 py-3">
+    <header className="brand-header sticky top-0 z-30 rounded-b-[2rem] px-4 py-4 shadow-[0_16px_34px_-26px_rgba(15,23,42,0.55)]">
       <div className="flex items-center gap-3">
-        <Link to="/" className="press grid h-9 w-9 shrink-0 place-items-center rounded-full bg-card/70">
+        <Link to="/" className="press grid h-10 w-10 shrink-0 place-items-center rounded-2xl glass-chip">
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2">
             <path d="M15 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
