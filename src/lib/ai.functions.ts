@@ -155,3 +155,110 @@ export const parseVoiceSearch = createServerFn({ method: "POST" })
       return fallback;
     }
   });
+
+const LayoutSection = z.object({
+  id: z.string(),
+  type: z.string(),
+  is_visible: z.boolean(),
+  order: z.number(),
+  config: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).default({}),
+});
+
+const LayoutCopilotInput = z.object({
+  app: z.enum(["customer", "vendor", "rider"]),
+  page: z.string().min(1).max(40),
+  prompt: z.string().min(2).max(400),
+  sections: z.array(LayoutSection).min(1).max(30),
+});
+
+type CfgValue = Record<string, string | number | boolean>;
+type LayoutSectionT = { id: string; type: string; is_visible: boolean; order: number; config: CfgValue };
+type LayoutVariant = { key: string; label: string; sections: LayoutSectionT[]; explanation_od: string };
+type CopilotResult = { variants: LayoutVariant[]; ai: boolean };
+
+const VARIANTS = [
+  { key: "compact", label: "Compact", scale: 0.8, gap: 6, padding: 8, font: 0.92 },
+  { key: "balanced", label: "Balanced", scale: 1, gap: 10, padding: 12, font: 1 },
+  { key: "roomy", label: "Roomy", scale: 1.22, gap: 16, padding: 18, font: 1.08 },
+] as const;
+
+function localVariant(sections: LayoutSectionT[], v: (typeof VARIANTS)[number]): LayoutSectionT[] {
+  return sections.map((s) => {
+    const cfg = s.config as CfgValue;
+    const height = Number(cfg["height"] ?? 140);
+    return {
+      ...s,
+      config: {
+        ...cfg,
+        height: Math.max(80, Math.min(320, Math.round(height * v.scale))),
+        gap: v.gap,
+        padding: v.padding,
+        fontScale: v.font,
+      },
+    };
+  });
+}
+
+/** Turns an admin's Odia / Hinglish / English feedback into 3 layout variants for one screen. */
+export const layoutCopilot = createServerFn({ method: "POST" })
+  .inputValidator((raw: unknown) => LayoutCopilotInput.parse(raw))
+  .handler(async ({ data }): Promise<CopilotResult> => {
+    const fallback: LayoutVariant[] = VARIANTS.map((v) => ({
+      key: v.key,
+      label: v.label,
+      sections: localVariant(data.sections, v),
+      explanation_od: `${v.label}: ବ୍ଲକ୍‌ର ଉଚ୍ଚତା, ଫାଙ୍କ ଓ ପ୍ୟାଡିଂ ${v.label.toLowerCase()} ଢଙ୍ଗରେ ସଜାଗଲା।`,
+    }));
+
+    const key = process.env["LOVABLE_API_KEY"];
+    if (!key) return { variants: fallback, ai: false };
+
+    try {
+      const gateway = createLovableAiGatewayProvider(key);
+      const { text } = await generateText({
+        model: gateway(MODEL),
+        system: [
+          "You are a mobile UI layout agent for a food-delivery app (Blinkit-like).",
+          "Input: the current layout JSON of one screen plus an admin instruction in Odia, Hinglish or English.",
+          "Return ONLY JSON: {\"variants\":[{\"key\":\"compact|balanced|roomy\",\"sections\":[...],\"explanation_od\":\"<Odia, max 20 words>\"}]}",
+          "Exactly 3 variants in the order compact, balanced, roomy.",
+          "Each sections array MUST keep the same section ids and types; you may change order, is_visible and config only.",
+          "Allowed config keys: title, height (80-320), rounded (0-32), gap (0-24), padding (0-24), fontScale (0.85-1.25), limit, layout, content, autoplay, fullWidth (boolean), buttonSize ('sm'|'md'|'lg'), buttonColor (hex).",
+        ].join("\n"),
+        prompt: [
+          `Role: ${data.app}`,
+          `Screen: ${data.page}`,
+          `Admin instruction: ${data.prompt}`,
+          `Current layout JSON: ${JSON.stringify(data.sections)}`,
+        ].join("\n"),
+      });
+      const match = text.match(/\{[\s\S]*\}/);
+      if (!match) return { variants: fallback, ai: false };
+      const parsed = JSON.parse(match[0]) as {
+        variants?: { key?: string; sections?: unknown; explanation_od?: string }[];
+      };
+      const ids = new Set(data.sections.map((s) => s.id));
+      const out: LayoutVariant[] = VARIANTS.map((v) => {
+        const hit = parsed.variants?.find((p) => p.key === v.key);
+        const arr = Array.isArray(hit?.sections) ? (hit!.sections as LayoutSectionT[]) : null;
+        const clean = arr?.filter((s) => s && typeof s.type === "string" && ids.has(s.id));
+        return {
+          key: v.key,
+          label: v.label,
+          sections:
+            clean && clean.length === data.sections.length
+              ? clean.map((s, i) => ({
+                  ...s,
+                  order: i + 1,
+                  is_visible: s.is_visible !== false,
+                  config: (s.config ?? {}) as CfgValue,
+                }))
+              : localVariant(data.sections, v),
+          explanation_od: hit?.explanation_od?.trim() || fallback.find((f) => f.key === v.key)!.explanation_od,
+        };
+      });
+      return { variants: out, ai: true };
+    } catch {
+      return { variants: fallback, ai: false };
+    }
+  });

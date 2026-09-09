@@ -11,7 +11,14 @@ export type SectionConfig = {
   limit?: number;
   layout?: string;
   content?: "image" | "video" | "lottie" | "grid";
+  gap?: number;
+  padding?: number;
+  fontScale?: number;
+  fullWidth?: boolean;
+  buttonSize?: "sm" | "md" | "lg";
+  buttonColor?: string;
 };
+
 
 export type PageSection = {
   id: string;

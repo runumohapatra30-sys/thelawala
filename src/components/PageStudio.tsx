@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { layoutCopilot } from "@/lib/ai.functions";
 import {
   PAGES,
   SECTION_LABELS,
@@ -7,8 +9,10 @@ import {
   loadLayout,
   saveLayout,
   type PageSection,
+  type SectionConfig,
   type TargetApp,
 } from "@/lib/pageLayout";
+
 
 const APPS: { key: TargetApp; label: string }[] = [
   { key: "customer", label: "Customer app" },
@@ -33,9 +37,56 @@ export function PageStudio() {
   const [drag, setDrag] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const askCopilot = useServerFn(layoutCopilot);
+  const [prompt, setPrompt] = useState("");
+  const [thinking, setThinking] = useState(false);
+  const [variants, setVariants] = useState<
+    { key: string; label: string; sections: PageSection[]; explanation_od: string }[]
+  >([]);
+  const [chosen, setChosen] = useState<string | null>(null);
+
   useEffect(() => {
     loadLayout(app, page).then((s) => { setSections(s); setPicked(null); });
+    setVariants([]);
+    setChosen(null);
   }, [app, page]);
+
+  async function runCopilot() {
+    if (prompt.trim().length < 2) { toast.error("Kichhi likhantu — kemiti badalibe."); return; }
+    setThinking(true);
+    try {
+      const res = await askCopilot({
+        data: { app, page, prompt: prompt.trim(), sections },
+      });
+      const list = res.variants.map((v) => ({
+        key: v.key,
+        label: v.label,
+        explanation_od: v.explanation_od,
+        sections: (v.sections as PageSection[]).map((s, i) => ({
+          ...s,
+          order: i + 1,
+          config: (s.config ?? {}) as SectionConfig,
+        })),
+      }));
+      setVariants(list);
+      const first = list[0];
+      if (first) { setChosen(first.key); setSections(first.sections); }
+      toast.success(res.ai ? "AI 3 ta design bahara kala." : "Design variant taiyar (offline mode).");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "AI kaam kalanahin. Aau tie try karantu.");
+    } finally {
+      setThinking(false);
+    }
+  }
+
+  function useVariant(key: string) {
+    const v = variants.find((x) => x.key === key);
+    if (!v) return;
+    setChosen(key);
+    setSections(v.sections);
+    setPicked(null);
+  }
+
 
   function switchApp(next: TargetApp) {
     setApp(next);
@@ -99,6 +150,49 @@ export function PageStudio() {
       <p className="text-[11px] text-muted-foreground">
         Drag a block up or down inside the phone to reorder it. Tap a block to change its settings.
       </p>
+
+      <div className="space-y-2 rounded-2xl border border-primary/30 bg-primary/5 p-3">
+        <p className="text-xs font-bold">AI UI Copilot · ଯେକୌଣସି ପେଜ୍ ପାଇଁ</p>
+        <div className="flex flex-wrap gap-2">
+          <input
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") void runCopilot(); }}
+            placeholder='e.g. "Trending stalls card spacing kam kara"'
+            className={`${selCls} min-w-[220px] flex-1`}
+          />
+          <button
+            onClick={() => void runCopilot()}
+            disabled={thinking}
+            className="rounded-full bg-foreground px-4 py-2 text-[11px] font-black text-background disabled:opacity-50"
+          >
+            {thinking ? "Bhabuchhi…" : "Design generate kara"}
+          </button>
+        </div>
+        {variants.length > 0 && (
+          <div className="grid gap-2 sm:grid-cols-3">
+            {variants.map((v) => (
+              <button
+                key={v.key}
+                onClick={() => useVariant(v.key)}
+                className={`rounded-xl border p-2 text-left text-[11px] ${
+                  chosen === v.key ? "border-primary bg-card" : "border-border bg-card/60"
+                }`}
+              >
+                <span className="block text-xs font-bold">{v.label}</span>
+                <span className="mt-1 block text-[10px] text-muted-foreground">{v.explanation_od}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        {variants.length > 0 && (
+          <p className="text-[10px] text-muted-foreground">
+            ଫୋନ୍ ମକଅପ୍‌ରେ ଦେଖନ୍ତୁ, ପସନ୍ଦ ହେଲେ “Publish changes live” ଦାବନ୍ତୁ।
+          </p>
+        )}
+      </div>
+
+
 
       <div className="flex flex-wrap gap-4">
         <div className="mx-auto w-[375px] max-w-full rounded-[2.2rem] border-[10px] border-foreground/85 bg-background p-2 shadow-[0_24px_50px_-24px_rgba(15,23,42,0.7)]">
