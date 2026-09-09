@@ -144,10 +144,23 @@ function Admin() {
                 {toggle("enable_online_payment", "Online payment")}
                 {toggle("enable_google_login", "Google one-tap login")}
               </div>
-              <div className="rounded-xl border border-border px-3 py-2 text-sm">
-                <span className="text-[11px] font-semibold text-muted-foreground">Payment gateway: </span>
-                <span className="font-bold text-primary">Cashfree</span>
+              <div className="space-y-1 rounded-xl border border-border px-3 py-2">
+                <span className="text-[11px] font-semibold text-muted-foreground">Payment gateway (only one runs)</span>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["CASHFREE", "PAYU"] as const).map((g) => (
+                    <button
+                      key={g}
+                      onClick={() => setS({ ...s, payment_gateway: g })}
+                      className={`rounded-xl border px-3 py-2 text-sm font-bold ${
+                        s.payment_gateway === g ? "border-primary text-primary" : "border-border text-muted-foreground"
+                      }`}
+                    >
+                      {g === "CASHFREE" ? "Cashfree" : "PayU"}
+                    </button>
+                  ))}
+                </div>
               </div>
+
               {num("wallet_min_topup", "Minimum wallet transaction (₹)")}
               {num("wallet_max_topup", "Maximum wallet transaction (₹)")}
               <label className="block">
