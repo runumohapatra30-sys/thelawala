@@ -278,6 +278,62 @@ export type Database = {
         }
         Relationships: []
       }
+      cash_deposits: {
+        Row: {
+          admin_note: string | null
+          amount: number
+          created_at: string
+          id: string
+          method: string
+          partner_id: string
+          proof_image_url: string | null
+          status: string
+          transaction_ref: string | null
+          updated_at: string
+          verification_otp: string | null
+          verified_at: string | null
+          verified_by_admin: string | null
+        }
+        Insert: {
+          admin_note?: string | null
+          amount: number
+          created_at?: string
+          id?: string
+          method: string
+          partner_id: string
+          proof_image_url?: string | null
+          status?: string
+          transaction_ref?: string | null
+          updated_at?: string
+          verification_otp?: string | null
+          verified_at?: string | null
+          verified_by_admin?: string | null
+        }
+        Update: {
+          admin_note?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          method?: string
+          partner_id?: string
+          proof_image_url?: string | null
+          status?: string
+          transaction_ref?: string | null
+          updated_at?: string
+          verification_otp?: string | null
+          verified_at?: string | null
+          verified_by_admin?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_deposits_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           emoji: string | null
@@ -1697,6 +1753,15 @@ export type Database = {
         Args: { _order_id: string; _otp: string }
         Returns: undefined
       }
+      decide_cash_deposit: {
+        Args: {
+          _approve: boolean
+          _deposit_id: string
+          _note?: string
+          _otp?: string
+        }
+        Returns: undefined
+      }
       decide_payout: {
         Args: {
           _approve: boolean
@@ -1748,6 +1813,7 @@ export type Database = {
         Returns: string
       }
       request_wallet_closure: { Args: never; Returns: string }
+      rider_cash_in_hand: { Args: { _partner_id: string }; Returns: number }
       sweep_dispatch: { Args: never; Returns: number }
       vendor_balance: { Args: { _vendor_id: string }; Returns: number }
       wallet_credit: {
