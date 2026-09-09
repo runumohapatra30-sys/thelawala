@@ -13,6 +13,7 @@ import { dlError, ifscError, normalizeDl, panError, phoneError } from "@/lib/val
 import { BBSR_ZONES, ID_PROOF_TYPES, VEHICLE_TYPES, uploadKycDoc } from "@/lib/kyc";
 import { useLoudAlarm } from "@/lib/alarm";
 import { toast } from "sonner";
+import { DynamicPageRenderer } from "@/components/DynamicPageRenderer";
 import { Html5Qrcode } from "html5-qrcode";
 
 export const Route = createFileRoute("/_authenticated/rider")({
@@ -623,33 +624,48 @@ function RiderPortal() {
       />
 
       <div className="space-y-3 p-4">
-        <div className="grid grid-cols-3 gap-2">
-          <div className="stat-tile">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">This week</p>
-            <p className="mt-0.5 text-lg font-black leading-none text-primary">{inr(Math.round(week.total))}</p>
-          </div>
-          <div className="stat-tile">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Trips · 7d</p>
-            <p className="mt-0.5 text-lg font-black leading-none">{week.trips}</p>
-          </div>
-          <div className="stat-tile">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Rating</p>
-            <p className="mt-0.5 text-lg font-black leading-none">{week.rating ? `${week.rating} ★` : "—"}</p>
-          </div>
-        </div>
+        <DynamicPageRenderer
+          app="rider"
+          page="dashboard"
+          registry={{
+            rider_earnings_card: (cfg) => (
+              <>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="stat-tile">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">This week</p>
+                    <p className="mt-0.5 text-lg font-black leading-none text-primary">{inr(Math.round(week.total))}</p>
+                  </div>
+                  <div className="stat-tile">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Trips · 7d</p>
+                    <p className="mt-0.5 text-lg font-black leading-none">{week.trips}</p>
+                  </div>
+                  <div className="stat-tile">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Rating</p>
+                    <p className="mt-0.5 text-lg font-black leading-none">{week.rating ? `${week.rating} ★` : "—"}</p>
+                  </div>
+                </div>
 
-        <div className={`flex items-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-black ${me.is_online ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-          <span className={`h-2.5 w-2.5 rounded-full ${me.is_online ? "animate-pulse bg-primary" : "bg-muted-foreground"}`} />
-          {me.is_online ? "On duty · receiving orders" : "Off duty · turn duty ON from the top bar"}
-        </div>
+                <div className={`mt-3 flex items-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-black ${me.is_online ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                  <span className={`h-2.5 w-2.5 rounded-full ${me.is_online ? "animate-pulse bg-primary" : "bg-muted-foreground"}`} />
+                  {me.is_online ? "On duty · receiving orders" : "Off duty · turn duty ON from the top bar"}
+                </div>
 
-        <PayoutPanel party="PARTNER" id={me.id} />
+                <div className="mt-3">
+                  <PayoutPanel party="PARTNER" id={me.id} />
+                </div>
+                {cfg.title ? <p className="section-title pt-1">{cfg.title}</p> : null}
+              </>
+            ),
+            rider_shifts: (cfg) => (
+              <>
+                <p className="section-title pt-1">{cfg.title ?? "Your shifts"}</p>
+                <RiderShifts partnerId={me.id} />
+              </>
+            ),
+          }}
+        />
 
         {active ? <OrderChat orderId={active.id} role="RIDER" senderId={user?.id} title="Chat with customer" /> : null}
-
-        <p className="section-title pt-1">Your shifts</p>
-
-        <RiderShifts partnerId={me.id} />
 
 
 

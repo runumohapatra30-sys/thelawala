@@ -4,6 +4,7 @@ import { PortalHeader, Shell } from "@/components/Shell";
 import { SupportQueue } from "@/components/SupportQueue";
 import { PayoutQueue, LiveOrders, CustomerManager } from "@/components/AdminPanels";
 import { MarketingManager } from "@/components/MarketingManager";
+import { PageStudio } from "@/components/PageStudio";
 import { AdminReports } from "@/components/AdminReports";
 import { supabase } from "@/integrations/supabase/client";
 import { listCoupons, type Coupon } from "@/lib/coupons";
@@ -39,7 +40,7 @@ function Admin() {
   const [refunds, setRefunds] = useState<{ id: string; amount: number; reason: string | null; method: string; status: string }[]>([]);
   const [closures, setClosures] = useState<{ id: string; amount: number; status: string }[]>([]);
   const [saved, setSaved] = useState(false);
-  const [tab, setTab] = useState<"ops" | "marketing">("ops");
+  const [tab, setTab] = useState<"ops" | "marketing" | "studio">("ops");
   const isSuper = isAdmin;
 
   const loadMoney = () => {
@@ -114,12 +115,12 @@ function Admin() {
         </div>
 
         {isSuper ? (
-          <div className="grid grid-cols-2 gap-2">
-            {([["ops", "Operations"], ["marketing", "Banner & marketing"]] as const).map(([key, label]) => (
+          <div className="grid grid-cols-3 gap-2">
+            {([["ops", "Operations"], ["marketing", "Banner & marketing"], ["studio", "Visual Page Studio"]] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setTab(key)}
-                className={`rounded-xl border px-3 py-2.5 text-sm font-bold ${tab === key ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+                className={`rounded-xl border px-2 py-2.5 text-[13px] font-bold ${tab === key ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
               >
                 {label}
               </button>
@@ -127,7 +128,7 @@ function Admin() {
           </div>
         ) : null}
 
-        {isSuper && tab === "marketing" ? <MarketingManager /> : (
+        {isSuper && tab === "studio" ? <PageStudio /> : isSuper && tab === "marketing" ? <MarketingManager /> : (
         <>
         <AdminReports />
 

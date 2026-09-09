@@ -12,6 +12,8 @@ import { BBSR_ZONES, ID_PROOF_TYPES, uploadKycDoc } from "@/lib/kyc";
 import { useLoudAlarm } from "@/lib/alarm";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
+import { SectionList } from "@/components/DynamicPageRenderer";
+import { usePageLayout } from "@/lib/pageLayout";
 
 export const Route = createFileRoute("/_authenticated/vendor")({
   head: () => ({
@@ -52,6 +54,7 @@ const EMPTY_DISH = {
 function VendorPortal() {
   const { user, loading } = useSession();
   const [vendor, setVendor] = useState<{ id: string; stall_name: string; status: string; is_open: boolean; fssai_number: string | null } | null>(null);
+  const vLayout = usePageLayout("vendor", "dashboard");
   const [orders, setOrders] = useState<Order[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
@@ -398,26 +401,38 @@ function VendorPortal() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-3 gap-2">
-          <div className="stat-tile">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Orders today</p>
-            <p className="mt-0.5 text-lg font-black leading-none">{today.orders}</p>
-          </div>
-          <div className="stat-tile">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Sales today</p>
-            <p className="mt-0.5 text-lg font-black leading-none text-primary">{inr(Math.round(today.sales))}</p>
-          </div>
-          <div className="stat-tile">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Rating</p>
-            <p className="mt-0.5 text-lg font-black leading-none">{today.rating ? `${today.rating} ★` : "—"}</p>
-          </div>
-        </div>
+        <SectionList
+          sections={vLayout}
+          registry={{
+            vendor_stats: (cfg) => (
+              <>
+                {cfg.title ? <p className="section-title">{cfg.title}</p> : null}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="stat-tile">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Orders today</p>
+                    <p className="mt-0.5 text-lg font-black leading-none">{today.orders}</p>
+                  </div>
+                  <div className="stat-tile">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Sales today</p>
+                    <p className="mt-0.5 text-lg font-black leading-none text-primary">{inr(Math.round(today.sales))}</p>
+                  </div>
+                  <div className="stat-tile">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Rating</p>
+                    <p className="mt-0.5 text-lg font-black leading-none">{today.rating ? `${today.rating} ★` : "—"}</p>
+                  </div>
+                </div>
+              </>
+            ),
+            vendor_settings: () => (
+              <div className="mt-3">
+                <PayoutPanel party="VENDOR" id={vendor.id} />
+                <p className="section-title pt-1">Stall settings</p>
+                <VendorHours vendorId={vendor.id} />
+              </div>
+            ),
+          }}
+        />
 
-        <PayoutPanel party="VENDOR" id={vendor.id} />
-
-        <p className="section-title pt-1">Stall settings</p>
-
-        <VendorHours vendorId={vendor.id} />
 
 
         <div className="portal-panel">
@@ -527,7 +542,7 @@ function VendorPortal() {
           </section>
         ) : null}
 
-        <section className="space-y-2">
+        <section className={`space-y-2 ${vLayout.find((x) => x.type === "vendor_active_orders")?.is_visible === false ? "hidden" : ""}`}>
           <p className="section-title">Live orders</p>
           {orders.length === 0 ? (
             <div className="portal-panel border-dashed text-center">
