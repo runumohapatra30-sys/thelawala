@@ -7,6 +7,7 @@ import { MarketingManager } from "@/components/MarketingManager";
 import { PageStudio } from "@/components/PageStudio";
 import { AdminReports } from "@/components/AdminReports";
 import { SystemHealthCard } from "@/components/SystemHealthCard";
+import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 import { AdminApprovals } from "@/components/AdminApprovals";
 import { RevenueSplit } from "@/components/RevenueSplit";
 import { CashRemittances } from "@/components/CashRemittances";
@@ -57,7 +58,7 @@ function Admin() {
     supabase.from("orders").select("id,code,status,grand_total,delivery_fee,platform_fee,food_total,created_at").order("created_at", { ascending: false }).limit(50).then(({ data }) => setOrders((data ?? []) as OrderRow[]));
   }, [isAdmin]);
 
-  if (loading) return <Shell><PortalHeader title="Administration" /></Shell>;
+  if (loading) return <Shell><PortalHeader title="Administration" /><ThaliwalaLoader /></Shell>;
 
   if (!user || !isAdmin) {
     return (

@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cart } from "@/lib/cart";
 import { inr, STATUS_LABEL } from "@/lib/fees";
 import { useSession } from "@/lib/session";
+import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 
 export const Route = createFileRoute("/orders/")({
   head: () => ({
@@ -128,7 +129,7 @@ function Orders() {
       </header>
 
       <div className="space-y-3 p-4">
-        {loading ? null : !user ? (
+        {loading ? <ThaliwalaLoader /> : !user ? (
           <div className="py-16 text-center">
             <p className="text-sm text-muted-foreground">Sign in to see your orders.</p>
             <Link to="/auth" className="mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">

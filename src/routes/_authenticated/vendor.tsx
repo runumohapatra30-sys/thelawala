@@ -14,6 +14,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { SectionList } from "@/components/DynamicPageRenderer";
 import { usePageLayout } from "@/lib/pageLayout";
+import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 
 export const Route = createFileRoute("/_authenticated/vendor")({
   head: () => ({
@@ -215,7 +216,7 @@ function VendorPortal() {
     }
   }
 
-  if (loading) return <Shell><PortalHeader title="Stall partner" /></Shell>;
+  if (loading) return <Shell><PortalHeader title="Stall partner" /><ThaliwalaLoader /></Shell>;
 
   if (!user) {
     return (

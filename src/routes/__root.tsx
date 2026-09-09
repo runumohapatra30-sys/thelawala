@@ -1,4 +1,5 @@
 import { PwaUpdater } from "@/components/PwaUpdater";
+import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -112,6 +113,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
+  pendingComponent: () => <ThaliwalaLoader fullScreen />,
 });
 
 function RootShell({ children }: { children: ReactNode }) {
