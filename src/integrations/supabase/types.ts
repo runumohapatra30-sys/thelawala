@@ -110,6 +110,51 @@ export type Database = {
         }
         Relationships: []
       }
+      app_dynamic_banners: {
+        Row: {
+          aspect_ratio: string
+          border_radius: number
+          created_at: string
+          display_order: number
+          height_px: number
+          id: string
+          is_active: boolean
+          media_path: string | null
+          media_type: string
+          media_url: string
+          target_route: string | null
+          updated_at: string
+        }
+        Insert: {
+          aspect_ratio?: string
+          border_radius?: number
+          created_at?: string
+          display_order?: number
+          height_px?: number
+          id?: string
+          is_active?: boolean
+          media_path?: string | null
+          media_type: string
+          media_url: string
+          target_route?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aspect_ratio?: string
+          border_radius?: number
+          created_at?: string
+          display_order?: number
+          height_px?: number
+          id?: string
+          is_active?: boolean
+          media_path?: string | null
+          media_type?: string
+          media_url?: string
+          target_route?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       banners: {
         Row: {
           category_id: string | null
