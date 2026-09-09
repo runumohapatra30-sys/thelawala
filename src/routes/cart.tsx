@@ -255,7 +255,10 @@ function Cart() {
       .select("id")
       .single();
 
+    if (order) console.log(`[Order Created -> Sent to Stall ID: ${vendorId}] order ${order.id}`);
+
     if (error || !order) {
+      console.error("[Order Create Failed]", error);
       setBusy(false);
       return setErr(error?.message ?? "Could not place the order.");
     }
