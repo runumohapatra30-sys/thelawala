@@ -674,7 +674,7 @@ function RiderPortal() {
 
             <Stepper step={step} />
 
-            <div className="card-soft border border-border p-3">
+            <div className="portal-panel">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
@@ -749,7 +749,7 @@ function RiderPortal() {
                 >
                   Scan Order QR to Pickup
                 </button>
-                <div className="card-soft border border-border p-3">
+                <div className="portal-panel">
                   <p className="text-sm font-bold">QR not scanning?</p>
                   <p className="text-[11px] text-muted-foreground">
                     Type the last 4 digits of the Order ID from the stall&apos;s slip to confirm pickup.
@@ -797,7 +797,7 @@ function RiderPortal() {
             {msg ? <p className="text-xs font-semibold text-destructive">{msg}</p> : null}
           </>
         ) : (
-          <div className="card-soft border border-dashed border-border p-6 text-center">
+          <div className="portal-panel border-dashed p-6 text-center">
             <p className="text-sm font-bold">{me.is_online ? "Waiting for orders…" : "You are off duty"}</p>
             <p className="mt-1 text-xs text-muted-foreground">
               {me.is_online ? "Stay near the stalls to get more orders." : "Turn duty ON from the top bar to start receiving orders."}
@@ -805,7 +805,7 @@ function RiderPortal() {
           </div>
         )}
 
-        <div className="card-soft border border-border p-3">
+        <div className="portal-panel">
           <p className="text-sm font-bold">Driving licence</p>
           <p className="text-[11px] text-muted-foreground">
             Current: {me.dl_number ?? "not added yet"}. Changing it sends your account for review and takes you off duty.

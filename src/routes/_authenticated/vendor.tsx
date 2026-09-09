@@ -567,7 +567,7 @@ function VendorPortal() {
         </section>
 
 
-        <section className="card-soft border border-border p-3">
+        <section className="portal-panel">
           <div className="flex items-center justify-between">
             <p className="text-sm font-bold">Your menu</p>
             <button
