@@ -4,6 +4,7 @@ import { Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { inr } from "@/lib/fees";
 import { useSession } from "@/lib/session";
+import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -45,7 +46,9 @@ function Profile() {
     });
   }, [user?.id]);
 
-  if (!loading && !user) {
+  if (loading) return <Shell><ThaliwalaLoader /></Shell>;
+
+  if (!user) {
     return (
       <Shell>
         <header className="brand-header px-4 pb-6 pt-5">

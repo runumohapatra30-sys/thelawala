@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/lib/session";
+import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 
 export const Route = createFileRoute("/support/")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -87,7 +88,7 @@ function SupportHome() {
     <Shell>
       <PortalHeader title="Help & support" subtitle="Order help, refunds and tickets" />
       <div className="space-y-3 p-4">
-        {loading ? null : !user ? (
+        {loading ? <ThaliwalaLoader /> : !user ? (
           <div className="py-16 text-center">
             <p className="text-sm text-muted-foreground">Sign in to chat with ThelaWala Care.</p>
             <Link to="/auth" className="mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">

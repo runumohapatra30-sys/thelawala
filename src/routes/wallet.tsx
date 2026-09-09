@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { startOnlinePayment } from "@/lib/checkout";
 import { inr, type Settings } from "@/lib/fees";
 import { useSession } from "@/lib/session";
+import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 
 export const Route = createFileRoute("/wallet")({
   head: () => ({
@@ -50,7 +51,9 @@ function Wallet() {
     if (user) void load(user.id);
   }, [user?.id]);
 
-  if (!loading && !user) {
+  if (loading) return <Shell><PortalHeader title="Wallet" /><ThaliwalaLoader /></Shell>;
+
+  if (!user) {
     return (
       <Shell>
         <PortalHeader title="Wallet" />

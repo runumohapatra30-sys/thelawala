@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/lib/session";
+import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 
 export const Route = createFileRoute("/notifications")({
   head: () => ({
@@ -41,7 +42,7 @@ function Notifications() {
     <Shell>
       <PortalHeader title="Notifications" subtitle="Your order updates" />
       <div className="space-y-2 p-4">
-        {loading ? null : !user ? (
+        {loading ? <ThaliwalaLoader /> : !user ? (
           <p className="py-16 text-center text-sm text-muted-foreground">Sign in to see your updates.</p>
         ) : rows.length === 0 ? (
           <p className="py-16 text-center text-sm text-muted-foreground">No updates yet.</p>
