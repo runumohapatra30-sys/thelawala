@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { HomeChat } from "@/components/HomeChat";
 import { Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { cart, cartTotals, useCart } from "@/lib/cart";
@@ -351,6 +352,8 @@ function Home() {
           );
         })}
       </div>
+
+      <HomeChat userId={user?.id} />
 
       {toast ? (
         <div className="fixed inset-x-0 bottom-44 z-40 mx-auto w-full max-w-[440px] px-4">
