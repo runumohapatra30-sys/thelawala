@@ -567,3 +567,89 @@ function CashfreeKeys() {
     </section>
   );
 }
+
+function PayuKeys() {
+  const [key, setKey] = useState("");
+  const [salt, setSalt] = useState("");
+  const [live, setLive] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from("payment_credentials")
+      .select("payu_key,payu_salt,is_live")
+      .eq("id", true)
+      .maybeSingle()
+      .then(({ data }) => {
+        setKey(data?.payu_key ?? "");
+        setSalt(data?.payu_salt ?? "");
+        setLive(Boolean(data?.is_live));
+        setLoaded(true);
+      });
+  }, []);
+
+  async function save() {
+    if (!key.trim() || !salt.trim()) {
+      toast.error("Please fill both the merchant key and the salt.");
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.from("payment_credentials").upsert({
+      id: true,
+      provider: "PAYU",
+      payu_key: key.trim(),
+      payu_salt: salt.trim(),
+      is_live: live,
+      updated_at: new Date().toISOString(),
+    });
+    setBusy(false);
+    if (error) {
+      toast.error("Could not save the PayU keys. Please try again.");
+      return;
+    }
+    toast.success(live ? "PayU is live now." : "Saved. PayU test mode is on.");
+  }
+
+  return (
+    <section className="card-soft space-y-2 border border-border p-3">
+      <p className="text-sm font-bold">PayU gateway keys</p>
+      <p className="text-[11px] text-muted-foreground">
+        Paste the merchant key and salt from your PayU dashboard, then choose PayU as the payment gateway above.
+      </p>
+      <label className="block">
+        <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">Merchant key</span>
+        <input
+          value={key}
+          onChange={(e) => setKey(e.target.value)}
+          placeholder="e.g. gtKFFx"
+          className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary"
+        />
+      </label>
+      <label className="block">
+        <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">Salt</span>
+        <input
+          type="password"
+          value={salt}
+          onChange={(e) => setSalt(e.target.value)}
+          placeholder="Paste the salt"
+          className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary"
+        />
+      </label>
+      <button
+        onClick={() => setLive(!live)}
+        className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm font-semibold ${live ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+      >
+        {live ? "Live mode (real money)" : "Test mode"}
+        <span>{live ? "LIVE" : "TEST"}</span>
+      </button>
+      <button
+        disabled={busy || !loaded}
+        onClick={save}
+        className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+      >
+        {busy ? "Saving…" : "Save PayU keys"}
+      </button>
+    </section>
+  );
+}
