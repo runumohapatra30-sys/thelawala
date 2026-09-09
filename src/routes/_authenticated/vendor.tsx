@@ -29,6 +29,7 @@ export const Route = createFileRoute("/_authenticated/vendor")({
 type Order = {
   id: string; code: string; status: string; grand_total: number; food_total: number;
   pickup_otp: string; qr_hash: string | null; customer_name: string; address_line: string; partner_id: string | null;
+  delivery_instructions?: string | null; ready_at?: string | null;
 };
 type Item = {
   id: string; name: string; price: number; mrp: number; in_stock: boolean;
