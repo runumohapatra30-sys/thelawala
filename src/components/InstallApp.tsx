@@ -66,9 +66,18 @@ export function InstallAppButton({ className = "" }: { className?: string }) {
         <div className="fixed inset-0 z-50 grid place-items-end bg-black/40 p-4" onClick={() => setTip(false)}>
           <div className="w-full rounded-3xl bg-card p-5 text-foreground" onClick={(e) => e.stopPropagation()}>
             <p className="text-base font-extrabold">Add Thaleewala to your home screen</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Tap the Share button in Safari, then choose “Add to Home Screen”.
-            </p>
+            {isIOS ? (
+              <p className="mt-2 text-sm text-muted-foreground">
+                Tap the Share button in Safari, then choose “Add to Home Screen”.
+              </p>
+            ) : (
+              <div className="mt-2 space-y-2 text-sm text-muted-foreground">
+                <p>1. Open the published app link in your phone's Chrome browser (not inside this preview).</p>
+                <p>2. Tap the three-dot menu (⋮) at the top right.</p>
+                <p>3. Choose “Add to Home screen” or “Install app”.</p>
+                <p>4. Thaleewala will appear on your home screen like a real app.</p>
+              </div>
+            )}
             <button
               onClick={() => setTip(false)}
               className="mt-4 w-full rounded-2xl bg-primary py-3 text-sm font-extrabold text-primary-foreground"
