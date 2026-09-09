@@ -9,6 +9,9 @@ import { customerPrice } from "@/lib/pricing";
 import { foodImage } from "@/lib/foodImage";
 import { InstallAppButton } from "@/components/InstallApp";
 import { useSession } from "@/lib/session";
+import { BannerCarousel } from "@/components/BannerCarousel";
+import { FestiveWidget } from "@/components/FestiveWidget";
+import { activeCampaign, type Campaign } from "@/lib/marketing";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -66,8 +69,11 @@ function Home() {
   const [onlyFav, setOnlyFav] = useState(false);
   const [onlyVeg, setOnlyVeg] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [vendorFilter, setVendorFilter] = useState<string | null>(null);
+  const [campaign, setCampaign] = useState<Campaign | null>(null);
 
   useEffect(() => {
+    activeCampaign().then(setCampaign);
     supabase.from("categories").select("id,name,emoji").order("sort_order").then(({ data }) => setCats(data ?? []));
     supabase.from("vendors").select("id,stall_name,is_open").eq("status", "APPROVED").then(({ data }) => setVendors(data ?? []));
     supabase
@@ -122,6 +128,7 @@ function Home() {
   const shown = items.filter(
     (i) =>
       (!active || i.category_id === active) &&
+      (!vendorFilter || i.vendor_id === vendorFilter) &&
       (!q || i.name.toLowerCase().includes(q.toLowerCase())) &&
       (!onlyVeg || i.food_type !== "NONVEG") &&
       (!onlyFav || favs.includes(i.id)),
@@ -251,6 +258,13 @@ function Home() {
         </div>
       ) : null}
 
+      <BannerCarousel
+        onCategory={(id) => { setActive(id); setVendorFilter(null); }}
+        onVendor={(id) => { setVendorFilter(id); setActive(null); }}
+      />
+
+      <FestiveWidget campaign={campaign} onFilter={(v) => { setQ(v); setActive(null); setVendorFilter(null); }} />
+
       <section className="px-5 pt-6">
         <h2 className="text-[17px] font-extrabold">Quick bites</h2>
         <p className="mt-0.5 text-xs font-medium text-muted-foreground">Pick a craving, we do the running</p>
@@ -273,6 +287,23 @@ function Home() {
             </span>
             <span className="mt-1.5 block text-[10.5px] font-extrabold leading-tight">All</span>
           </button>
+          {campaign?.top_tab_label ? (
+            <button
+              onClick={() => { setQ(campaign.top_tab_label ?? ""); setActive(null); setVendorFilter(null); }}
+              className="press rise-in w-[74px] shrink-0 snap-start text-center"
+            >
+              <span className="relative block aspect-square overflow-hidden rounded-[1.5rem] shadow-[0_12px_24px_-16px_rgba(15,23,42,0.75)] ring-2 ring-primary">
+                <img
+                  src={campaign.top_tab_icon_url || "/food/food-sweets.jpg"}
+                  alt={campaign.top_tab_label}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+                <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/45 to-transparent" />
+              </span>
+              <span className="mt-1.5 block truncate text-[10.5px] font-extrabold leading-tight">{campaign.top_tab_label}</span>
+            </button>
+          ) : null}
           {cats.map((c, idx) => (
             <button
               key={c.id}
