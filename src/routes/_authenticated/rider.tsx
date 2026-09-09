@@ -212,7 +212,18 @@ function RiderPortal() {
     };
     load();
     const t = setInterval(load, 6000);
-    return () => clearInterval(t);
+
+    // Live push so new offers and status changes land without waiting for the poll.
+    const channel = supabase
+      .channel(`rider-live-orders-${me.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `partner_id=eq.${me.id}` }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `offered_to=eq.${me.id}` }, () => load())
+      .subscribe();
+
+    return () => {
+      clearInterval(t);
+      supabase.removeChannel(channel);
+    };
   }, [me?.id]);
 
   useEffect(() => {
