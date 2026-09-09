@@ -29,24 +29,36 @@ export function Shell({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto min-h-screen w-full max-w-[480px] bg-background pb-24 shadow-[0_0_40px_rgba(0,0,0,0.05)]">
+      <div className="mx-auto min-h-screen w-full max-w-[480px] bg-background pb-36 shadow-[0_0_40px_rgba(0,0,0,0.05)]">
         {children}
       </div>
-      <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto flex w-full max-w-[480px] items-stretch border-t border-border bg-card">
+      <nav className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-full max-w-[440px] items-center justify-around rounded-[2rem] px-3 py-2.5 glass-panel">
         {NAV.map((n) => {
           const active = n.to === "/" ? path === "/" : path.startsWith(n.to);
           return (
             <Link
               key={n.to}
               to={n.to}
-              className={`press flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-bold ${
-                active ? "text-primary" : "text-muted-foreground"
-              }`}
+              className="press flex flex-1 flex-col items-center gap-1"
             >
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d={n.icon} strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {n.label}
+              <span
+                className={`grid h-11 w-11 place-items-center rounded-2xl transition-all ${
+                  active
+                    ? "bg-brand text-brand-foreground shadow-[0_10px_22px_-8px_color-mix(in_oklab,var(--color-brand)_85%,transparent)]"
+                    : "text-muted-foreground"
+                }`}
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d={n.icon} strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <span
+                className={`text-[9px] font-extrabold uppercase tracking-wider ${
+                  active ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {n.label}
+              </span>
             </Link>
           );
         })}
@@ -72,9 +84,9 @@ export function LogoutButton({ className = "" }: { className?: string }) {
 
 export function PortalHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <header className="brand-header sticky top-0 z-30 px-4 py-3">
+    <header className="brand-header sticky top-0 z-30 rounded-b-[2rem] px-4 py-4 shadow-[0_16px_34px_-26px_rgba(15,23,42,0.55)]">
       <div className="flex items-center gap-3">
-        <Link to="/" className="press grid h-9 w-9 shrink-0 place-items-center rounded-full bg-card/70">
+        <Link to="/" className="press grid h-10 w-10 shrink-0 place-items-center rounded-2xl glass-chip">
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2">
             <path d="M15 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
           </svg>

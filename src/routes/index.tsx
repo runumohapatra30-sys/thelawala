@@ -139,21 +139,22 @@ function Home() {
 
   return (
     <Shell>
-      <header className="brand-header sticky top-0 z-30 px-4 pb-3 pt-4">
+      <header className="brand-header sticky top-0 z-30 rounded-b-[2.75rem] px-5 pb-5 pt-5 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)]">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
           <Link to="/cart" className="min-w-0 text-left">
-            <p className="text-[13px] font-black uppercase tracking-wide">Delivery in 15-20 minutes</p>
-            <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold opacity-80">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] opacity-70">Delivery in</p>
+            <p className="text-[22px] font-extrabold leading-tight">15–20 minutes</p>
+            <p className="mt-1 flex items-center gap-1 text-xs font-semibold opacity-80">
               <span className="truncate">{address ?? "Bhubaneswar · set your address"}</span>
               <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.6">
                 <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </p>
           </Link>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5">
             <Link
               to="/wallet"
-              className="press flex items-center gap-1 rounded-full bg-card px-2.5 py-1.5 text-[11px] font-black shadow-sm"
+              className="press flex items-center gap-1 rounded-full px-2.5 py-2 text-[11px] font-extrabold glass-chip"
             >
               <span aria-hidden="true">👛</span>
               {inr(balance)}
@@ -161,7 +162,7 @@ function Home() {
             <Link
               to="/notifications"
               aria-label="Notifications"
-              className="press relative grid h-9 w-9 place-items-center rounded-full bg-card shadow-sm"
+              className="press relative grid h-10 w-10 place-items-center rounded-2xl glass-chip"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path d="M6 9a6 6 0 1112 0c0 4 1.5 5.5 1.5 5.5h-15S6 13 6 9zM10 19a2 2 0 004 0" strokeLinecap="round" strokeLinejoin="round" />
@@ -175,7 +176,7 @@ function Home() {
             <Link
               to={user ? "/profile" : "/auth"}
               aria-label="Your account"
-              className="press grid h-9 w-9 place-items-center rounded-full bg-card shadow-sm"
+              className="press grid h-10 w-10 place-items-center rounded-2xl glass-chip"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <circle cx="12" cy="8" r="3.4" /><path d="M4.5 20a7.5 7.5 0 0115 0" strokeLinecap="round" />
@@ -184,7 +185,7 @@ function Home() {
             <button
               aria-label="More options"
               onClick={() => setMenu((m) => !m)}
-              className="press grid h-9 w-9 place-items-center rounded-full bg-card shadow-sm"
+              className="press grid h-10 w-10 place-items-center rounded-2xl glass-chip"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
                 <circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" />
@@ -193,15 +194,15 @@ function Home() {
           </div>
         </div>
 
-        <div className="mt-3 flex items-center gap-2 rounded-full bg-card px-3 py-2.5 shadow-sm">
-          <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2">
+        <div className="mt-4 flex items-center gap-2.5 rounded-3xl bg-card px-4 py-3.5 shadow-[0_14px_30px_-18px_rgba(15,23,42,0.5)]">
+          <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2.2">
             <circle cx="11" cy="11" r="6.5" /><path d="M16 16l4 4" strokeLinecap="round" />
           </svg>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder='Search "dahi bara"'
-            className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none"
+            className="min-w-0 flex-1 bg-transparent text-sm font-medium text-foreground outline-none"
           />
           <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2">
             <rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0014 0M12 18v3" strokeLinecap="round" />
@@ -229,62 +230,67 @@ function Home() {
         </div>
       ) : null}
 
-      <section className="px-4 pt-4">
-        <h2 className="text-sm font-black">Thela categories</h2>
-        <div className="mt-2 grid grid-cols-4 gap-2">
+      <section className="px-5 pt-6">
+        <h2 className="text-[17px] font-extrabold">Quick bites</h2>
+        <p className="mt-0.5 text-xs font-medium text-muted-foreground">Pick a craving, we do the running</p>
+        <div className="mt-3 grid grid-cols-4 gap-2.5">
           <button
             onClick={() => setActive(null)}
-            className={`press rounded-2xl border p-2 text-center ${!active ? "border-primary" : "border-transparent"} ${TINTS[0]}`}
+            className={`press aspect-square rounded-[1.35rem] p-2 text-center transition-all ${!active ? "ring-2 ring-primary" : ""} ${TINTS[0]} shadow-[0_10px_22px_-16px_rgba(15,23,42,0.7)]`}
           >
-            <span className="block text-xl">🍽️</span>
-            <span className="mt-1 block text-[10px] font-bold leading-tight">All</span>
+            <span className="mt-1 block text-2xl">🍽️</span>
+            <span className="mt-1 block text-[10px] font-extrabold leading-tight">All</span>
           </button>
           {cats.map((c, idx) => (
             <button
               key={c.id}
               onClick={() => setActive(c.id)}
-              className={`press rounded-2xl border p-2 text-center ${active === c.id ? "border-primary" : "border-transparent"} ${TINTS[(idx + 1) % TINTS.length]}`}
+              className={`press aspect-square rounded-[1.35rem] p-2 text-center transition-all ${active === c.id ? "ring-2 ring-primary" : ""} ${TINTS[(idx + 1) % TINTS.length]} shadow-[0_10px_22px_-16px_rgba(15,23,42,0.7)]`}
             >
-              <span className="block text-xl">{c.emoji ?? "🥘"}</span>
-              <span className="mt-1 block text-[10px] font-bold leading-tight">{c.name}</span>
+              <span className="mt-1 block text-2xl">{c.emoji ?? "🥘"}</span>
+              <span className="mt-1 block truncate text-[10px] font-extrabold leading-tight">{c.name}</span>
             </button>
           ))}
         </div>
       </section>
 
-      <section className="flex items-center gap-2 px-4 pt-5">
-        <h2 className="mr-auto text-sm font-black">Hot from the thela</h2>
+      <section className="flex items-center gap-2 px-5 pt-7">
+        <h2 className="mr-auto text-[17px] font-extrabold">Trending stalls</h2>
         <button
           onClick={() => setOnlyVeg((v) => !v)}
-          className={`press rounded-full border px-2.5 py-1 text-[11px] font-black ${onlyVeg ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+          className={`press rounded-full border px-3 py-1.5 text-[11px] font-extrabold ${onlyVeg ? "border-primary bg-[color-mix(in_oklab,var(--color-primary)_10%,white)] text-primary" : "border-border text-muted-foreground"}`}
         >
           Veg only
         </button>
         <button
           onClick={() => setOnlyFav((v) => !v)}
-          className={`press rounded-full border px-2.5 py-1 text-[11px] font-black ${onlyFav ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+          className={`press rounded-full border px-3 py-1.5 text-[11px] font-extrabold ${onlyFav ? "border-primary bg-[color-mix(in_oklab,var(--color-primary)_10%,white)] text-primary" : "border-border text-muted-foreground"}`}
         >
           ♥ Favourites
         </button>
       </section>
 
-      <div className="grid grid-cols-2 gap-3 px-4 pb-32 pt-2">
+      <div className="grid grid-cols-2 gap-3.5 px-5 pb-36 pt-3">
         {shown.map((i) => {
           const line = lines.find((l) => l.itemId === i.id);
           const off = Number(i.mrp) > Number(i.price)
             ? Math.round(((Number(i.mrp) - Number(i.price)) / Number(i.mrp)) * 100)
             : 0;
           return (
-            <div key={i.id} className="card-soft border border-border p-2">
+            <div key={i.id} className="press card-elevated p-2.5 hover:-translate-y-0.5">
               <div className="relative">
-                <img src={i.photo_url ?? "/food/food-tiffin.jpg"} alt={i.name} className="h-28 w-full rounded-xl object-cover" />
+                <img
+                  src={i.photo_url ?? "/food/food-tiffin.jpg"}
+                  alt={i.name}
+                  className="aspect-[4/5] w-full rounded-[1.4rem] object-cover"
+                />
                 {off > 0 ? (
-                  <span className="absolute left-1 top-1 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-black text-primary-foreground">
+                  <span className="absolute left-2 top-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-extrabold text-primary-foreground shadow-md">
                     {off}% OFF
                   </span>
                 ) : null}
                 {!i.in_stock ? (
-                  <span className="absolute inset-0 grid place-items-center rounded-xl bg-black/55 text-xs font-bold text-white">
+                  <span className="absolute inset-0 grid place-items-center rounded-[1.4rem] bg-black/55 text-xs font-bold text-white">
                     Out of stock
                   </span>
                 ) : null}
@@ -292,29 +298,34 @@ function Home() {
                   <button
                     aria-label={favs.includes(i.id) ? "Remove from favourites" : "Add to favourites"}
                     onClick={() => toggleFav(i.id, i.vendor_id)}
-                    className={`press absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-card/90 text-sm shadow-sm ${favs.includes(i.id) ? "text-destructive" : "text-muted-foreground"}`}
+                    className={`press absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-card/90 text-sm shadow-md ${favs.includes(i.id) ? "text-destructive" : "text-muted-foreground"}`}
                   >
                     {favs.includes(i.id) ? "♥" : "♡"}
                   </button>
                 ) : null}
               </div>
-              <p className="mt-2 truncate text-sm font-bold">{i.name}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{vendorName[i.vendor_id] ?? "Stall"} · {i.unit}</p>
-              <div className="mt-2 flex items-center justify-between">
-                <p className="text-sm font-bold">
+              <p className="mt-2.5 truncate px-0.5 text-[13px] font-extrabold">{i.name}</p>
+              <p className="truncate px-0.5 text-[11px] font-medium text-muted-foreground">
+                {vendorName[i.vendor_id] ?? "Stall"} · {i.unit}
+              </p>
+              <div className="mt-2.5 flex items-center justify-between px-0.5">
+                <p className="text-[15px] font-extrabold text-primary">
                   {inr(Number(i.price))}{" "}
                   {off > 0 ? (
-                    <span className="text-[11px] font-normal text-muted-foreground line-through">{inr(Number(i.mrp))}</span>
+                    <span className="text-[11px] font-medium text-muted-foreground line-through">{inr(Number(i.mrp))}</span>
                   ) : null}
                 </p>
                 {!i.in_stock ? null : line ? (
-                  <div className="press flex items-center gap-2 rounded-lg bg-primary px-2 py-1 text-primary-foreground">
-                    <button aria-label="Remove one" onClick={() => cart.remove(i.id)} className="px-1 font-bold">−</button>
-                    <span className="text-xs font-bold">{line.qty}</span>
-                    <button aria-label="Add one" onClick={() => add(i)} className="px-1 font-bold">+</button>
+                  <div className="flex items-center gap-1.5 rounded-full bg-primary px-2 py-1 text-primary-foreground shadow-[0_8px_18px_-10px_var(--color-primary)]">
+                    <button aria-label="Remove one" onClick={() => cart.remove(i.id)} className="press px-1 font-bold">−</button>
+                    <span className="text-xs font-extrabold">{line.qty}</span>
+                    <button aria-label="Add one" onClick={() => add(i)} className="press px-1 font-bold">+</button>
                   </div>
                 ) : (
-                  <button onClick={() => add(i)} className="press rounded-lg border border-primary bg-[color-mix(in_oklab,var(--color-primary)_8%,white)] px-3 py-1 text-xs font-black text-primary">
+                  <button
+                    onClick={() => add(i)}
+                    className="press rounded-full border border-primary bg-[color-mix(in_oklab,var(--color-primary)_8%,white)] px-3.5 py-1.5 text-[11px] font-extrabold text-primary shadow-[0_8px_18px_-12px_var(--color-primary)]"
+                  >
                     ADD
                   </button>
                 )}
@@ -325,13 +336,13 @@ function Home() {
       </div>
 
       {toast ? (
-        <div className="fixed inset-x-0 bottom-32 z-40 mx-auto w-full max-w-[440px] px-4">
+        <div className="fixed inset-x-0 bottom-44 z-40 mx-auto w-full max-w-[440px] px-4">
           <div className="rounded-xl bg-foreground px-4 py-2.5 text-xs font-semibold text-background">{toast}</div>
         </div>
       ) : null}
 
       {count ? (
-        <div className="fixed inset-x-0 bottom-[62px] z-40 mx-auto w-full max-w-[480px] px-3">
+        <div className="fixed inset-x-0 bottom-[104px] z-40 mx-auto w-full max-w-[480px] px-3">
           <Link
             to="/cart"
             className="press flex items-center justify-between rounded-xl bg-primary px-4 py-3 text-primary-foreground shadow-lg"
