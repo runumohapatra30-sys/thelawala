@@ -322,6 +322,8 @@ function VendorPortal() {
           </div>
         </div>
 
+        <PayoutPanel party="VENDOR" id={vendor.id} />
+
         <button
           onClick={async () => {
             await supabase.from("vendors").update({ is_open: !vendor.is_open }).eq("id", vendor.id);
