@@ -583,6 +583,7 @@ function CashfreeKeys() {
     setBusy(true);
     const { error } = await supabase.from("payment_credentials").upsert({
       id: true,
+      provider: "CASHFREE",
       cashfree_app_id: appId.trim(),
       cashfree_secret: secret.trim(),
       is_live: live,
