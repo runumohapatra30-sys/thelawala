@@ -490,6 +490,67 @@ function RiderPortal() {
     toast.success("Delivery completed · earnings added");
   }
 
+  // Fallback when the QR will not scan: last 4 digits/characters of the order id.
+  async function pickupByCode() {
+    if (!trip) return;
+    const entered = manualCode.trim().toUpperCase();
+    const idTail = trip.id.replace(/-/g, "").slice(-4).toUpperCase();
+    const codeTail = String(trip.code ?? "").slice(-4).toUpperCase();
+    if (entered.length < 4 || (entered !== idTail && entered !== codeTail)) {
+      chime(false);
+      setScanErr("Incorrect parcel! Please verify Order ID");
+      return;
+    }
+    const now = new Date().toISOString();
+    await supabase.from("orders").update({ status: "OUT_FOR_DELIVERY", pickup_scanned_at: now, picked_up_at: now }).eq("id", trip.id);
+    chime(true);
+    setScanErr(null);
+    setManualCode("");
+    setActive({ ...trip, status: "OUT_FOR_DELIVERY" });
+    toast.success("Order verified · out for delivery");
+  }
+
+  async function requestCancel() {
+    if (!trip) return;
+    setCancelBusy(true);
+    const otp = String(Math.floor(1000 + Math.random() * 9000));
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        cancel_otp: otp,
+        cancel_reason: cancelReason,
+        cancel_requested_at: new Date().toISOString(),
+        cancel_requested_by: "PARTNER",
+      })
+      .eq("id", trip.id);
+    setCancelBusy(false);
+    if (error) return setCancelMsg("Could not start the cancellation. Try again.");
+    setActive({ ...trip, cancel_otp: otp, cancel_reason: cancelReason });
+    setCancelMsg("Ask the customer for the cancel PIN shown in their app.");
+  }
+
+  async function confirmCancel() {
+    if (!trip || !me) return;
+    if (cancelCode.trim() !== (trip.cancel_otp ?? "")) {
+      chime(false);
+      return setCancelMsg("Wrong cancel PIN. Ask the customer to read it again.");
+    }
+    setCancelBusy(true);
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: "CANCELLED", cancelled_at: new Date().toISOString(), cancelled_by: "PARTNER", cancel_reason: cancelReason })
+      .eq("id", trip.id);
+    if (!error) await supabase.from("delivery_partners").update({ is_busy: false }).eq("id", me.id);
+    setCancelBusy(false);
+    if (error) return setCancelMsg("Could not cancel the order. Try again.");
+    chime(true);
+    setActive(null);
+    setCancelOpen(false);
+    setCancelCode("");
+    setCancelMsg(null);
+    toast.success("Order cancelled");
+  }
+
   const pos = posRef.current;
   const stallPoint = vendor ? { lat: Number(vendor.lat), lng: Number(vendor.lng) } : null;
   const dropPoint = trip ? { lat: Number(trip.drop_lat), lng: Number(trip.drop_lng) } : null;
