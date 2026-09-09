@@ -385,8 +385,16 @@ function Cart() {
               className="w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
             />
           </label>
-          <button onClick={locate} className="w-full rounded-xl border border-primary py-2.5 text-sm font-bold text-primary">
-            {coords ? `Location set (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}) · Update` : "Use my current location"}
+          <button
+            onClick={() => locate(true)}
+            disabled={locating}
+            className="w-full rounded-xl border border-primary py-2.5 text-sm font-bold text-primary disabled:opacity-60"
+          >
+            {locating
+              ? "Finding your address…"
+              : coords
+                ? `Location set (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}) · Update`
+                : "Use my current location"}
           </button>
           {coords && vendor ? (
             <p className="text-xs text-muted-foreground">

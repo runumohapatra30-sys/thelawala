@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cart, cartTotals, useCart } from "@/lib/cart";
 import { inr } from "@/lib/fees";
 import { foodImage } from "@/lib/foodImage";
+import { InstallAppButton } from "@/components/InstallApp";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/")({
@@ -156,6 +157,7 @@ function Home() {
             </p>
           </Link>
           <div className="flex shrink-0 items-center gap-1.5">
+            <InstallAppButton />
             <Link
               to="/wallet"
               className="press flex items-center gap-1 rounded-full px-2.5 py-2 text-[11px] font-extrabold glass-chip"
