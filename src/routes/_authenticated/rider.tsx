@@ -6,7 +6,7 @@ import { OrderChat } from "@/components/OrderChat";
 import { RiderShifts } from "@/components/RiderShifts";
 import { LiveMap } from "@/components/LiveMap";
 import { supabase } from "@/integrations/supabase/client";
-import { rejectOffer } from "@/lib/dispatch";
+import { rejectOffer, sweepSearchingOrders } from "@/lib/dispatch";
 import { haversineKm, inr } from "@/lib/fees";
 import { useSession } from "@/lib/session";
 import { dlError, ifscError, normalizeDl, panError, phoneError } from "@/lib/validation";
