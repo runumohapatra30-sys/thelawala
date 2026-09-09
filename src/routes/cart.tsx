@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cart, cartTotals, useCart } from "@/lib/cart";
 import { couponDiscount, findCoupon, listCoupons, type Coupon } from "@/lib/coupons";
 import { computeBill, haversineKm, inr, type Settings } from "@/lib/fees";
-import { createPayuPayment } from "@/lib/payments.functions";
+import { startOnlinePayment } from "@/lib/checkout";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/cart")({
@@ -224,29 +224,15 @@ function Cart() {
 
     if (payable > 0 && payment === "ONLINE") {
       try {
-        const checkout = await createPayuPayment({
-          data: {
-            amount: payable,
-            purpose: "ORDER",
-            orderId: order.id,
-            name: form.full_name,
-            email: user.email ?? "",
-            mobile: form.mobile,
-            origin: window.location.origin,
-          },
+        await startOnlinePayment({
+          gateway: settings?.payment_gateway,
+          amount: payable,
+          purpose: "ORDER",
+          orderId: order.id,
+          name: form.full_name,
+          email: user.email ?? "",
+          mobile: form.mobile,
         });
-        const f = document.createElement("form");
-        f.method = "POST";
-        f.action = checkout.action;
-        Object.entries(checkout.params).forEach(([k, v]) => {
-          const i = document.createElement("input");
-          i.type = "hidden";
-          i.name = k;
-          i.value = v;
-          f.appendChild(i);
-        });
-        document.body.appendChild(f);
-        f.submit();
         return;
       } catch (e) {
         setBusy(false);
