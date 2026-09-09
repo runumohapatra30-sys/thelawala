@@ -202,6 +202,8 @@ function RiderPortal() {
       .then(({ data }) => setVendor(data));
   }, [active?.id, offer?.id]);
 
+  useLoudAlarm(Boolean(offer));
+
   useEffect(() => {
     if (!offer) return;
     const t = setInterval(() => setSecs((s) => Math.max(0, s - 1)), 1000);
