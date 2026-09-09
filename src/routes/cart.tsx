@@ -97,13 +97,58 @@ function Cart() {
       });
   }, [user?.id]);
 
-  function locate() {
+  async function fillFromCoords(lat: number, lng: number, overwrite: boolean) {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`,
+        { headers: { Accept: "application/json" } },
+      );
+      if (!res.ok) return;
+      const json = (await res.json()) as {
+        display_name?: string;
+        address?: Record<string, string>;
+      };
+      const a = json.address ?? {};
+      const line = [a["house_number"], a["road"], a["neighbourhood"], a["suburb"], a["city_district"], a["city"] ?? a["town"] ?? a["village"]]
+        .filter(Boolean)
+        .join(", ");
+      const pin = a["postcode"] ?? "";
+      setForm((f) => ({
+        ...f,
+        line: overwrite || !f.line ? line || json.display_name || f.line : f.line,
+        landmark: f.landmark || a["neighbourhood"] || a["suburb"] || "",
+        pincode: overwrite || !f.pincode ? pin || f.pincode : f.pincode,
+      }));
+    } catch {
+      /* reverse geocoding is best-effort */
+    }
+  }
+
+  function locate(overwrite = true) {
+    setLocating(true);
     navigator.geolocation?.getCurrentPosition(
-      (p) => setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }),
-      () => setErr("Could not read your location. Please allow location access."),
-      { enableHighAccuracy: true },
+      async (p) => {
+        setCoords({ lat: p.coords.latitude, lng: p.coords.longitude });
+        await fillFromCoords(p.coords.latitude, p.coords.longitude, overwrite);
+        setLocating(false);
+      },
+      () => {
+        setLocating(false);
+        setErr("Could not read your location. Please allow location access.");
+      },
+      { enableHighAccuracy: true, timeout: 15000 },
     );
   }
+
+  useEffect(() => {
+    if (autoTried.current) return;
+    autoTried.current = true;
+    const t = setTimeout(() => {
+      if (!coordsRef.current && !formRef.current.line) locate(true);
+    }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const distanceKm = vendor && coords ? haversineKm(coords, { lat: Number(vendor.lat), lng: Number(vendor.lng) }) : 0;
   const bill = settings ? computeBill({ settings, foodTotal, mrpTotal, distanceKm }) : null;
