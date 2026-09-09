@@ -15,6 +15,7 @@ import { BBSR_ZONES, ID_PROOF_TYPES, VEHICLE_TYPES, uploadKycDoc } from "@/lib/k
 import { useLoudAlarm } from "@/lib/alarm";
 import { toast } from "sonner";
 import { DynamicPageRenderer } from "@/components/DynamicPageRenderer";
+import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 import { Html5Qrcode } from "html5-qrcode";
 
 export const Route = createFileRoute("/_authenticated/rider")({
@@ -128,6 +129,7 @@ function RiderPortal() {
   const [cancelCode, setCancelCode] = useState("");
   const [cancelMsg, setCancelMsg] = useState<string | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
+  const [deliveryBusy, setDeliveryBusy] = useState(false);
   const [earnings, setEarnings] = useState({ trips: 0, total: 0 });
   const [week, setWeek] = useState({ trips: 0, total: 0, rating: 0 });
   const [form, setForm] = useState({
@@ -250,7 +252,7 @@ function RiderPortal() {
     }
   }, [secs, offer?.id]);
 
-  if (loading) return <Shell><RiderHeader /></Shell>;
+  if (loading) return <Shell><RiderHeader /><ThaliwalaLoader /></Shell>;
 
   if (!user) {
     return (
@@ -506,43 +508,48 @@ function RiderPortal() {
   }
 
   async function completeDelivery() {
-    if (!trip || !me) return;
+    if (!trip || !me || deliveryBusy) return;
     if (!photo) return setMsg("Take the handover photo first.");
     setMsg(null);
+    setDeliveryBusy(true);
 
-    // Store the handover photo as a real file (a base64 photo is too big for the orders row).
-    let proofPath = photo;
     try {
       const blob = await (await fetch(photo)).blob();
       const path = `${trip.id}/proof-${Date.now()}.jpg`;
-      const up = await supabase.storage.from("delivery-proofs").upload(path, blob, {
+      const { error: uploadError } = await supabase.storage.from("delivery-proofs").upload(path, blob, {
         contentType: blob.type || "image/jpeg",
-        upsert: true,
+        upsert: false,
       });
-      if (!up.error) proofPath = path;
-    } catch {
-      /* keep going — the PIN check matters more than the photo upload */
-    }
+      if (uploadError) throw uploadError;
 
-    const { error: upErr } = await supabase.from("orders").update({ proof_photo_url: proofPath }).eq("id", trip.id);
-    if (upErr) return setMsg(`Could not save the handover photo: ${upErr.message}`);
+      const { error } = await supabase.rpc("complete_delivery", {
+        _order_id: trip.id,
+        _otp: dropCode.trim(),
+        _proof_path: path,
+      });
+      if (error) {
+        await supabase.storage.from("delivery-proofs").remove([path]);
+        const detail = error.message ?? "Please try again.";
+        throw new Error(detail);
+      }
 
-    const { error } = await supabase.rpc("complete_delivery", { _order_id: trip.id, _otp: dropCode.trim() });
-    if (error) {
-      const m = error.message ?? "";
-      return setMsg(
-        m.toLowerCase().includes("wrong delivery pin")
+      chime(true);
+      setMsg(null);
+      setActive(null);
+      setDropCode("");
+      setPhoto(null);
+      setShowComplete(false);
+      toast.success("Delivery completed · earnings added");
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "Please try again.";
+      setMsg(
+        detail.toLowerCase().includes("wrong delivery pin")
           ? "Wrong delivery PIN. Ask the customer to read it again."
-          : `Could not complete delivery: ${m}`,
+          : `Could not complete delivery: ${detail}`,
       );
+    } finally {
+      setDeliveryBusy(false);
     }
-    chime(true);
-    setMsg(null);
-    setActive(null);
-    setDropCode("");
-    setPhoto(null);
-    setShowComplete(false);
-    toast.success("Delivery completed · earnings added");
   }
 
 
@@ -929,6 +936,7 @@ function RiderPortal() {
           photo={photo}
           onPhoto={setPhoto}
           msg={msg}
+          busy={deliveryBusy}
           onClose={() => setShowComplete(false)}
           onConfirm={completeDelivery}
         />
@@ -1173,10 +1181,10 @@ function OfferDrawer({
 }
 
 function CompleteDrawer({
-  value, onChange, photo, onPhoto, msg, onClose, onConfirm,
+  value, onChange, photo, onPhoto, msg, busy, onClose, onConfirm,
 }: {
   value: string; onChange: (v: string) => void; photo: string | null; onPhoto: (v: string) => void;
-  msg: string | null; onClose: () => void; onConfirm: () => void;
+  msg: string | null; busy: boolean; onClose: () => void; onConfirm: () => void;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50">
@@ -1187,7 +1195,7 @@ function CompleteDrawer({
             <p className="text-base font-extrabold">Verify delivery PIN</p>
             <p className="text-xs text-muted-foreground">Ask the customer for the PIN shown in their app.</p>
           </div>
-          <button onClick={onClose} className="press text-sm font-bold text-muted-foreground">Close</button>
+          <button disabled={busy} onClick={onClose} className="press text-sm font-bold text-muted-foreground disabled:opacity-50">Close</button>
         </div>
 
         <div className="mt-4">
@@ -1215,12 +1223,13 @@ function CompleteDrawer({
         {msg ? <p className="mt-2 text-xs font-semibold text-destructive">{msg}</p> : null}
 
         <button
-          disabled={value.length < OTP_LEN || !photo}
+          disabled={busy || value.length < OTP_LEN || !photo}
           onClick={onConfirm}
           className="press mt-3 w-full rounded-xl bg-primary py-3.5 text-sm font-extrabold text-primary-foreground disabled:opacity-50"
         >
-          Confirm &amp; Complete Delivery
+          {busy ? "Completing delivery…" : "Confirm & Complete Delivery"}
         </button>
+        {busy ? <ThaliwalaLoader fullScreen /> : null}
       </div>
     </div>
   );
