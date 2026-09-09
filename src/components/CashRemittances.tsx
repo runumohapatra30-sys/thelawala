@@ -57,8 +57,8 @@ export function CashRemittances() {
     const { error } = await supabase.rpc("decide_cash_deposit", {
       _deposit_id: r.id,
       _approve: approve,
-      _otp: otp[r.id] ?? null,
-      _note: note || null,
+      _otp: otp[r.id] ?? undefined,
+      _note: note || undefined,
     });
     setBusy(null);
     if (error) { toast.error(error.message); return; }
