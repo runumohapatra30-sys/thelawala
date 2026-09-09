@@ -262,7 +262,7 @@ function Cart() {
     <Shell>
       <PortalHeader title="Checkout" subtitle={vendor?.stall_name ?? "Your order"} />
       <div className="space-y-3 p-4 pb-36">
-        <div className="card-soft grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border border-border p-3">
+        <div className="card-elevated rise-in grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border border-border p-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-black">{form.full_name || "Delivering to you"}</p>
             <p className="truncate text-[11px] text-muted-foreground">{form.line || "Add your full address below"}</p>
@@ -272,7 +272,7 @@ function Cart() {
           </a>
         </div>
 
-        <div className="card-soft border border-border p-3">
+        <div className="card-elevated rise-in p-3">
           <p className="inline-flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-1 text-[11px] font-black text-primary-foreground">
             ⚡ Free delivery in 15 mins
           </p>
@@ -295,7 +295,7 @@ function Cart() {
           </div>
         </div>
 
-        <div id="delivery-details" className="card-soft space-y-2 border border-border p-3">
+        <div id="delivery-details" className="card-elevated rise-in space-y-2 border border-border p-3">
           <p className="text-sm font-bold">Delivery details</p>
           {([
             ["full_name", "Full name", "text"],
@@ -332,7 +332,7 @@ function Cart() {
           ) : null}
         </div>
 
-        <div className="card-soft border border-border p-3">
+        <div className="card-elevated rise-in p-3">
           <p className="text-sm font-bold">Coupons &amp; offers</p>
           <div className="mt-2 flex gap-2">
             <input
@@ -370,7 +370,7 @@ function Cart() {
           </div>
         </div>
 
-        <div className="card-soft border border-border p-3">
+        <div className="card-elevated rise-in p-3">
           <p className="text-sm font-bold">Bill details</p>
           {bill ? (
             <dl className="mt-2 space-y-1.5 text-sm">
@@ -393,7 +393,7 @@ function Cart() {
           )}
         </div>
 
-        <div className="card-soft border border-border p-3">
+        <div className="card-elevated rise-in p-3">
           <p className="text-sm font-bold">Payment method</p>
           {walletBalance > 0 ? (
             <button
