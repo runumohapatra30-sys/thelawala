@@ -88,7 +88,11 @@ export const createCashfreePayment = createServerFn({ method: "POST" })
 
     const body = (await res.json()) as { link_url?: string; message?: string };
     if (!res.ok || !body.link_url) {
-      throw new Error(body.message ?? "Could not start the Cashfree payment.");
+      if (res.status === 401 || res.status === 403) {
+        throw new Error("Payment keys are not valid. Please update the Cashfree App ID and Secret Key.");
+      }
+      throw new Error(body.message ?? "Could not start the payment right now. Please try again.");
     }
+
     return { linkUrl: body.link_url };
   });
