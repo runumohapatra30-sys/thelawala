@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { layoutCopilot } from "@/lib/ai.functions";
 import {
   PAGES,
   SECTION_LABELS,
@@ -7,8 +9,10 @@ import {
   loadLayout,
   saveLayout,
   type PageSection,
+  type SectionConfig,
   type TargetApp,
 } from "@/lib/pageLayout";
+
 
 const APPS: { key: TargetApp; label: string }[] = [
   { key: "customer", label: "Customer app" },
