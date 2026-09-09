@@ -139,11 +139,12 @@ function Home() {
 
   return (
     <Shell>
-      <header className="brand-header sticky top-0 z-30 px-4 pb-3 pt-4">
+      <header className="brand-header sticky top-0 z-30 rounded-b-[2.75rem] px-5 pb-5 pt-5 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)]">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
           <Link to="/cart" className="min-w-0 text-left">
-            <p className="text-[13px] font-black uppercase tracking-wide">Delivery in 15-20 minutes</p>
-            <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold opacity-80">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] opacity-70">Delivery in</p>
+            <p className="text-[22px] font-extrabold leading-tight">15–20 minutes</p>
+            <p className="mt-1 flex items-center gap-1 text-xs font-semibold opacity-80">
               <span className="truncate">{address ?? "Bhubaneswar · set your address"}</span>
               <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.6">
                 <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
