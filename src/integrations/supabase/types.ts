@@ -686,6 +686,8 @@ export type Database = {
       }
       payment_credentials: {
         Row: {
+          cashfree_app_id: string | null
+          cashfree_secret: string | null
           id: boolean
           is_live: boolean
           payu_key: string | null
@@ -694,6 +696,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cashfree_app_id?: string | null
+          cashfree_secret?: string | null
           id?: boolean
           is_live?: boolean
           payu_key?: string | null
@@ -702,6 +706,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cashfree_app_id?: string | null
+          cashfree_secret?: string | null
           id?: boolean
           is_live?: boolean
           payu_key?: string | null
