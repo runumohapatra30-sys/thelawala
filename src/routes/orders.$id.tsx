@@ -194,7 +194,7 @@ function Track() {
         ) : null}
 
         {live && order.cancel_otp ? (
-          <div className="card-soft border-2 border-destructive p-4 text-center animate-pulse-slow">
+          <div className="card-soft border-2 border-destructive p-4 text-center animate-pulse">
             <p className="text-xs font-semibold text-destructive">
               Your delivery partner wants to cancel this order
               {order.cancel_reason ? ` · ${order.cancel_reason}` : ""}
