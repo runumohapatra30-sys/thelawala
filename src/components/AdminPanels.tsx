@@ -76,7 +76,7 @@ export function PayoutQueue() {
 
 type Live = { id: string; code: string; status: string; grand_total: number; partner_id: string | null; customer_name: string };
 
-const LIVE = ["ORDER_PLACED", "PREPARING", "READY_FOR_PICKUP", "RIDER_ASSIGNED", "OUT_FOR_DELIVERY"];
+const LIVE = ["ORDER_PLACED", "PREPARING", "READY_FOR_PICKUP", "SEARCHING_RIDER", "RIDER_ASSIGNED", "OUT_FOR_DELIVERY"];
 
 export function LiveOrders() {
   const [rows, setRows] = useState<Live[]>([]);

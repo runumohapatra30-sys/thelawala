@@ -123,12 +123,14 @@ function VendorPortal() {
   }, [vendor?.id]);
 
   async function setStatus(o: Order, status: string) {
-    let patch: { status: string; accepted_at?: string; prep_minutes?: number; ready_at?: string } = { status };
+    // Marking an order ready puts it into the rider search queue.
+    const effective = status === "READY_FOR_PICKUP" ? "SEARCHING_RIDER" : status;
+    let patch: { status: string; accepted_at?: string; prep_minutes?: number; ready_at?: string } = { status: effective };
     if (status === "PREPARING") {
       const { data: v } = await supabase.from("vendors").select("default_prep_minutes").eq("id", vendor?.id ?? "").maybeSingle();
       const mins = Number(v?.default_prep_minutes ?? 10);
       patch = {
-        status,
+        status: effective,
         accepted_at: new Date().toISOString(),
         prep_minutes: mins,
         ready_at: new Date(Date.now() + mins * 60000).toISOString(),
@@ -139,8 +141,8 @@ function VendorPortal() {
       toast.error("Could not update this order. Please try again.");
       return;
     }
-    if (status === "READY_FOR_PICKUP") await offerToNearestPartner(o.id);
-    setOrders((prev) => prev.map((x) => (x.id === o.id ? { ...x, status } : x)));
+    if (effective === "SEARCHING_RIDER") await offerToNearestPartner(o.id);
+    setOrders((prev) => prev.map((x) => (x.id === o.id ? { ...x, status: effective } : x)));
   }
 
   async function addDish(): Promise<void> {
