@@ -6,6 +6,7 @@ import { PayoutQueue, LiveOrders, CustomerManager } from "@/components/AdminPane
 import { MarketingManager } from "@/components/MarketingManager";
 import { PageStudio } from "@/components/PageStudio";
 import { AdminReports } from "@/components/AdminReports";
+import { SystemHealthCard } from "@/components/SystemHealthCard";
 import { supabase } from "@/integrations/supabase/client";
 import { listCoupons, type Coupon } from "@/lib/coupons";
 import { inr, STATUS_LABEL, type Settings } from "@/lib/fees";
@@ -130,6 +131,7 @@ function Admin() {
 
         {isSuper && tab === "studio" ? <PageStudio /> : isSuper && tab === "marketing" ? <MarketingManager /> : (
         <>
+        <SystemHealthCard />
         <AdminReports />
 
 

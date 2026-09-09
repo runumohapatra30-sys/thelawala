@@ -1670,6 +1670,22 @@ export type Database = {
           vendor_payout: number
         }[]
       }
+      admin_storage_usage: {
+        Args: never
+        Returns: {
+          bucket_id: string
+          bytes: number
+          files: number
+        }[]
+      }
+      admin_unused_banner_objects: {
+        Args: never
+        Returns: {
+          created_at: string
+          path: string
+          size_bytes: number
+        }[]
+      }
       apply_referral: { Args: { _code: string }; Returns: string }
       complete_delivery: {
         Args: { _order_id: string; _otp: string }
