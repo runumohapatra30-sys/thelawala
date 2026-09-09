@@ -397,26 +397,29 @@ function VendorPortal() {
         ) : null}
 
         <div className="grid grid-cols-3 gap-2">
-          <div className="card-soft border border-border p-3 text-center">
-            <p className="text-[11px] text-muted-foreground">Today&apos;s orders</p>
-            <p className="text-sm font-black">{today.orders}</p>
+          <div className="stat-tile">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Orders today</p>
+            <p className="mt-0.5 text-lg font-black leading-none">{today.orders}</p>
           </div>
-          <div className="card-soft border border-border p-3 text-center">
-            <p className="text-[11px] text-muted-foreground">Today&apos;s sales</p>
-            <p className="text-sm font-black">{inr(Math.round(today.sales))}</p>
+          <div className="stat-tile">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Sales today</p>
+            <p className="mt-0.5 text-lg font-black leading-none text-primary">{inr(Math.round(today.sales))}</p>
           </div>
-          <div className="card-soft border border-border p-3 text-center">
-            <p className="text-[11px] text-muted-foreground">Food rating</p>
-            <p className="text-sm font-black">{today.rating ? `${today.rating} ★` : "—"}</p>
+          <div className="stat-tile">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Rating</p>
+            <p className="mt-0.5 text-lg font-black leading-none">{today.rating ? `${today.rating} ★` : "—"}</p>
           </div>
         </div>
 
         <PayoutPanel party="VENDOR" id={vendor.id} />
 
+        <p className="section-title pt-1">Stall settings</p>
+
         <VendorHours vendorId={vendor.id} />
 
 
-        <div className="card-soft border border-border p-3">
+        <div className="portal-panel">
+
           <p className="text-sm font-bold">FSSAI licence</p>
           <p className="text-[11px] text-muted-foreground">Current: {vendor.fssai_number ?? "not added yet"}</p>
           <input
