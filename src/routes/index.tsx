@@ -14,6 +14,7 @@ import { FestiveWidget } from "@/components/FestiveWidget";
 import { activeCampaign, type Campaign } from "@/lib/marketing";
 import { VoiceSearch } from "@/components/VoiceSearch";
 import { DynamicAssetBanner } from "@/components/DynamicAssetBanner";
+import { DynamicBanners } from "@/components/DynamicBanners";
 
 export const Route = createFileRoute("/")({
   head: () => ({
