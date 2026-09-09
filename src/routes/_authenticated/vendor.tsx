@@ -8,6 +8,7 @@ import { inr, STATUS_LABEL } from "@/lib/fees";
 import { useSession } from "@/lib/session";
 import { fssaiError, ifscError, normalizeFssai, panError, phoneError } from "@/lib/validation";
 import { BBSR_ZONES, ID_PROOF_TYPES, uploadKycDoc } from "@/lib/kyc";
+import { useLoudAlarm } from "@/lib/alarm";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 
@@ -45,41 +46,6 @@ const EMPTY_DISH = {
   unit: "1 plate",
 };
 
-function useOrderBell(count: number) {
-  const ctxRef = useRef<AudioContext | null>(null);
-  useEffect(() => {
-    if (count <= 0) return;
-    let stopped = false;
-    const beep = () => {
-      if (stopped) return;
-      try {
-        const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        const ctx = (ctxRef.current ??= new Ctx());
-        if (ctx.state === "suspended") void ctx.resume();
-        [0, 0.22].forEach((offset) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = "sine";
-          osc.frequency.value = 880;
-          gain.gain.setValueAtTime(0.0001, ctx.currentTime + offset);
-          gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + offset + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + offset + 0.18);
-          osc.connect(gain).connect(ctx.destination);
-          osc.start(ctx.currentTime + offset);
-          osc.stop(ctx.currentTime + offset + 0.2);
-        });
-      } catch {
-        /* audio unavailable */
-      }
-    };
-    beep();
-    const t = setInterval(beep, 2500);
-    return () => {
-      stopped = true;
-      clearInterval(t);
-    };
-  }, [count]);
-}
 
 function VendorPortal() {
   const { user, loading } = useSession();
@@ -109,8 +75,9 @@ function VendorPortal() {
   const [slip, setSlip] = useState<Order | null>(null);
   const [today, setToday] = useState({ orders: 0, sales: 0, rating: 0 });
 
-  const pending = orders.filter((o) => o.status === "ORDER_PLACED").length;
-  useOrderBell(pending);
+  const newOrders = orders.filter((o) => o.status === "ORDER_PLACED");
+  const pending = newOrders.length;
+  const { muted, setMuted } = useLoudAlarm(pending > 0);
 
   useEffect(() => {
     if (!user) return;
@@ -500,10 +467,63 @@ function VendorPortal() {
         </div>
 
 
+        {pending > 0 ? (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between rounded-2xl bg-destructive px-3 py-2 text-destructive-foreground">
+              <p className="flex items-center gap-2 text-sm font-black">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
+                </span>
+                {pending} new order{pending > 1 ? "s" : ""} waiting
+              </p>
+              <button
+                onClick={() => setMuted(!muted)}
+                className="press rounded-full bg-white/20 px-3 py-1 text-[11px] font-black"
+              >
+                {muted ? "Unmute alarm" : "Mute alarm"}
+              </button>
+            </div>
+
+            {newOrders.map((o) => (
+              <div
+                key={o.id}
+                className="animate-scale-in overflow-hidden rounded-3xl border-2 border-primary bg-card shadow-[0_16px_40px_-18px_rgba(12,131,31,0.55)]"
+              >
+                <div className="flex items-center justify-between bg-primary px-4 py-2 text-primary-foreground">
+                  <p className="text-xs font-black tracking-wide">NEW ORDER · #{o.code}</p>
+                  <p className="text-sm font-black">{inr(Number(o.grand_total))}</p>
+                </div>
+                <div className="space-y-2 p-4">
+                  <p className="text-base font-black">{o.customer_name}</p>
+                  <p className="text-xs leading-snug text-muted-foreground">{o.address_line}</p>
+                  <div className="flex gap-2 pt-1">
+                    <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold">Pickup OTP {o.pickup_otp}</span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-[1fr_1.6fr] gap-2">
+                    <button
+                      onClick={() => setStatus(o, "CANCELLED")}
+                      className="press rounded-2xl border-2 border-destructive py-3.5 text-sm font-black text-destructive"
+                    >
+                      Reject
+                    </button>
+                    <button
+                      onClick={() => setStatus(o, "PREPARING")}
+                      className="press rounded-2xl bg-primary py-3.5 text-sm font-black text-primary-foreground shadow-lg"
+                    >
+                      Accept order
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </section>
+        ) : null}
+
         <section className="space-y-2">
           <p className="text-sm font-bold">Live orders</p>
           {orders.length === 0 ? <p className="text-xs text-muted-foreground">No orders yet.</p> : null}
-          {orders.map((o) => (
+          {orders.filter((o) => o.status !== "ORDER_PLACED").map((o) => (
             <div key={o.id} className="card-soft border border-border p-3">
               <div className="flex items-start justify-between">
                 <div>
@@ -515,16 +535,10 @@ function VendorPortal() {
               </div>
 
               <div className="mt-2 flex flex-wrap gap-2">
-                {o.status === "ORDER_PLACED" ? (
-                  <>
-                    <button onClick={() => setStatus(o, "PREPARING")} className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground">Accept</button>
-                    <button onClick={() => setStatus(o, "CANCELLED")} className="flex-1 rounded-xl border border-border py-2 text-xs font-bold">Reject</button>
-                  </>
-                ) : null}
                 {o.status === "PREPARING" ? (
                   <button onClick={() => setStatus(o, "READY_FOR_PICKUP")} className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground">Ready for Pickup</button>
                 ) : null}
-                {o.status !== "ORDER_PLACED" && o.status !== "CANCELLED" ? (
+                {o.status !== "CANCELLED" ? (
                   <button onClick={() => setSlip(o)} className="flex-1 rounded-xl border border-primary py-2 text-xs font-bold text-primary">
                     Print / View order slip
                   </button>
