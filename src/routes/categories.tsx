@@ -52,10 +52,13 @@ function Categories() {
             key={c.id}
             to="/"
             style={{ animationDelay: `${idx * 45}ms` }}
-            className={`press rise-in rounded-[1.5rem] p-3 text-center shadow-[0_12px_26px_-18px_rgba(15,23,42,0.7)] ${TINTS[idx % TINTS.length]}`}
+            className={`press rise-in overflow-hidden rounded-[1.5rem] p-2 text-center shadow-[0_12px_26px_-18px_rgba(15,23,42,0.7)] ${TINTS[idx % TINTS.length]}`}
           >
-            <span className="block text-2xl float-slow" style={{ animationDelay: `${idx * 0.3}s` }}>{c.emoji ?? "🥘"}</span>
-            <span className="mt-1 block text-[11px] font-bold leading-tight">{c.name}</span>
+            <span className="relative block aspect-square overflow-hidden rounded-[1.15rem]">
+              <img src={foodImage(c.name)} alt={c.name} loading="lazy" className="h-full w-full object-cover" />
+              <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/45 to-transparent" />
+            </span>
+            <span className="mt-1.5 block truncate text-[11px] font-bold leading-tight">{c.name}</span>
             <span className="mt-0.5 block text-[10px] text-muted-foreground">{counts[c.id] ?? 0} items</span>
           </Link>
         ))}
