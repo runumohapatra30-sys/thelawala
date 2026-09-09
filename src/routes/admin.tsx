@@ -144,17 +144,10 @@ function Admin() {
                 {toggle("enable_online_payment", "Online payment")}
                 {toggle("enable_google_login", "Google one-tap login")}
               </div>
-              <label className="block">
-                <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">Payment gateway</span>
-                <select
-                  value={s.payment_gateway}
-                  onChange={(e) => setS({ ...s, payment_gateway: e.target.value })}
-                  className="w-full rounded-xl border border-border px-3 py-2 text-sm"
-                >
-                  <option value="PAYU">PayU</option>
-                  <option value="CASHFREE">Cashfree</option>
-                </select>
-              </label>
+              <div className="rounded-xl border border-border px-3 py-2 text-sm">
+                <span className="text-[11px] font-semibold text-muted-foreground">Payment gateway: </span>
+                <span className="font-bold text-primary">Cashfree</span>
+              </div>
               {num("wallet_min_topup", "Minimum wallet transaction (₹)")}
               {num("wallet_max_topup", "Maximum wallet transaction (₹)")}
               <label className="block">
@@ -167,7 +160,6 @@ function Admin() {
               </label>
             </section>
 
-            <PayuKeys />
             <CashfreeKeys />
 
             <button
