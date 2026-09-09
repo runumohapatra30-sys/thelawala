@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { AddressBook } from "@/components/AddressBook";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,6 +47,12 @@ function Cart() {
   const [offers, setOffers] = useState<Coupon[]>([]);
   const [tip, setTip] = useState(0);
   const [instructions, setInstructions] = useState("");
+  const [locating, setLocating] = useState(false);
+  const autoTried = useRef(false);
+  const coordsRef = useRef(coords);
+  const formRef = useRef(form);
+  coordsRef.current = coords;
+  formRef.current = form;
 
   useEffect(() => {
     listCoupons().then((cs) => setOffers(cs.filter((c) => c.is_active).slice(0, 3)));
