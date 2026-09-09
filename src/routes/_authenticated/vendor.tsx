@@ -6,7 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { offerToNearestPartner } from "@/lib/dispatch";
 import { inr, STATUS_LABEL } from "@/lib/fees";
 import { useSession } from "@/lib/session";
-import { fssaiError, normalizeFssai } from "@/lib/validation";
+import { fssaiError, ifscError, normalizeFssai, panError, phoneError } from "@/lib/validation";
+import { BBSR_ZONES, ID_PROOF_TYPES, uploadKycDoc } from "@/lib/kyc";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 
