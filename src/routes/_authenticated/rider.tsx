@@ -685,6 +685,32 @@ function RiderPortal() {
                 >
                   Scan Order QR to Pickup
                 </button>
+                <div className="card-soft border border-border p-3">
+                  <p className="text-sm font-bold">QR not scanning?</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Type the last 4 digits of the Order ID from the stall&apos;s slip to confirm pickup.
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      value={manualCode}
+                      inputMode="text"
+                      maxLength={4}
+                      placeholder="Last 4"
+                      onChange={(e) => {
+                        setManualCode(e.target.value.replace(/[^a-zA-Z0-9]/g, "").slice(0, 4).toUpperCase());
+                        setScanErr(null);
+                      }}
+                      className="w-28 rounded-xl border border-border px-3 py-2.5 text-center text-base font-black tracking-widest uppercase outline-none focus:border-primary"
+                    />
+                    <button
+                      onClick={pickupByCode}
+                      disabled={manualCode.length < 4}
+                      className="press flex-1 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                    >
+                      Confirm pickup
+                    </button>
+                  </div>
+                </div>
               </>
             ) : null}
 
@@ -696,6 +722,17 @@ function RiderPortal() {
                 Complete delivery
               </button>
             ) : null}
+
+            <button
+              onClick={() => {
+                setCancelMsg(null);
+                setCancelReason(trip.cancel_reason ?? CANCEL_REASONS[0]!);
+                setCancelOpen(true);
+              }}
+              className="press w-full rounded-xl border-2 border-destructive py-3 text-sm font-bold text-destructive"
+            >
+              Cancel order
+            </button>
 
             {msg ? <p className="text-xs font-semibold text-destructive">{msg}</p> : null}
           </>
