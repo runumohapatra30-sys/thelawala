@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { SupportQueue } from "@/components/SupportQueue";
 import { PayoutQueue, LiveOrders, CustomerManager } from "@/components/AdminPanels";
+import { MarketingManager } from "@/components/MarketingManager";
 import { AdminReports } from "@/components/AdminReports";
 import { supabase } from "@/integrations/supabase/client";
 import { listCoupons, type Coupon } from "@/lib/coupons";
@@ -26,6 +27,8 @@ export const Route = createFileRoute("/admin")({
 
 type OrderRow = { id: string; code: string; status: string; grand_total: number; delivery_fee: number; platform_fee: number; food_total: number; created_at: string };
 
+const SUPERADMIN_EMAIL = "runumohapatra808@gmail.com";
+
 function Admin() {
   const { user, loading } = useSession();
   const isAdmin = useIsAdmin(user?.id);
@@ -36,6 +39,8 @@ function Admin() {
   const [refunds, setRefunds] = useState<{ id: string; amount: number; reason: string | null; method: string; status: string }[]>([]);
   const [closures, setClosures] = useState<{ id: string; amount: number; status: string }[]>([]);
   const [saved, setSaved] = useState(false);
+  const [tab, setTab] = useState<"ops" | "marketing">("ops");
+  const isSuper = (user?.email ?? "").toLowerCase() === SUPERADMIN_EMAIL;
 
   const loadMoney = () => {
     supabase.from("refund_requests").select("id,amount,reason,method,status").eq("status", "PENDING").then(({ data }) => setRefunds(data ?? []));
