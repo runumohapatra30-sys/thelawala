@@ -305,6 +305,43 @@
   to { transform: translateX(240%) skewX(-18deg); }
 }
 
+@keyframes thaliwala-spin {
+  to { transform: rotate(360deg); }
+}
+
+@utility thaliwala-loader {
+  position: relative;
+  display: grid;
+  width: 5.25rem;
+  height: 5.25rem;
+  place-items: center;
+  border-radius: 9999px;
+  background: var(--color-card);
+  box-shadow: var(--shadow-card);
+  & > span {
+    position: relative;
+    z-index: 1;
+    font-size: 0.62rem;
+    font-weight: 900;
+    color: var(--color-foreground);
+  }
+}
+
+@utility thaliwala-loader-ring {
+  position: absolute;
+  inset: 0.35rem;
+  border-radius: 9999px;
+  background: conic-gradient(var(--color-primary) 0deg 180deg, var(--color-brand) 180deg 360deg);
+  animation: thaliwala-spin 0.85s linear infinite;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0.38rem;
+    border-radius: inherit;
+    background: var(--color-card);
+  }
+}
+
 @utility rise-in {
   animation: rise-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -349,7 +386,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rise-in, .pop-in, .float-slow, .marquee-track, .shine::after, .live-dot {
+  .rise-in, .pop-in, .float-slow, .marquee-track, .shine::after, .live-dot, .thaliwala-loader-ring {
     animation: none !important;
   }
 }
