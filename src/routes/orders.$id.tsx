@@ -79,14 +79,17 @@ function Track() {
     };
     load();
     supabase.from("order_items").select("id,name,qty,price,photo_url").eq("order_id", id).then(({ data }) => setItems(data ?? []));
-    const timer = setInterval(load, 8000);
+    const timer = setInterval(load, 4000);
     const channel = supabase
       .channel(`order-${id}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${id}` }, () => load())
       .subscribe();
+    const onFocus = () => load();
+    window.addEventListener("focus", onFocus);
     return () => {
       alive = false;
       clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
       supabase.removeChannel(channel);
     };
   }, [id]);
