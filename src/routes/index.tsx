@@ -269,6 +269,7 @@ function Home() {
       ) : null}
 
       <DynamicAssetBanner />
+      <DynamicBanners />
       <BannerCarousel
         onCategory={(id) => { setActive(id); setVendorFilter(null); }}
         onVendor={(id) => { setVendorFilter(id); setActive(null); }}
