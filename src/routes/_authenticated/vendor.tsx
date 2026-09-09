@@ -397,26 +397,29 @@ function VendorPortal() {
         ) : null}
 
         <div className="grid grid-cols-3 gap-2">
-          <div className="card-soft border border-border p-3 text-center">
-            <p className="text-[11px] text-muted-foreground">Today&apos;s orders</p>
-            <p className="text-sm font-black">{today.orders}</p>
+          <div className="stat-tile">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Orders today</p>
+            <p className="mt-0.5 text-lg font-black leading-none">{today.orders}</p>
           </div>
-          <div className="card-soft border border-border p-3 text-center">
-            <p className="text-[11px] text-muted-foreground">Today&apos;s sales</p>
-            <p className="text-sm font-black">{inr(Math.round(today.sales))}</p>
+          <div className="stat-tile">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Sales today</p>
+            <p className="mt-0.5 text-lg font-black leading-none text-primary">{inr(Math.round(today.sales))}</p>
           </div>
-          <div className="card-soft border border-border p-3 text-center">
-            <p className="text-[11px] text-muted-foreground">Food rating</p>
-            <p className="text-sm font-black">{today.rating ? `${today.rating} ★` : "—"}</p>
+          <div className="stat-tile">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Rating</p>
+            <p className="mt-0.5 text-lg font-black leading-none">{today.rating ? `${today.rating} ★` : "—"}</p>
           </div>
         </div>
 
         <PayoutPanel party="VENDOR" id={vendor.id} />
 
+        <p className="section-title pt-1">Stall settings</p>
+
         <VendorHours vendorId={vendor.id} />
 
 
-        <div className="card-soft border border-border p-3">
+        <div className="portal-panel">
+
           <p className="text-sm font-bold">FSSAI licence</p>
           <p className="text-[11px] text-muted-foreground">Current: {vendor.fssai_number ?? "not added yet"}</p>
           <input
@@ -523,30 +526,39 @@ function VendorPortal() {
         ) : null}
 
         <section className="space-y-2">
-          <p className="text-sm font-bold">Live orders</p>
-          {orders.length === 0 ? <p className="text-xs text-muted-foreground">No orders yet.</p> : null}
+          <p className="section-title">Live orders</p>
+          {orders.length === 0 ? (
+            <div className="portal-panel border-dashed text-center">
+              <p className="text-sm font-bold">No orders yet</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">New orders will pop up here with an alarm.</p>
+            </div>
+          ) : null}
           {orders.filter((o) => o.status !== "ORDER_PLACED").map((o) => (
-            <div key={o.id} className="card-soft border border-border p-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-bold">#{o.code}</p>
-                  <p className="text-[11px] text-muted-foreground">{o.customer_name} · {o.address_line}</p>
-                  <p className="mt-1 text-xs font-semibold text-primary">{STATUS_LABEL[o.status] ?? o.status}</p>
+            <div key={o.id} className="portal-panel">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-black">#{o.code}</p>
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-primary">
+                      {STATUS_LABEL[o.status] ?? o.status}
+                    </span>
+                  </div>
+                  <p className="mt-1 truncate text-[11px] text-muted-foreground">{o.customer_name} · {o.address_line}</p>
                   {o.delivery_instructions ? (
                     <p className="mt-1 text-[11px] font-semibold text-foreground">📝 {o.delivery_instructions}</p>
                   ) : null}
                   {o.status === "PREPARING" ? <span className="mt-1 inline-block"><PrepCountdown readyAt={o.ready_at} /></span> : null}
                 </div>
-                <p className="text-sm font-bold">{inr(Number(o.grand_total))}</p>
+                <p className="shrink-0 text-base font-black">{inr(Number(o.grand_total))}</p>
               </div>
 
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 {o.status === "PREPARING" ? (
-                  <button onClick={() => setStatus(o, "READY_FOR_PICKUP")} className="flex-1 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground">Ready for Pickup</button>
+                  <button onClick={() => setStatus(o, "READY_FOR_PICKUP")} className="press flex-1 rounded-xl bg-primary py-2.5 text-xs font-black text-primary-foreground">Ready for pickup</button>
                 ) : null}
                 {o.status !== "CANCELLED" ? (
-                  <button onClick={() => setSlip(o)} className="flex-1 rounded-xl border border-primary py-2 text-xs font-bold text-primary">
-                    Print / View order slip
+                  <button onClick={() => setSlip(o)} className="press flex-1 rounded-xl border border-primary py-2.5 text-xs font-black text-primary">
+                    Order slip
                   </button>
                 ) : null}
               </div>
@@ -554,7 +566,8 @@ function VendorPortal() {
           ))}
         </section>
 
-        <section className="card-soft border border-border p-3">
+
+        <section className="portal-panel">
           <div className="flex items-center justify-between">
             <p className="text-sm font-bold">Your menu</p>
             <button

@@ -208,6 +208,42 @@
   }
 }
 
+@utility stat-tile {
+  background: linear-gradient(160deg, color-mix(in oklab, var(--color-card) 96%, var(--color-brand)) 0%, var(--color-card) 100%);
+  border: 1px solid color-mix(in oklab, var(--color-border) 70%, white);
+  border-radius: 1.25rem;
+  padding: 0.75rem 0.6rem;
+  text-align: center;
+  box-shadow: 0 14px 28px -22px rgba(15, 23, 42, 0.45);
+}
+
+@utility portal-panel {
+  background: var(--color-card);
+  border: 1px solid color-mix(in oklab, var(--color-border) 70%, white);
+  border-radius: 1.5rem;
+  padding: 0.9rem;
+  box-shadow: 0 16px 34px -26px rgba(15, 23, 42, 0.4);
+}
+
+@utility section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--color-foreground) 68%, transparent);
+  &::before {
+    content: "";
+    width: 0.28rem;
+    height: 1rem;
+    border-radius: 999px;
+    background: var(--color-primary);
+  }
+}
+
+
 .leaflet-container {
   width: 100%;
   height: 100%;
