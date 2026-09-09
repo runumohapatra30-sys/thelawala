@@ -122,30 +122,54 @@ function VendorPortal() {
     loadToday();
     loadItems(vendor.id);
     const t = setInterval(() => { load(); loadToday(); }, 8000);
-    return () => clearInterval(t);
+
+    // Live push: any change to this stall's orders refreshes the queue at once.
+    const channel = supabase
+      .channel(`vendor-live-orders-${vendor.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders", filter: `vendor_id=eq.${vendor.id}` },
+        () => { load(); loadToday(); },
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(t);
+      supabase.removeChannel(channel);
+    };
   }, [vendor?.id]);
 
   async function setStatus(o: Order, status: string) {
     // Marking an order ready puts it into the rider search queue.
     const effective = status === "READY_FOR_PICKUP" ? "SEARCHING_RIDER" : status;
-    let patch: { status: string; accepted_at?: string; prep_minutes?: number; ready_at?: string } = { status: effective };
+    let patch: {
+      status: string;
+      updated_at: string;
+      accepted_at?: string;
+      prep_minutes?: number;
+      ready_at?: string;
+    } = { status: effective, updated_at: new Date().toISOString() };
     if (status === "PREPARING") {
       const { data: v } = await supabase.from("vendors").select("default_prep_minutes").eq("id", vendor?.id ?? "").maybeSingle();
       const mins = Number(v?.default_prep_minutes ?? 10);
       patch = {
-        status: effective,
+        ...patch,
         accepted_at: new Date().toISOString(),
         prep_minutes: mins,
         ready_at: new Date(Date.now() + mins * 60000).toISOString(),
       };
     }
+    // Optimistic: show the new state right away, roll back only if the save fails.
+    const before = o.status;
+    setOrders((prev) => prev.map((x) => (x.id === o.id ? { ...x, status: effective } : x)));
     const { error } = await supabase.from("orders").update(patch).eq("id", o.id);
     if (error) {
-      toast.error("Could not update this order. Please try again.");
+      console.error("Order status update error:", error);
+      setOrders((prev) => prev.map((x) => (x.id === o.id ? { ...x, status: before } : x)));
+      toast.error(`Could not update this order: ${error.message}`);
       return;
     }
     if (effective === "SEARCHING_RIDER") await offerToNearestPartner(o.id);
-    setOrders((prev) => prev.map((x) => (x.id === o.id ? { ...x, status: effective } : x)));
   }
 
   async function addDish(): Promise<void> {
