@@ -63,9 +63,9 @@ function Profile() {
 
   return (
     <Shell>
-      <header className="brand-header px-4 pb-8 pt-5">
+      <header className="brand-header rounded-b-[2.75rem] px-5 pb-10 pt-6 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)]">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-card text-xl font-black">
+          <div className="pop-in grid h-14 w-14 shrink-0 place-items-center rounded-3xl glass-chip text-xl font-black">
             {(name || user?.email || "T").slice(0, 1).toUpperCase()}
           </div>
           <div className="min-w-0">
@@ -204,8 +204,8 @@ function Profile() {
 
 function QuickCard({ to, emoji, label, note }: { to: string; emoji: string; label: string; note?: string }) {
   return (
-    <Link to={to} className="card-soft press border border-border p-3 text-center">
-      <span className="block text-xl">{emoji}</span>
+    <Link to={to} className="card-elevated rise-in press p-3 text-center">
+      <span className="block text-xl float-slow">{emoji}</span>
       <span className="mt-1 block text-[11px] font-bold leading-tight">{label}</span>
       {note ? <span className="mt-0.5 block text-[11px] font-black text-primary">{note}</span> : null}
     </Link>

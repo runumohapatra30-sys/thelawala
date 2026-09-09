@@ -46,9 +46,12 @@ function Notifications() {
         ) : rows.length === 0 ? (
           <p className="py-16 text-center text-sm text-muted-foreground">No updates yet.</p>
         ) : (
-          rows.map((n) => {
+          rows.map((n, idx) => {
             const card = (
-              <div className={`card-soft border p-3 ${n.is_read ? "border-border" : "border-primary"}`}>
+              <div
+                style={{ animationDelay: `${Math.min(idx, 10) * 50}ms` }}
+                className={`rise-in card-elevated p-4 ${n.is_read ? "" : "ring-2 ring-primary/60"}`}
+              >
                 <p className="text-sm font-bold">{n.title}</p>
                 <p className="text-[11px] text-muted-foreground">
                   {n.body} · {new Date(n.created_at).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}

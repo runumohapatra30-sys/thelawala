@@ -115,8 +115,8 @@ function Orders() {
 
   return (
     <Shell>
-      <header className="brand-header sticky top-0 z-30 flex items-center gap-3 px-4 py-3">
-        <Link to="/" aria-label="Back to home" className="press grid h-9 w-9 shrink-0 place-items-center rounded-full bg-card/70">
+      <header className="brand-header sticky top-0 z-30 flex items-center gap-3 rounded-b-[2rem] px-4 py-4 shadow-[0_16px_34px_-26px_rgba(15,23,42,0.55)]">
+        <Link to="/" aria-label="Back to home" className="press grid h-10 w-10 shrink-0 place-items-center rounded-2xl glass-chip">
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2">
             <path d="M15 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -138,11 +138,15 @@ function Orders() {
         ) : rows.length === 0 ? (
           <p className="py-16 text-center text-sm text-muted-foreground">No orders yet.</p>
         ) : (
-          rows.map((o) => {
+          rows.map((o, idx) => {
             const its = items.filter((i) => i.order_id === o.id);
             const thumb = its[0]?.photo_url ?? "/food/food-tiffin.jpg";
             return (
-              <article key={o.id} className="card-soft overflow-hidden border border-border">
+              <article
+                key={o.id}
+                style={{ animationDelay: `${Math.min(idx, 8) * 60}ms` }}
+                className="rise-in card-elevated overflow-hidden"
+              >
                 <div className="flex gap-3 p-3">
                   <img src={thumb} alt={its[0]?.name ?? "Order"} className="h-14 w-14 shrink-0 rounded-xl object-cover" />
                   <div className="min-w-0 flex-1">
@@ -210,7 +214,7 @@ function Orders() {
 
       {billFor ? (
         <div className="fixed inset-0 z-50 flex items-end bg-black/40" onClick={() => setBillFor(null)}>
-          <div className="mx-auto w-full max-w-[480px] rounded-t-3xl bg-card p-4" onClick={(e) => e.stopPropagation()}>
+          <div className="rise-in mx-auto w-full max-w-[480px] rounded-t-[2rem] bg-card p-4" onClick={(e) => e.stopPropagation()}>
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border" />
             <p className="text-sm font-black">Bill for #{billFor.code}</p>
             <p className="text-[11px] text-muted-foreground">{billFor.address_line}</p>
@@ -245,7 +249,7 @@ function Orders() {
 
       {rateFor ? (
         <div className="fixed inset-0 z-50 flex items-end bg-black/40" onClick={() => setRateFor(null)}>
-          <div className="mx-auto w-full max-w-[480px] rounded-t-3xl bg-card p-4" onClick={(e) => e.stopPropagation()}>
+          <div className="rise-in mx-auto w-full max-w-[480px] rounded-t-[2rem] bg-card p-4" onClick={(e) => e.stopPropagation()}>
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border" />
             <p className="text-sm font-black">Rate order #{rateFor.code}</p>
             <Stars label="Food quality" value={food} onChange={setFood} />

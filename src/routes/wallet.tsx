@@ -105,15 +105,15 @@ function Wallet() {
     <Shell>
       <PortalHeader title="Wallet" subtitle="Money for faster checkout" />
       <div className="space-y-3 p-4">
-        <div className="card-soft border border-border p-4">
-          <p className="text-xs font-semibold text-muted-foreground">Available balance</p>
-          <p className="text-3xl font-extrabold text-primary">{inr(balance)}</p>
+        <div className="rise-in card-elevated shine p-5">
+          <p className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground"><span className="live-dot" /> Available balance</p>
+          <p className="mt-1 text-4xl font-extrabold tracking-tight text-primary">{inr(balance)}</p>
           {status !== "ACTIVE" ? (
             <p className="mt-1 text-[11px] font-semibold text-destructive">Wallet {status.toLowerCase().replace("_", " ")}</p>
           ) : null}
         </div>
 
-        <div className="card-soft space-y-2 border border-border p-3">
+        <div className="rise-in card-elevated space-y-2 p-4" style={{ animationDelay: "60ms" }}>
           <p className="text-sm font-bold">Add money</p>
           <div className="flex gap-2">
             {[100, 200, 500].map((v) => (
@@ -139,7 +139,7 @@ function Wallet() {
           {msg ? <p className="text-xs font-semibold text-destructive">{msg}</p> : null}
         </div>
 
-        <div className="card-soft border border-border p-3">
+        <div className="rise-in card-elevated p-4" style={{ animationDelay: "120ms" }}>
           <p className="text-sm font-bold">Wallet history</p>
           <div className="mt-2 space-y-2">
             {txns.map((t) => (
