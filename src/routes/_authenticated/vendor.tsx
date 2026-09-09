@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
+import { PayoutPanel } from "@/components/Payouts";
 import { supabase } from "@/integrations/supabase/client";
 import { offerToNearestPartner } from "@/lib/dispatch";
 import { inr, STATUS_LABEL } from "@/lib/fees";
