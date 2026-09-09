@@ -1,5 +1,8 @@
 export const DL_REGEX = /^([A-Z]{2}[0-9]{2}[ -]?[0-9]{11})$/;
 export const FSSAI_REGEX = /^[1-2][0-9]{13}$/;
+export const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+export const IFSC_REGEX = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+export const PHONE_REGEX = /^\+?[0-9]{10,13}$/;
 
 /** Keeps only characters a valid DL can contain, uppercased. */
 export function normalizeDl(value: string): string {
