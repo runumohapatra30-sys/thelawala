@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { LogoutButton, Shell } from "@/components/Shell";
 import { PayoutPanel } from "@/components/Payouts";
+import { CashSettlement } from "@/components/CashSettlement";
 import { OrderChat } from "@/components/OrderChat";
 
 import { LiveMap } from "@/components/LiveMap";
@@ -678,6 +679,10 @@ function RiderPortal() {
                 <div className={`mt-3 flex items-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-black ${me.is_online ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
                   <span className={`h-2.5 w-2.5 rounded-full ${me.is_online ? "animate-pulse bg-primary" : "bg-muted-foreground"}`} />
                   {me.is_online ? "On duty · receiving orders" : "Off duty · turn duty ON from the top bar"}
+                </div>
+
+                <div className="mt-3">
+                  <CashSettlement partnerId={me.id} userId={user?.id ?? ""} />
                 </div>
 
                 <div className="mt-3">
