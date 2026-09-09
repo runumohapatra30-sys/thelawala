@@ -21,21 +21,25 @@ function parseLive(raw: string | undefined): boolean {
 }
 
 export async function cashfreeCreds(): Promise<{ appId: string; secret: string; base: string; live: boolean }> {
-  let appId = (process.env["CASHFREE_APP_ID"] ?? "").trim();
-  let secret = (process.env["CASHFREE_SECRET_KEY"] ?? "").trim();
-  let live = parseLive(process.env["CASHFREE_LIVE"]);
+  // Admin-panel keys win; environment values are only a fallback.
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("payment_credentials")
+    .select("cashfree_app_id,cashfree_secret,is_live")
+    .eq("id", true)
+    .maybeSingle();
 
-  if (!appId || !secret) {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin
-      .from("payment_credentials")
-      .select("cashfree_app_id,cashfree_secret,is_live")
-      .eq("id", true)
-      .maybeSingle();
-    appId = (data?.cashfree_app_id ?? "").trim();
-    secret = (data?.cashfree_secret ?? "").trim();
-    live = Boolean(data?.is_live);
+  let appId = (data?.cashfree_app_id ?? "").trim();
+  let secret = (data?.cashfree_secret ?? "").trim();
+  let live = Boolean(data?.is_live);
+
+  // A valid Cashfree secret always looks like cfsk_ma_...; ignore anything else.
+  if (!appId || !secret.startsWith("cfsk_")) {
+    appId = (process.env["CASHFREE_APP_ID"] ?? "").trim();
+    secret = (process.env["CASHFREE_SECRET_KEY"] ?? "").trim();
+    live = parseLive(process.env["CASHFREE_LIVE"]);
   }
+
   if (!appId || !secret) throw new Error("Cashfree is not set up yet. Please ask the team to add the gateway keys.");
   // Live secrets always start with cfsk_ma_prod_, test secrets with cfsk_ma_test_.
   if (secret.includes("_prod_")) live = true;
