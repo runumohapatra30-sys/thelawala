@@ -856,7 +856,7 @@ function RiderPortal() {
                   {CANCEL_REASONS.map((r) => (
                     <button
                       key={r}
-                      onClick={() => setCancelReason(r)}
+                      onClick={() => updateCancelReason(r)}
                       className={`w-full rounded-xl border px-3 py-2.5 text-left text-sm ${
                         cancelReason === r ? "border-destructive font-bold text-destructive" : "border-border"
                       }`}
