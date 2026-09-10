@@ -3,8 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const BRAND_YELLOW = "#FACC15";
 
+export type ThemeToken = "SKY_BLUE" | "WARM_OCHRE" | "DEFAULT_YELLOW";
+
 export type ThemeConfig = {
   id: string;
+  theme_token: ThemeToken;
   current_bg_color: string;
   temporary_bg_color: string | null;
   is_temporary_active: boolean;
@@ -14,7 +17,42 @@ export type ThemeConfig = {
   festive_style_active: boolean;
 };
 
-const COLS = "id,current_bg_color,temporary_bg_color,is_temporary_active,temporary_expires_at,header_height_px,header_bg_image_url,festive_style_active";
+const COLS = "id,theme_token,current_bg_color,temporary_bg_color,is_temporary_active,temporary_expires_at,header_height_px,header_bg_image_url,festive_style_active";
+
+/** Server-driven header/grid looks. Admin picks one; every app updates instantly. */
+export const THEME_TOKENS: {
+  token: ThemeToken;
+  label: string;
+  wrapper: string;
+  card: string;
+  swatch: string;
+}[] = [
+  {
+    token: "SKY_BLUE",
+    label: "Sky Blue",
+    wrapper: "bg-gradient-to-b from-sky-400 via-sky-200 to-sky-100 text-sky-950",
+    card: "bg-sky-200/90 text-sky-900 border border-sky-300",
+    swatch: "linear-gradient(180deg,#38bdf8,#e0f2fe)",
+  },
+  {
+    token: "WARM_OCHRE",
+    label: "Ganesh Ochre",
+    wrapper: "bg-gradient-to-b from-[#6D281D] via-[#991B1B] to-[#B91C1C] text-white",
+    card: "bg-[#FEF3C7] text-[#78350F] border border-amber-200",
+    swatch: "linear-gradient(180deg,#6D281D,#B91C1C)",
+  },
+  {
+    token: "DEFAULT_YELLOW",
+    label: "Default Yellow",
+    wrapper: "text-brand-foreground",
+    card: "bg-card/85 text-foreground border border-card/60",
+    swatch: BRAND_YELLOW,
+  },
+];
+
+export function themeStyle(token: ThemeToken | null | undefined) {
+  return THEME_TOKENS.find((t) => t.token === token) ?? THEME_TOKENS[2]!;
+}
 
 export const THEME_PRESETS: { label: string; color: string }[] = [
   { label: "Brand Yellow", color: BRAND_YELLOW },

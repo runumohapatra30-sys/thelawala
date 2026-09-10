@@ -49,16 +49,18 @@ function GridCardButton({
   tall,
   wide,
   onFilter,
+  cardClass,
 }: {
   card: { title: string; image_url: string; filter: string; tag: string };
   tall?: boolean;
   wide?: boolean;
   onFilter: (v: string) => void;
+  cardClass?: string;
 }) {
   return (
     <button
       onClick={() => onFilter(card.filter || card.title)}
-      className={`press flex min-w-0 flex-col gap-2 overflow-hidden rounded-3xl border border-card/60 bg-card/85 p-3 text-left shadow-md ${tall ? "row-span-2" : ""} ${wide ? "col-span-2" : ""}`}
+      className={`press flex min-w-0 flex-col gap-2 overflow-hidden rounded-3xl p-3 text-left shadow-md ${cardClass ?? "border border-card/60 bg-card/85"} ${tall ? "row-span-2" : ""} ${wide ? "col-span-2" : ""}`}
     >
       <div className="min-w-0">
         <p className={`font-black leading-tight text-foreground ${tall ? "text-[16px]" : "text-[12.5px]"}`}>{card.title}</p>
