@@ -97,8 +97,6 @@ function FestivePicks({ section, items, onAdd, qtyOf }: Props & { section: HomeS
         <div className="-mx-1 mt-3 flex snap-x gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {picks.map((i) => {
             const price = customerPrice(i.price);
-            const mrp = customerPrice(i.mrp);
-            const off = Math.max(0, Math.round(mrp - price));
             const qty = qtyOf?.(i.id) ?? 0;
             return (
               <div key={i.id} className="w-[156px] shrink-0 snap-start rounded-2xl border border-border/70 bg-card p-2 shadow-md">
