@@ -97,8 +97,6 @@ function FestivePicks({ section, items, onAdd, qtyOf }: Props & { section: HomeS
         <div className="-mx-1 mt-3 flex snap-x gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {picks.map((i) => {
             const price = customerPrice(i.price);
-            const mrp = customerPrice(i.mrp);
-            const off = Math.max(0, Math.round(mrp - price));
             const qty = qtyOf?.(i.id) ?? 0;
             return (
               <div key={i.id} className="w-[156px] shrink-0 snap-start rounded-2xl border border-border/70 bg-card p-2 shadow-md">
@@ -109,11 +107,6 @@ function FestivePicks({ section, items, onAdd, qtyOf }: Props & { section: HomeS
                     loading="lazy"
                     className="aspect-square w-full rounded-xl object-cover"
                   />
-                  {off > 0 ? (
-                    <span className="absolute left-1.5 top-1.5 rounded-full bg-[#2563EB] px-2 py-0.5 text-[9.5px] font-black text-white shadow">
-                      {inr(off)} OFF
-                    </span>
-                  ) : null}
                 </div>
                 <p className="mt-1.5 flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
                   <span aria-hidden>⏱</span> 14 mins
@@ -122,9 +115,6 @@ function FestivePicks({ section, items, onAdd, qtyOf }: Props & { section: HomeS
                 <div className="mt-1.5 flex items-center justify-between gap-1">
                   <div className="min-w-0">
                     <p className="truncate text-[13px] font-extrabold">{inr(price)}</p>
-                    {mrp > price ? (
-                      <p className="truncate text-[10.5px] font-medium text-muted-foreground line-through">{inr(mrp)}</p>
-                    ) : null}
                   </div>
                   {!i.in_stock ? (
                     <span className="rounded-lg border border-border px-2 py-1 text-[10px] font-bold text-muted-foreground">

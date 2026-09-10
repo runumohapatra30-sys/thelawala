@@ -4,6 +4,7 @@ import { PortalHeader, Shell } from "@/components/Shell";
 import { PayoutPanel } from "@/components/Payouts";
 import { SettlementHistory } from "@/components/SettlementHistory";
 import { VendorHours, PrepCountdown } from "@/components/VendorHours";
+import { VendorOffer } from "@/components/VendorOffer";
 import { supabase } from "@/integrations/supabase/client";
 import { offerToNearestPartner } from "@/lib/dispatch";
 import { inr, STATUS_LABEL } from "@/lib/fees";
@@ -204,7 +205,7 @@ function VendorPortal() {
         vendor_id: vendor.id,
         name: dish.name.trim(),
         price,
-        mrp: Number(dish.mrp) || price,
+        mrp: price,
         category_id: dish.category_id || null,
         food_type: dish.food_type,
         details: dish.details.trim() || null,
@@ -478,6 +479,7 @@ function VendorPortal() {
                 </div>
                 <p className="section-title pt-1">Stall settings</p>
                 <VendorHours vendorId={vendor.id} />
+                <VendorOffer vendorId={vendor.id} />
               </div>
             ),
           }}
@@ -672,11 +674,10 @@ function VendorPortal() {
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">Cut price (₹, optional)</span>
+                  <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">Unit</span>
                   <input
-                    inputMode="numeric"
-                    value={dish.mrp}
-                    onChange={(e) => setDish({ ...dish, mrp: e.target.value.replace(/\D/g, "").slice(0, 5) })}
+                    value={dish.unit}
+                    onChange={(e) => setDish({ ...dish, unit: e.target.value.slice(0, 20) })}
                     className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary"
                   />
                 </label>

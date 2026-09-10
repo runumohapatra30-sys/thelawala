@@ -49,7 +49,7 @@ type Item = {
   food_type: string;
 };
 type Category = { id: string; name: string; emoji: string | null };
-type Vendor = { id: string; stall_name: string; is_open: boolean };
+type Vendor = { id: string; stall_name: string; is_open: boolean; offer_percent: number | null; offer_label: string | null };
 
 const TINTS = [
   "bg-[color-mix(in_oklab,var(--color-brand)_28%,white)]",
@@ -85,7 +85,7 @@ function Home() {
   useEffect(() => {
     activeCampaign().then(setCampaign);
     supabase.from("categories").select("id,name,emoji").order("sort_order").then(({ data }) => setCats(data ?? []));
-    supabase.from("vendors").select("id,stall_name,is_open").eq("status", "APPROVED").then(({ data }) => setVendors(data ?? []));
+    supabase.from("vendors").select("id,stall_name,is_open,offer_percent,offer_label").eq("status", "APPROVED").then(({ data }) => setVendors((data ?? []) as Vendor[]));
     supabase
       .from("menu_items")
       .select("id,vendor_id,category_id,name,details,photo_url,unit,price,mrp,in_stock,food_type")
@@ -132,6 +132,10 @@ function Home() {
 
   const vendorName = useMemo(
     () => Object.fromEntries(vendors.map((v) => [v.id, v.stall_name])),
+    [vendors],
+  );
+  const vendorOffer = useMemo(
+    () => Object.fromEntries(vendors.map((v) => [v.id, Number(v.offer_percent ?? 0)])),
     [vendors],
   );
 
@@ -268,8 +272,9 @@ function Home() {
           {shown.map((i, idx) => {
             const line = lines.find((l) => l.itemId === i.id);
             const shownPrice = customerPrice(i.price);
-            const shownMrp = customerPrice(i.mrp);
-            const off = shownMrp > shownPrice ? Math.round(((shownMrp - shownPrice) / shownMrp) * 100) : 0;
+            // Discounts only exist when the stall itself runs an offer.
+            const off = vendorOffer[i.vendor_id] ?? 0;
+            const offerPrice = off > 0 ? Math.round(shownPrice * (100 - off)) / 100 : shownPrice;
             return (
               <div key={i.id} style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }} className="press rise-in card-elevated p-2.5 hover:-translate-y-0.5">
                 <div className="relative">
@@ -304,9 +309,9 @@ function Home() {
                 </p>
                 <div className="mt-2.5 flex items-center justify-between px-0.5">
                   <p className="text-[15px] font-extrabold text-primary">
-                    {inr(shownPrice)}{" "}
+                    {inr(offerPrice)}{" "}
                     {off > 0 ? (
-                      <span className="text-[11px] font-medium text-muted-foreground line-through">{inr(shownMrp)}</span>
+                      <span className="text-[11px] font-medium text-muted-foreground line-through">{inr(shownPrice)}</span>
                     ) : null}
                   </p>
                   {!i.in_stock ? null : line ? (

@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cart, cartTotals, useCart } from "@/lib/cart";
 import { couponDiscount, findCoupon, listCoupons, type Coupon } from "@/lib/coupons";
 import { computeBill, haversineKm, inr, type Settings } from "@/lib/fees";
-import { checkoutGate, minimumOrderValue } from "@/lib/pricing";
+import { checkoutGate, minimumOrderValue, stallOfferDiscount } from "@/lib/pricing";
 import { startOnlinePayment } from "@/lib/checkout";
 import { useSession } from "@/lib/session";
 
@@ -31,10 +31,10 @@ function Cart() {
   const navigate = useNavigate();
   const { user } = useSession();
   const lines = useCart();
-  const { foodTotal, mrpTotal, baseTotal } = cartTotals(lines);
+  const { foodTotal, baseTotal } = cartTotals(lines);
 
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [vendor, setVendor] = useState<{ id: string; stall_name: string; lat: number; lng: number } | null>(null);
+  const [vendor, setVendor] = useState<{ id: string; stall_name: string; lat: number; lng: number; offer_percent: number | null; offer_label: string | null } | null>(null);
   const [form, setForm] = useState({ full_name: "", mobile: "", pincode: "", line: "", landmark: "" });
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [payment, setPayment] = useState<"COD" | "ONLINE">("COD");
@@ -79,7 +79,7 @@ function Cart() {
   useEffect(() => {
     const vid = lines[0]?.vendorId;
     if (!vid) return;
-    supabase.from("vendors").select("id,stall_name,lat,lng").eq("id", vid).maybeSingle().then(({ data }) => setVendor(data));
+    supabase.from("vendors").select("id,stall_name,lat,lng,offer_percent,offer_label").eq("id", vid).maybeSingle().then(({ data }) => setVendor(data));
   }, [lines[0]?.vendorId]);
 
   useEffect(() => {
@@ -160,9 +160,11 @@ function Cart() {
   const distanceKm = vendor && coords ? haversineKm(coords, { lat: Number(vendor.lat), lng: Number(vendor.lng) }) : 0;
   const gate = vendor && coords ? checkoutGate(distanceKm, baseTotal) : ({ ok: true } as const);
   const blockedReason = gate.ok ? null : gate.reason;
-  const bill = settings ? computeBill({ settings, foodTotal, mrpTotal, distanceKm }) : null;
+  // No automatic MRP discount any more: a discount exists only when the stall runs its own offer.
+  const bill = settings ? computeBill({ settings, foodTotal, mrpTotal: foodTotal, distanceKm }) : null;
+  const stallOff = stallOfferDiscount(foodTotal, vendor?.offer_percent);
   const couponOff = coupon ? couponDiscount(coupon, foodTotal) : 0;
-  const netTotal = bill ? Math.max(0, Math.round((bill.grandTotal - couponOff + tip) * 100) / 100) : 0;
+  const netTotal = bill ? Math.max(0, Math.round((bill.grandTotal - stallOff - couponOff + tip) * 100) / 100) : 0;
   const walletUse = bill && useWallet ? Math.min(walletBalance, netTotal) : 0;
   const payable = bill ? Math.round((netTotal - walletUse) * 100) / 100 : 0;
 
@@ -242,7 +244,7 @@ function Cart() {
         surge_fee: bill.surgeFee,
         grand_total: netTotal,
         coupon_code: coupon?.code ?? null,
-        discount_amount: couponOff,
+        discount_amount: Math.round((couponOff + stallOff) * 100) / 100,
         wallet_paid: walletUse,
         tip_amount: tip,
         delivery_instructions: instructions.trim() || null,
@@ -476,8 +478,14 @@ function Cart() {
           <p className="text-sm font-bold">Bill details</p>
           {bill ? (
             <dl className="mt-2 space-y-1.5 text-sm">
-              <Row label="Item total (MRP)" value={inr(bill.mrpTotal)} />
-              {bill.discount > 0 ? <Row label="Stall discount" value={`− ${inr(bill.discount)}`} good /> : null}
+              <Row label="Item total" value={inr(bill.foodTotal)} />
+              {stallOff > 0 ? (
+                <Row
+                  label={`${vendor?.stall_name ?? "Stall"} offer (${Number(vendor?.offer_percent ?? 0)}% off)`}
+                  value={`− ${inr(stallOff)}`}
+                  good
+                />
+              ) : null}
               <Row label={`Delivery fee (${bill.distanceKm} km)`} value={bill.deliveryFee ? inr(bill.deliveryFee) : "FREE"} />
               {bill.platformFee ? <Row label="Platform fee" value={inr(bill.platformFee)} /> : null}
               {bill.handlingFee ? <Row label="Handling fee" value={inr(bill.handlingFee)} /> : null}
