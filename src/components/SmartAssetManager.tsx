@@ -141,6 +141,20 @@ export function SmartAssetManager() {
             </div>
             <button
               onClick={async () => {
+                await supabase.from("app_dynamic_assets").update({ is_active: false }).neq("id", a.id);
+                await supabase
+                  .from("app_dynamic_assets")
+                  .update({ is_active: true, is_enabled: true, activated_at: new Date().toISOString(), ai_reason: "Chosen by admin" })
+                  .eq("id", a.id);
+                toast.success("This banner is live now.");
+                void load();
+              }}
+              className="rounded-full border border-primary px-2 py-1 text-[10px] font-black text-primary"
+            >
+              Show now
+            </button>
+            <button
+              onClick={async () => {
                 await supabase.from("app_dynamic_assets").update({ is_enabled: !a.is_enabled }).eq("id", a.id);
                 void load();
               }}
