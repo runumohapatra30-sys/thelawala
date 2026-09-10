@@ -405,20 +405,10 @@ export function ThemeController() {
         )}
       </div>
 
-      <label className="block">
-        <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">
-          Festive banner size · {cfg.header_height_px || 220}px
-        </span>
-        <input
-          type="range"
-          min={100}
-          max={420}
-          step={10}
-          value={cfg.header_height_px || 220}
-          onChange={(e) => setCfg({ ...cfg, header_height_px: Number(e.target.value) })}
-          className="w-full"
-        />
-      </label>
+      <p className="text-[11px] font-semibold text-muted-foreground">
+        The festive photo now sizes itself to its own shape, so nothing gets cut off.
+      </p>
+
 
       <div className="grid grid-cols-2 gap-2">
         <label className="block">
