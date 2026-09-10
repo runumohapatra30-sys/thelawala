@@ -176,6 +176,23 @@ function SectionStudio() {
 
           <input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} placeholder="Section title" className={inputCls} />
           <input value={editing.subtitle ?? ""} onChange={(e) => setEditing({ ...editing, subtitle: e.target.value })} placeholder="Subtitle" className={inputCls} />
+          <div className="flex flex-wrap gap-2">
+            {[
+              { label: "Festive morning", value: "linear-gradient(180deg,#BFE6FF,#E8F7FF)" },
+              { label: "Ganesh brown", value: "linear-gradient(180deg,#8A3312,#C4551F)" },
+              { label: "Warm cream", value: "linear-gradient(180deg,#FFE7A8,#FFF6DD)" },
+              { label: "Saffron", value: "linear-gradient(180deg,#FB923C,#FFD9A0)" },
+            ].map((p) => (
+              <button
+                key={p.label}
+                onClick={() => setEditing({ ...editing, bg_color: p.value })}
+                style={{ background: p.value }}
+                className="rounded-xl border border-border px-3 py-2 text-[11px] font-black text-foreground shadow-sm"
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <label className="block">
               <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">Background colour</span>
