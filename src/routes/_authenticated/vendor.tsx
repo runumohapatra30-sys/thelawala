@@ -636,13 +636,24 @@ function VendorPortal() {
 
         <section className={`space-y-2 ${vLayout.find((x) => x.type === "vendor_active_orders")?.is_visible === false ? "hidden" : ""}`}>
           <p className="section-title">Live orders</p>
-          {orders.length === 0 ? (
+          <OrderFilterBar
+            mode="vendor"
+            status={statusFilter}
+            date={dateFilter}
+            payment={paymentFilter}
+            search={search}
+            onStatus={setStatusFilter}
+            onDate={setDateFilter}
+            onPayment={setPaymentFilter}
+            onSearch={setSearch}
+          />
+          {filtered.length === 0 ? (
             <div className="portal-panel border-dashed text-center">
-              <p className="text-sm font-bold">No orders yet</p>
-              <p className="mt-1 text-[11px] text-muted-foreground">New orders will pop up here with an alarm.</p>
+              <p className="text-sm font-bold">No orders match</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">Try clearing filters.</p>
             </div>
           ) : null}
-          {orders.filter((o) => o.status !== "ORDER_PLACED").map((o) => (
+          {filtered.filter((o) => o.status !== "ORDER_PLACED").map((o) => (
             <div key={o.id} className="portal-panel">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
