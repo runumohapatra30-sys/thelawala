@@ -168,6 +168,14 @@ function Home() {
     festive: () => (
       <FestiveWidget campaign={campaign} onFilter={(v) => { setQ(v); setActive(null); setVendorFilter(null); }} />
     ),
+    festive_sections: () => (
+      <FestiveSections
+        items={items}
+        onFilter={(v) => { setQ(v); setActive(null); setVendorFilter(null); }}
+        onAdd={(id) => { const it = items.find((x) => x.id === id); if (it) add(it); }}
+        qtyOf={(id) => lines.find((l) => l.itemId === id)?.qty ?? 0}
+      />
+    ),
     quick_bites: (cfg) => (
       <section className="px-5 pt-6">
         <h2 className="text-[17px] font-extrabold">{cfg.title ?? "Quick bites"}</h2>
