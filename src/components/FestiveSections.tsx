@@ -44,35 +44,58 @@ function bgStyle(section: HomeSection) {
     : { background: section.bg_color || "linear-gradient(135deg,#FFF3C4,#FFD9A0)" };
 }
 
+function GridCardButton({
+  card,
+  tall,
+  wide,
+  onFilter,
+}: {
+  card: { title: string; image_url: string; filter: string; tag: string };
+  tall?: boolean;
+  wide?: boolean;
+  onFilter: (v: string) => void;
+}) {
+  return (
+    <button
+      onClick={() => onFilter(card.filter || card.title)}
+      className={`press flex min-w-0 flex-col gap-2 overflow-hidden rounded-3xl border border-card/60 bg-card/85 p-3 text-left shadow-md ${tall ? "row-span-2" : ""} ${wide ? "col-span-2" : ""}`}
+    >
+      <div className="min-w-0">
+        <p className={`font-black leading-tight text-foreground ${tall ? "text-[16px]" : "text-[12.5px]"}`}>{card.title}</p>
+        {card.tag ? (
+          <span className="mt-1 inline-block rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-black text-primary">
+            {card.tag}
+          </span>
+        ) : null}
+      </div>
+      <img
+        src={card.image_url || foodImage(card.title)}
+        alt={card.title}
+        loading="lazy"
+        className={`mt-auto w-full rounded-2xl object-cover ${tall ? "aspect-[3/4]" : wide ? "aspect-[3/1]" : "aspect-square"}`}
+      />
+    </button>
+  );
+}
+
 function FestiveGrid({ section, onFilter }: { section: HomeSection; onFilter: (v: string) => void }) {
   const cards = section.cards.filter((c) => c.title || c.image_url).slice(0, 4);
   if (cards.length === 0) return null;
+  const [first, ...rest] = cards;
   return (
     <section className="pt-5">
       <div style={bgStyle(section)} className="relative overflow-hidden px-4 pb-5 pt-6 shadow-sm">
         <div className="mb-4 text-center">
           <p className="text-[9px] font-black uppercase text-foreground/55">Celebrate</p>
           <p className="text-[22px] font-black leading-tight text-foreground drop-shadow-sm">{section.title}</p>
-        {section.subtitle ? (
+          {section.subtitle ? (
             <p className="mt-1 text-[11px] font-semibold text-foreground/65">{section.subtitle}</p>
-        ) : null}
+          ) : null}
         </div>
-        <div className="grid h-[330px] grid-cols-2 grid-rows-3 gap-3">
-          {cards.map((c, n) => (
-            <button
-              key={n}
-              onClick={() => onFilter(c.filter || c.title)}
-              className={`press relative overflow-hidden rounded-3xl border border-card/60 bg-card/85 text-left shadow-md ${n === 0 ? "row-span-3" : "row-span-1"}`}
-            >
-              <img
-                src={c.image_url || foodImage(c.title)}
-                alt={c.title}
-                loading="lazy"
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-              <span className="absolute inset-x-0 top-0 h-2/3 bg-gradient-to-b from-card via-card/75 to-transparent" />
-              <p className={`relative z-10 px-3 pt-3 font-black leading-tight text-foreground ${n === 0 ? "text-[16px]" : "text-[12px]"}`}>{c.title}</p>
-            </button>
+        <div className="grid h-auto grid-cols-2 auto-rows-auto items-stretch gap-3">
+          {first ? <GridCardButton card={first} tall onFilter={onFilter} /> : null}
+          {rest.map((c, n) => (
+            <GridCardButton key={n} card={c} wide={n === 2} onFilter={onFilter} />
           ))}
         </div>
       </div>
