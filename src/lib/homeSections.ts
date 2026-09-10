@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type SectionType = "FESTIVE_GRID_4" | "FESTIVE_PICKS_PRODUCTS";
 
-export type GridCard = { title: string; image_url: string; filter: string; tag: string };
+export type GridCard = { title: string; image_url: string; video_url: string; filter: string; tag: string };
 
 export type HomeSection = {
   id: string;
@@ -28,6 +28,7 @@ export function toCards(value: unknown): GridCard[] {
     .map((v) => ({
       title: String(v["title"] ?? ""),
       image_url: String(v["image_url"] ?? ""),
+      video_url: String(v["video_url"] ?? ""),
       filter: String(v["filter"] ?? ""),
       tag: String(v["tag"] ?? ""),
     }));
