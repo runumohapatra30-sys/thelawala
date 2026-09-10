@@ -32,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/vendor")({
 });
 
 type Order = {
-  id: string; code: string; status: string; grand_total: number; food_total: number;
+  id: string; code: string; status: string; grand_total: number; food_total: number; base_food_total: number | null;
   pickup_otp: string; qr_hash: string | null; customer_name: string; address_line: string; partner_id: string | null;
   delivery_instructions?: string | null; ready_at?: string | null;
 };
@@ -101,7 +101,7 @@ function VendorPortal() {
     if (!vendor) return;
     const load = () => {
       supabase.from("orders")
-        .select("id,code,status,grand_total,food_total,pickup_otp,qr_hash,customer_name,address_line,partner_id,delivery_instructions,ready_at")
+        .select("id,code,status,grand_total,food_total,base_food_total,pickup_otp,qr_hash,customer_name,address_line,partner_id,delivery_instructions,ready_at")
         .eq("vendor_id", vendor.id).order("created_at", { ascending: false }).limit(30)
         .then(({ data }) => setOrders((data ?? []) as Order[]));
     };
