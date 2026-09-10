@@ -4,6 +4,7 @@ import { PortalHeader, Shell } from "@/components/Shell";
 import { PayoutPanel } from "@/components/Payouts";
 import { SettlementHistory } from "@/components/SettlementHistory";
 import { VendorHours, PrepCountdown } from "@/components/VendorHours";
+import { VendorOffer } from "@/components/VendorOffer";
 import { supabase } from "@/integrations/supabase/client";
 import { offerToNearestPartner } from "@/lib/dispatch";
 import { inr, STATUS_LABEL } from "@/lib/fees";
