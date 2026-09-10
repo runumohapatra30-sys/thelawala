@@ -56,6 +56,11 @@ function Orders() {
   const [review, setReview] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
 
+  const [statusFilter, setStatusFilter] = useState<StatusValue>("ALL");
+  const [dateFilter, setDateFilter] = useState<DateRange>("ALL");
+  const [paymentFilter, setPaymentFilter] = useState<PaymentMode>("ALL");
+  const [search, setSearch] = useState("");
+
   function orderAgain(o: Row) {
     cart.clear();
     let blocked = false;
