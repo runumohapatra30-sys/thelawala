@@ -284,7 +284,7 @@ function toLocalInput(iso: string | null) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function ThemeController() {
+export function ThemeController() {
   const [cfg, setCfg] = useState<ThemeConfig | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -298,13 +298,16 @@ function ThemeController() {
       temporary_bg_color: cfg.temporary_bg_color || null,
       is_temporary_active: cfg.is_temporary_active,
       temporary_expires_at: cfg.temporary_expires_at || null,
+      header_height_px: cfg.header_height_px || 230,
+      header_bg_image_url: cfg.header_bg_image_url || null,
+      festive_style_active: cfg.festive_style_active,
     };
     const { error } = cfg.id
       ? await supabase.from("app_theme_config").update(payload).eq("id", cfg.id)
       : await supabase.from("app_theme_config").insert(payload);
     setBusy(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Top bar colour applied to the live app.");
+    toast.success("Header design applied to the live app.");
     loadThemeConfig().then(setCfg);
   }
 
@@ -313,9 +316,52 @@ function ThemeController() {
 
   return (
     <section className="card-soft space-y-2 border border-border p-3">
-      <p className="text-sm font-bold">Top header colour</p>
-      <div className="rounded-2xl p-4 text-center text-[12px] font-black" style={{ background: showing }}>
-        Live preview of the header
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-bold">Home header design</p>
+        <button
+          onClick={() => setCfg({ ...cfg, current_bg_color: BRAND_YELLOW, temporary_bg_color: null, is_temporary_active: false, temporary_expires_at: null, header_height_px: 230, header_bg_image_url: null, festive_style_active: false })}
+          className="rounded-full border border-border px-3 py-1 text-[11px] font-bold text-muted-foreground"
+        >
+          Reset default
+        </button>
+      </div>
+      <div
+        className="flex items-end overflow-hidden rounded-2xl bg-cover bg-center p-4 text-[12px] font-black transition-[height]"
+        style={{ backgroundColor: showing, backgroundImage: cfg.header_bg_image_url ? `linear-gradient(color-mix(in srgb, ${showing} 38%, transparent), color-mix(in srgb, ${showing} 68%, transparent)), url(${cfg.header_bg_image_url})` : undefined, height: `${Math.min(190, Math.max(90, (cfg.header_height_px || 230) * 0.52))}px` }}
+      >
+        Live header preview · {cfg.header_height_px || 230}px
+      </div>
+
+      <label className="block">
+        <span className="flex justify-between text-[11px] font-semibold text-muted-foreground"><span>Header height</span><span>{cfg.header_height_px || 230}px</span></span>
+        <input type="range" min={180} max={380} step={5} value={cfg.header_height_px || 230} onChange={(e) => setCfg({ ...cfg, header_height_px: Number(e.target.value) })} className="w-full" />
+      </label>
+
+      <div className="grid grid-cols-2 gap-2">
+        <label className="block">
+          <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">Header background photo</span>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              if (!/^image\/(jpeg|png|webp)$/.test(file.type)) { toast.error("Use a JPG, PNG or WebP picture."); return; }
+              void uploadSectionImage(file).then((up) => {
+                if ("error" in up) toast.error(up.error);
+                else setCfg((current) => current ? { ...current, header_bg_image_url: up.url, festive_style_active: true } : current);
+              });
+            }}
+            className="w-full rounded-xl border border-border px-2 py-2 text-[11px]"
+          />
+        </label>
+        <button
+          onClick={() => setCfg({ ...cfg, header_bg_image_url: null, festive_style_active: false })}
+          disabled={!cfg.header_bg_image_url}
+          className="mt-5 rounded-xl border border-border px-3 py-2 text-[11px] font-bold text-muted-foreground disabled:opacity-40"
+        >
+          Remove photo
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-2">

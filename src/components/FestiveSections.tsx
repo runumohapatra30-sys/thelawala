@@ -48,26 +48,30 @@ function FestiveGrid({ section, onFilter }: { section: HomeSection; onFilter: (v
   const cards = section.cards.filter((c) => c.title || c.image_url).slice(0, 4);
   if (cards.length === 0) return null;
   return (
-    <section className="px-4 pt-6">
-      <div style={bgStyle(section)} className="overflow-hidden rounded-2xl p-4 shadow-md">
-        <p className="text-[17px] font-extrabold leading-tight text-[#1f2937] drop-shadow-sm">{section.title}</p>
+    <section className="pt-5">
+      <div style={bgStyle(section)} className="relative overflow-hidden px-4 pb-5 pt-6 shadow-sm">
+        <div className="mb-4 text-center">
+          <p className="text-[9px] font-black uppercase text-foreground/55">Celebrate</p>
+          <p className="text-[22px] font-black leading-tight text-foreground drop-shadow-sm">{section.title}</p>
         {section.subtitle ? (
-          <p className="mt-0.5 text-[11.5px] font-semibold text-[#1f2937]/75">{section.subtitle}</p>
+            <p className="mt-1 text-[11px] font-semibold text-foreground/65">{section.subtitle}</p>
         ) : null}
-        <div className="mt-3 grid grid-cols-2 gap-3">
+        </div>
+        <div className="grid h-[330px] grid-cols-2 grid-rows-3 gap-3">
           {cards.map((c, n) => (
             <button
               key={n}
               onClick={() => onFilter(c.filter || c.title)}
-              className="press overflow-hidden rounded-2xl bg-card p-2 text-left shadow-md"
+              className={`press relative overflow-hidden rounded-3xl border border-card/60 bg-card/85 text-left shadow-md ${n === 0 ? "row-span-3" : "row-span-1"}`}
             >
               <img
                 src={c.image_url || foodImage(c.title)}
                 alt={c.title}
                 loading="lazy"
-                className="aspect-square w-full rounded-xl object-cover"
+                className="absolute inset-0 h-full w-full object-cover"
               />
-              <p className="mt-2 truncate px-0.5 text-[12px] font-extrabold">{c.title}</p>
+              <span className="absolute inset-x-0 top-0 h-2/3 bg-gradient-to-b from-card via-card/75 to-transparent" />
+              <p className={`relative z-10 px-3 pt-3 font-black leading-tight text-foreground ${n === 0 ? "text-[16px]" : "text-[12px]"}`}>{c.title}</p>
             </button>
           ))}
         </div>
@@ -83,9 +87,9 @@ function FestivePicks({ section, items, onAdd, qtyOf }: Props & { section: HomeS
   if (picks.length === 0) return null;
 
   return (
-    <section className="pt-6">
-      <div style={bgStyle(section)} className="mx-4 overflow-hidden rounded-2xl px-4 py-4 shadow-md">
-        <p className="text-[17px] font-extrabold leading-tight text-[#1f2937] drop-shadow-sm">{section.title}</p>
+    <section className="pt-5">
+      <div style={bgStyle(section)} className="overflow-hidden px-4 py-5 shadow-sm">
+        <p className="text-[20px] font-black leading-tight text-foreground drop-shadow-sm">✦ {section.title}</p>
         {section.subtitle ? (
           <p className="mt-0.5 text-[11.5px] font-semibold text-[#1f2937]/75">{section.subtitle}</p>
         ) : null}
@@ -97,7 +101,7 @@ function FestivePicks({ section, items, onAdd, qtyOf }: Props & { section: HomeS
             const off = Math.max(0, Math.round(mrp - price));
             const qty = qtyOf?.(i.id) ?? 0;
             return (
-              <div key={i.id} className="w-[150px] shrink-0 snap-start rounded-2xl bg-card p-2 shadow-md">
+              <div key={i.id} className="w-[156px] shrink-0 snap-start rounded-2xl border border-border/70 bg-card p-2 shadow-md">
                 <div className="relative">
                   <img
                     src={i.photo_url ?? foodImage(i.name)}
