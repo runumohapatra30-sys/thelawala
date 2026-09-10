@@ -31,23 +31,28 @@ export const Route = createFileRoute("/admin")({
   component: Admin,
 });
 
-type OrderRow = { id: string; code: string; status: string; grand_total: number; delivery_fee: number; platform_fee: number; food_total: number; created_at: string };
+type Tab = "orders" | "settle" | "refunds" | "money" | "people" | "market" | "settings";
 
-
+const TABS: { key: Tab; label: string; Icon: typeof ReceiptText }[] = [
+  { key: "orders", label: "Orders", Icon: ReceiptText },
+  { key: "settle", label: "Settlement", Icon: HandCoins },
+  { key: "refunds", label: "Refunds", Icon: RotateCcw },
+  { key: "money", label: "Money", Icon: IndianRupee },
+  { key: "people", label: "Partners", Icon: Users },
+  { key: "market", label: "Marketing", Icon: Megaphone },
+  { key: "settings", label: "Settings", Icon: SlidersHorizontal },
+];
 
 function Admin() {
   const { user, loading } = useSession();
   const isAdmin = useIsAdmin(user?.id);
   const [s, setS] = useState<Settings | null>(null);
-  const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [refunds, setRefunds] = useState<{ id: string; amount: number; reason: string | null; method: string; status: string }[]>([]);
   const [closures, setClosures] = useState<{ id: string; amount: number; status: string }[]>([]);
   const [saved, setSaved] = useState(false);
-  const [tab, setTab] = useState<"ops" | "marketing" | "studio">("ops");
-  const isSuper = isAdmin;
+  const [tab, setTab] = useState<Tab>("orders");
+  const [studio, setStudio] = useState(false);
 
   const loadMoney = () => {
-    supabase.from("refund_requests").select("id,amount,reason,method,status").eq("status", "PENDING").then(({ data }) => setRefunds(data ?? []));
     supabase.from("wallet_closure_requests").select("id,amount,status").eq("status", "PENDING").then(({ data }) => setClosures(data ?? []));
   };
 
@@ -55,7 +60,6 @@ function Admin() {
     if (!isAdmin) return;
     loadMoney();
     supabase.from("system_settings").select("*").maybeSingle().then(({ data }) => setS(data as Settings));
-    supabase.from("orders").select("id,code,status,grand_total,delivery_fee,platform_fee,food_total,created_at").order("created_at", { ascending: false }).limit(50).then(({ data }) => setOrders((data ?? []) as OrderRow[]));
   }, [isAdmin]);
 
   if (loading) return <Shell><PortalHeader title="Administration" /><ThaliwalaLoader /></Shell>;
@@ -75,10 +79,6 @@ function Admin() {
       </Shell>
     );
   }
-
-  const gmv = orders.reduce((a, o) => a + Number(o.grand_total), 0);
-  const commission = s ? orders.reduce((a, o) => a + (Number(o.food_total) * Number(s.vendor_commission_pct)) / 100, 0) : 0;
-  const feeIncome = orders.reduce((a, o) => a + Number(o.platform_fee), 0);
 
   const num = (k: keyof Settings, label: string) =>
     s ? (
@@ -107,39 +107,96 @@ function Admin() {
 
   return (
     <Shell>
-      <PortalHeader title="Administration" subtitle="Fees, approvals and earnings" />
+      <PortalHeader title="Administration" subtitle="Orders, settlement, refunds and earnings" />
       <div className="space-y-3 p-4">
-        <div className="grid grid-cols-3 gap-2">
-          <Stat label="Orders" value={String(orders.length)} />
-          <Stat label="Sales" value={inr(Math.round(gmv))} />
-          <Stat label="Platform earning" value={inr(Math.round(commission + feeIncome))} />
+        <div className="grid grid-cols-4 gap-2">
+          {TABS.map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`flex flex-col items-center gap-1 rounded-2xl border px-1 py-2.5 text-[10px] font-bold ${
+                tab === key ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </button>
+          ))}
         </div>
 
-        <RevenueSplit />
-
-        {isSuper ? (
-          <div className="grid grid-cols-3 gap-2">
-            {([["ops", "Operations"], ["marketing", "Banner & marketing"], ["studio", "Visual Page Studio"]] as const).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setTab(key)}
-                className={`rounded-xl border px-2 py-2.5 text-[13px] font-bold ${tab === key ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        {tab === "orders" ? (
+          <>
+            <AdminOrdersSection />
+            <LiveOrders />
+          </>
         ) : null}
 
-        {isSuper && tab === "studio" ? <PageStudio /> : isSuper && tab === "marketing" ? <MarketingManager /> : (
-        <>
-        <SystemHealthCard />
-        <AdminReports />
+        {tab === "settle" ? (
+          <>
+            <AdminSettlement />
+            <CashRemittances />
+            <PayoutQueue />
+          </>
+        ) : null}
 
+        {tab === "refunds" ? (
+          <>
+            <AdminRefunds />
+            <section className="card-soft border border-border p-3">
+              <p className="text-sm font-bold">Wallet closure requests</p>
+              {closures.length === 0 ? <p className="mt-1 text-xs text-muted-foreground">Nothing pending.</p> : null}
+              {closures.map((c) => (
+                <div key={c.id} className="mt-2 flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold">Return {inr(Number(c.amount))}</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => { await supabase.rpc("decide_wallet_closure", { _request_id: c.id, _approve: true }); loadMoney(); }}
+                      className="rounded-lg border border-primary px-3 py-1 text-xs font-bold text-primary"
+                    >
+                      Paid &amp; close
+                    </button>
+                    <button
+                      onClick={async () => { await supabase.rpc("decide_wallet_closure", { _request_id: c.id, _approve: false }); loadMoney(); }}
+                      className="rounded-lg border border-border px-3 py-1 text-xs font-bold text-muted-foreground"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </section>
+          </>
+        ) : null}
 
+        {tab === "money" ? (
+          <>
+            <RevenueSplit />
+            <AdminReports />
+            <SystemHealthCard />
+          </>
+        ) : null}
 
+        {tab === "people" ? (
+          <>
+            <AdminApprovals />
+            <SupportQueue adminId={user.id} />
+            <CustomerManager />
+          </>
+        ) : null}
 
-        {s ? (
+        {tab === "market" ? (
+          <>
+            <button
+              onClick={() => setStudio((v) => !v)}
+              className="w-full rounded-xl border border-primary py-2.5 text-xs font-black text-primary"
+            >
+              {studio ? "← Back to banners & campaigns" : "Open Visual Page Studio"}
+            </button>
+            {studio ? <PageStudio /> : <MarketingManager />}
+          </>
+        ) : null}
+
+        {tab === "settings" && s ? (
           <>
             <section className="card-soft space-y-2 border border-border p-3">
               <p className="text-sm font-bold">Delivery fee rule</p>
@@ -206,9 +263,7 @@ function Admin() {
             </section>
 
             <CashfreeKeys />
-
             <PayuKeys />
-
 
             <button
               onClick={async () => {
@@ -219,104 +274,15 @@ function Admin() {
             >
               {saved ? "Settings saved" : "Save settings"}
             </button>
+
+            <CouponManager />
           </>
         ) : null}
-
-        <AdminApprovals />
-
-        <SupportQueue adminId={user.id} />
-
-        <CashRemittances />
-        <PayoutQueue />
-        <LiveOrders />
-        <CustomerManager />
-
-        <section className="card-soft border border-border p-3">
-          <p className="text-sm font-bold">Refund requests</p>
-          {refunds.length === 0 ? <p className="mt-1 text-xs text-muted-foreground">Nothing pending.</p> : null}
-          {refunds.map((r) => (
-            <div key={r.id} className="mt-2 flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold">{inr(Number(r.amount))} · {r.method === "WALLET" ? "To wallet" : "To bank"}</p>
-                <p className="truncate text-[11px] text-muted-foreground">{r.reason ?? "No reason given"}</p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={async () => {
-                    await supabase.rpc("decide_refund", { _request_id: r.id, _approve: true });
-                    loadMoney();
-                  }}
-                  className="rounded-lg border border-primary px-3 py-1 text-xs font-bold text-primary"
-                >
-                  Approve
-                </button>
-                <button
-                  onClick={async () => {
-                    await supabase.rpc("decide_refund", { _request_id: r.id, _approve: false });
-                    loadMoney();
-                  }}
-                  className="rounded-lg border border-border px-3 py-1 text-xs font-bold text-muted-foreground"
-                >
-                  Reject
-                </button>
-              </div>
-            </div>
-          ))}
-        </section>
-
-        <section className="card-soft border border-border p-3">
-          <p className="text-sm font-bold">Wallet closure requests</p>
-          {closures.length === 0 ? <p className="mt-1 text-xs text-muted-foreground">Nothing pending.</p> : null}
-          {closures.map((c) => (
-            <div key={c.id} className="mt-2 flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold">Return {inr(Number(c.amount))}</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={async () => {
-                    await supabase.rpc("decide_wallet_closure", { _request_id: c.id, _approve: true });
-                    loadMoney();
-                  }}
-                  className="rounded-lg border border-primary px-3 py-1 text-xs font-bold text-primary"
-                >
-                  Paid &amp; close
-                </button>
-                <button
-                  onClick={async () => {
-                    await supabase.rpc("decide_wallet_closure", { _request_id: c.id, _approve: false });
-                    loadMoney();
-                  }}
-                  className="rounded-lg border border-border px-3 py-1 text-xs font-bold text-muted-foreground"
-                >
-                  Reject
-                </button>
-              </div>
-            </div>
-          ))}
-        </section>
-
-        <CouponManager />
-
-        <section className="card-soft border border-border p-3">
-          <p className="text-sm font-bold">Recent orders</p>
-          <div className="mt-2 space-y-2">
-            {orders.map((o) => (
-              <div key={o.id} className="flex items-center justify-between text-sm">
-                <div>
-                  <p className="font-semibold">#{o.code}</p>
-                  <p className="text-[11px] text-muted-foreground">{STATUS_LABEL[o.status] ?? o.status}</p>
-                </div>
-                <p className="font-bold">{inr(Number(o.grand_total))}</p>
-              </div>
-            ))}
-            {orders.length === 0 ? <p className="text-xs text-muted-foreground">No orders yet.</p> : null}
-          </div>
-        </section>
-        </>
-        )}
       </div>
     </Shell>
   );
 }
+
 
 function CouponManager() {
   const [rows, setRows] = useState<Coupon[]>([]);
