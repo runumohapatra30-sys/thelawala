@@ -161,7 +161,8 @@ function Cart() {
   const gate = vendor && coords ? checkoutGate(distanceKm, baseTotal) : ({ ok: true } as const);
   const blockedReason = gate.ok ? null : gate.reason;
   // No automatic MRP discount any more: a discount exists only when the stall runs its own offer.
-  const bill = settings ? computeBill({ settings, foodTotal, mrpTotal: foodTotal, distanceKm }) : null;
+  const hasLocation = Boolean(vendor && coords);
+  const bill = settings && hasLocation ? computeBill({ settings, foodTotal, mrpTotal: foodTotal, distanceKm }) : null;
   const stallOff = stallOfferDiscount(foodTotal, vendor?.offer_percent);
   const couponOff = coupon ? couponDiscount(coupon, foodTotal) : 0;
   const netTotal = bill ? Math.max(0, Math.round((bill.grandTotal - stallOff - couponOff + tip) * 100) / 100) : 0;
@@ -499,6 +500,20 @@ function Cart() {
                 <span>{inr(payable)}</span>
               </div>
             </dl>
+          ) : !hasLocation ? (
+            <div className="mt-2 space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground">
+                Choose a saved address or use your current location. Your delivery fee is worked out from the exact
+                distance to the stall.
+              </p>
+              <button
+                onClick={() => locate(true)}
+                disabled={locating}
+                className="press w-full rounded-xl bg-primary py-2.5 text-sm font-black text-primary-foreground disabled:opacity-60"
+              >
+                {locating ? "Finding your location…" : "Use my current location"}
+              </button>
+            </div>
           ) : (
             <p className="mt-2 text-xs text-muted-foreground">Loading charges…</p>
           )}
