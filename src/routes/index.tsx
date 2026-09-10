@@ -495,15 +495,12 @@ function Home() {
       <main className="flex min-w-0 flex-col gap-4 overflow-x-hidden">
         {topBarTheme?.header_bg_image_url ? (
           <section className="px-5 py-3">
-            <div className="overflow-hidden rounded-2xl bg-muted shadow-sm">
-              <img
-                key={topBarTheme.header_bg_image_url}
-                src={topBarTheme.header_bg_image_url}
-                alt="Thaleewala festive offer"
-                style={{ maxHeight: `${topBarTheme.header_height_px || 220}px` }}
-                className="festive-header-photo block h-auto w-full rounded-2xl object-contain shadow-sm"
-              />
-            </div>
+            <img
+              key={topBarTheme.header_bg_image_url}
+              src={topBarTheme.header_bg_image_url}
+              alt="Thaleewala festive offer"
+              className="festive-header-photo block h-auto w-full rounded-2xl shadow-sm"
+            />
           </section>
         ) : null}
         {vendors.length > 0 ? (
