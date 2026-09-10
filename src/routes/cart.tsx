@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cart, cartTotals, useCart } from "@/lib/cart";
 import { couponDiscount, findCoupon, listCoupons, type Coupon } from "@/lib/coupons";
 import { computeBill, haversineKm, inr, type Settings } from "@/lib/fees";
-import { checkoutGate, minimumOrderValue } from "@/lib/pricing";
+import { checkoutGate, minimumOrderValue, stallOfferDiscount } from "@/lib/pricing";
 import { startOnlinePayment } from "@/lib/checkout";
 import { useSession } from "@/lib/session";
 
@@ -31,7 +31,7 @@ function Cart() {
   const navigate = useNavigate();
   const { user } = useSession();
   const lines = useCart();
-  const { foodTotal, mrpTotal, baseTotal } = cartTotals(lines);
+  const { foodTotal, baseTotal } = cartTotals(lines);
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [vendor, setVendor] = useState<{ id: string; stall_name: string; lat: number; lng: number; offer_percent: number | null; offer_label: string | null } | null>(null);
