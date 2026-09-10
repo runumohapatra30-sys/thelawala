@@ -61,7 +61,7 @@ export function useHomeSections() {
     const onVisible = () => { if (document.visibilityState === "visible") pull(); };
     document.addEventListener("visibilitychange", onVisible);
     const channel = supabase
-      .channel("home-dynamic-sections")
+      .channel(`home-dynamic-sections-${Math.random().toString(36).slice(2, 8)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "home_dynamic_sections" }, pull)
       .subscribe();
     return () => {

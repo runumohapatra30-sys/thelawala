@@ -17,7 +17,8 @@ import { VoiceSearch } from "@/components/VoiceSearch";
 import { DynamicAssetBanner } from "@/components/DynamicAssetBanner";
 import { DynamicBanners } from "@/components/DynamicBanners";
 import { DynamicPageRenderer, type SectionRegistry } from "@/components/DynamicPageRenderer";
-import { FestiveSections } from "@/components/FestiveSections";
+import { FestiveHero, FestiveSections } from "@/components/FestiveSections";
+import { useHomeSections } from "@/lib/homeSections";
 import { FestivePhotoStrip } from "@/components/FestivePhotoStrip";
 import { activeThemeColor, useTopBarTheme } from "@/lib/appTheme";
 import { Bike, Gift, Heart, Utensils, Wallet, X, Zap } from "lucide-react";
@@ -82,6 +83,9 @@ function Home() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const topBarTheme = useTopBarTheme();
   const topBarColor = activeThemeColor(topBarTheme);
+  const homeSections = useHomeSections();
+  const festiveTheme = homeSections.find((s) => s.section_type === "FESTIVE_GRID_4" && s.cards.some((c) => c.title || c.image_url)) ?? null;
+  const otherSections = festiveTheme ? homeSections.filter((s) => s.id !== festiveTheme.id) : homeSections;
 
   useEffect(() => {
     activeCampaign().then(setCampaign);
@@ -182,6 +186,7 @@ function Home() {
     festive_photos: () => <FestivePhotoStrip />,
     festive_sections: () => (
       <FestiveSections
+        sections={otherSections}
         items={items}
         onFilter={(v) => { setQ(v); setActive(null); setVendorFilter(null); }}
         onAdd={(id) => { const it = items.find((x) => x.id === id); if (it) add(it); }}
@@ -345,8 +350,14 @@ function Home() {
   return (
     <Shell>
       <header
-        style={{ backgroundColor: topBarColor }}
-        className="relative z-20 flex min-w-0 flex-col gap-4 overflow-hidden px-5 pb-4 pt-4 text-brand-foreground shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)] transition-colors duration-500"
+        style={
+          festiveTheme
+            ? festiveTheme.bg_image_url
+              ? { backgroundImage: `url(${festiveTheme.bg_image_url})`, backgroundSize: "cover", backgroundPosition: "center" }
+              : { background: festiveTheme.bg_color || topBarColor }
+            : { backgroundColor: topBarColor }
+        }
+        className={`relative z-20 flex min-w-0 flex-col gap-4 overflow-hidden px-5 pb-4 pt-4 text-brand-foreground shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)] transition-colors duration-500 ${festiveTheme ? "rounded-b-[2.5rem] pb-6" : ""}`}
       >
         <div className="pointer-events-none absolute inset-0 brand-header" />
 
@@ -431,7 +442,11 @@ function Home() {
           />
         </div>
 
-        {topBarTheme?.festive_style_active && campaign?.title ? (
+        {festiveTheme ? (
+          <div className="relative z-10 min-w-0 pt-1">
+            <FestiveHero section={festiveTheme} onFilter={(v) => { setQ(v); setActive(null); setVendorFilter(null); }} />
+          </div>
+        ) : topBarTheme?.festive_style_active && campaign?.title ? (
           <div className="relative z-10 min-w-0">
             <div className="mb-1 flex items-center gap-2 text-brand">
               <span className="h-0.5 w-6 rounded-full bg-brand" />

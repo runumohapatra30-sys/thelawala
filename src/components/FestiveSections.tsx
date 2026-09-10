@@ -78,6 +78,30 @@ function GridCardButton({
   );
 }
 
+/** Bare festive grid (no own background/padding) for rendering inside the themed top header. */
+export function FestiveHero({ section, onFilter }: { section: HomeSection; onFilter: (v: string) => void }) {
+  const cards = section.cards.filter((c) => c.title || c.image_url).slice(0, 4);
+  if (cards.length === 0) return null;
+  const [first, ...rest] = cards;
+  return (
+    <div className="min-w-0">
+      <div className="mb-3 text-center">
+        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-foreground/60">Celebrate</p>
+        <p className="text-[22px] font-black leading-tight text-foreground drop-shadow-sm">{section.title}</p>
+        {section.subtitle ? (
+          <p className="mt-1 text-[11px] font-semibold text-foreground/70">{section.subtitle}</p>
+        ) : null}
+      </div>
+      <div className="grid h-auto grid-cols-2 auto-rows-auto items-stretch gap-3">
+        {first ? <GridCardButton card={first} tall onFilter={onFilter} /> : null}
+        {rest.map((c, n) => (
+          <GridCardButton key={n} card={c} wide={n === 2} onFilter={onFilter} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function FestiveGrid({ section, onFilter }: { section: HomeSection; onFilter: (v: string) => void }) {
   const cards = section.cards.filter((c) => c.title || c.image_url).slice(0, 4);
   if (cards.length === 0) return null;
