@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { SectionList } from "@/components/DynamicPageRenderer";
 import { usePageLayout } from "@/lib/pageLayout";
 import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
+import { PRICE_MARKUP, VENDOR_PAYOUT_RATE } from "@/lib/pricing";
 
 export const Route = createFileRoute("/_authenticated/vendor")({
   head: () => ({
@@ -79,7 +80,7 @@ function VendorPortal() {
   const [dishSaving, setDishSaving] = useState(false);
   const [dishOpen, setDishOpen] = useState(false);
   const [slip, setSlip] = useState<Order | null>(null);
-  const [today, setToday] = useState({ orders: 0, sales: 0, rating: 0 });
+  const [today, setToday] = useState({ orders: 0, sales: 0, earning: 0, rating: 0 });
 
   const newOrders = orders.filter((o) => o.status === "ORDER_PLACED");
   const pending = newOrders.length;
