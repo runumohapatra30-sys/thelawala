@@ -55,7 +55,7 @@ function GridCardButton({
   tall?: boolean;
   wide?: boolean;
   onFilter: (v: string) => void;
-  cardClass?: string;
+  cardClass?: string | undefined;
 }) {
   return (
     <button
@@ -88,7 +88,7 @@ export function FestiveHero({
 }: {
   section: HomeSection;
   onFilter: (v: string) => void;
-  cardClass?: string;
+  cardClass?: string | undefined;
 }) {
   const cards = section.cards.filter((c) => c.title || c.image_url).slice(0, 4);
   if (cards.length === 0) return null;
