@@ -63,9 +63,9 @@ function GridCardButton({
       className={`press flex min-w-0 flex-col gap-2 overflow-hidden rounded-3xl p-3 text-left shadow-md ${cardClass ?? "border border-card/60 bg-card/85"} ${tall ? "row-span-2" : ""} ${wide ? "col-span-2" : ""}`}
     >
       <div className="min-w-0">
-        <p className={`font-black leading-tight text-foreground ${tall ? "text-[16px]" : "text-[12.5px]"}`}>{card.title}</p>
+        <p className={`font-black leading-tight ${cardClass ? "" : "text-foreground"} ${tall ? "text-[16px]" : "text-[12.5px]"}`}>{card.title}</p>
         {card.tag ? (
-          <span className="mt-1 inline-block rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-black text-primary">
+          <span className="mt-1 inline-block rounded-md bg-current/15 px-1.5 py-0.5 text-[10px] font-black opacity-90">
             {card.tag}
           </span>
         ) : null}
@@ -81,23 +81,31 @@ function GridCardButton({
 }
 
 /** Bare festive grid (no own background/padding) for rendering inside the themed top header. */
-export function FestiveHero({ section, onFilter }: { section: HomeSection; onFilter: (v: string) => void }) {
+export function FestiveHero({
+  section,
+  onFilter,
+  cardClass,
+}: {
+  section: HomeSection;
+  onFilter: (v: string) => void;
+  cardClass?: string;
+}) {
   const cards = section.cards.filter((c) => c.title || c.image_url).slice(0, 4);
   if (cards.length === 0) return null;
   const [first, ...rest] = cards;
   return (
     <div className="min-w-0">
       <div className="mb-3 text-center">
-        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-foreground/60">Celebrate</p>
-        <p className="text-[22px] font-black leading-tight text-foreground drop-shadow-sm">{section.title}</p>
+        <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-70">Celebrate</p>
+        <p className="text-[22px] font-black leading-tight drop-shadow-sm">{section.title}</p>
         {section.subtitle ? (
-          <p className="mt-1 text-[11px] font-semibold text-foreground/70">{section.subtitle}</p>
+          <p className="mt-1 text-[11px] font-semibold opacity-80">{section.subtitle}</p>
         ) : null}
       </div>
       <div className="grid h-auto grid-cols-2 auto-rows-auto items-stretch gap-3">
-        {first ? <GridCardButton card={first} tall onFilter={onFilter} /> : null}
+        {first ? <GridCardButton card={first} tall onFilter={onFilter} cardClass={cardClass} /> : null}
         {rest.map((c, n) => (
-          <GridCardButton key={n} card={c} wide={n === 2} onFilter={onFilter} />
+          <GridCardButton key={n} card={c} wide={n === 2} onFilter={onFilter} cardClass={cardClass} />
         ))}
       </div>
     </div>
