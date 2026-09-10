@@ -185,6 +185,9 @@ export type Database = {
       app_theme_config: {
         Row: {
           current_bg_color: string
+          festive_style_active: boolean
+          header_bg_image_url: string | null
+          header_height_px: number
           id: string
           is_temporary_active: boolean
           temporary_bg_color: string | null
@@ -193,6 +196,9 @@ export type Database = {
         }
         Insert: {
           current_bg_color?: string
+          festive_style_active?: boolean
+          header_bg_image_url?: string | null
+          header_height_px?: number
           id?: string
           is_temporary_active?: boolean
           temporary_bg_color?: string | null
@@ -201,6 +207,9 @@ export type Database = {
         }
         Update: {
           current_bg_color?: string
+          festive_style_active?: boolean
+          header_bg_image_url?: string | null
+          header_height_px?: number
           id?: string
           is_temporary_active?: boolean
           temporary_bg_color?: string | null

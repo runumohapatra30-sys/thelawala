@@ -12,6 +12,7 @@ import {
   type SectionConfig,
   type TargetApp,
 } from "@/lib/pageLayout";
+import { ThemeController } from "@/components/AdminDynamicLayout";
 
 
 const APPS: { key: TargetApp; label: string }[] = [
@@ -150,6 +151,8 @@ export function PageStudio() {
       <p className="text-[11px] text-muted-foreground">
         Drag a block up or down inside the phone to reorder it. Tap a block to change its settings.
       </p>
+
+      {app === "customer" && page === "home" ? <ThemeController /> : null}
 
       <div className="space-y-2 rounded-2xl border border-primary/30 bg-primary/5 p-3">
         <p className="text-xs font-bold">AI UI Copilot · ଯେକୌଣସି ପେଜ୍ ପାଇଁ</p>

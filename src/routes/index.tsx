@@ -17,7 +17,7 @@ import { DynamicAssetBanner } from "@/components/DynamicAssetBanner";
 import { DynamicBanners } from "@/components/DynamicBanners";
 import { DynamicPageRenderer, type SectionRegistry } from "@/components/DynamicPageRenderer";
 import { FestiveSections } from "@/components/FestiveSections";
-import { useTopBarColor } from "@/lib/appTheme";
+import { activeThemeColor, useTopBarTheme } from "@/lib/appTheme";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -77,7 +77,8 @@ function Home() {
   const [unread, setUnread] = useState(0);
   const [vendorFilter, setVendorFilter] = useState<string | null>(null);
   const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const topBarColor = useTopBarColor();
+  const topBarTheme = useTopBarTheme();
+  const topBarColor = activeThemeColor(topBarTheme);
 
   useEffect(() => {
     activeCampaign().then(setCampaign);
@@ -332,15 +333,21 @@ function Home() {
   return (
     <Shell>
       <header
-        style={{ background: topBarColor }}
-        className="brand-header sticky top-0 z-30 rounded-b-[2.75rem] px-5 pb-5 pt-5 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)]"
+        style={{
+          backgroundColor: topBarColor,
+          backgroundImage: topBarTheme?.header_bg_image_url
+            ? `linear-gradient(color-mix(in srgb, ${topBarColor} 42%, transparent), color-mix(in srgb, ${topBarColor} 72%, transparent)), url(${topBarTheme.header_bg_image_url})`
+            : undefined,
+          minHeight: `${topBarTheme?.header_height_px ?? 230}px`,
+        }}
+        className={`brand-header sticky top-0 z-30 bg-cover bg-center px-5 pb-4 pt-4 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)] transition-[min-height,background] duration-300 ${topBarTheme?.festive_style_active ? "rounded-b-[2rem]" : "rounded-b-[2.75rem]"}`}
       >
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
           <Link to="/cart" className="min-w-0 text-left">
             <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] opacity-80">
               <span className="live-dot" /> Live · Delivery in
             </p>
-            <p className="text-[22px] font-extrabold leading-tight">15–20 minutes</p>
+            <p className="text-[24px] font-extrabold leading-tight">15–20 minutes</p>
             <p className="mt-1 flex items-center gap-1 text-xs font-semibold opacity-80">
               <span className="truncate">{address ?? "Bhubaneswar · set your address"}</span>
               <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.6">
@@ -392,7 +399,7 @@ function Home() {
           </div>
         </div>
 
-        <div className="relative mt-4 flex items-center gap-2.5 rounded-3xl bg-card px-4 py-3.5 shadow-[0_14px_30px_-18px_rgba(15,23,42,0.5)]">
+        <div className="relative mt-4 flex items-center gap-2.5 rounded-2xl bg-card px-4 py-3 shadow-[0_14px_30px_-18px_rgba(15,23,42,0.5)]">
           <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2.2">
             <circle cx="11" cy="11" r="6.5" /><path d="M16 16l4 4" strokeLinecap="round" />
           </svg>

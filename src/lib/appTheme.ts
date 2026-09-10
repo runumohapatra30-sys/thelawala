@@ -9,9 +9,12 @@ export type ThemeConfig = {
   temporary_bg_color: string | null;
   is_temporary_active: boolean;
   temporary_expires_at: string | null;
+  header_height_px: number;
+  header_bg_image_url: string | null;
+  festive_style_active: boolean;
 };
 
-const COLS = "id,current_bg_color,temporary_bg_color,is_temporary_active,temporary_expires_at";
+const COLS = "id,current_bg_color,temporary_bg_color,is_temporary_active,temporary_expires_at,header_height_px,header_bg_image_url,festive_style_active";
 
 export const THEME_PRESETS: { label: string; color: string }[] = [
   { label: "Brand Yellow", color: BRAND_YELLOW },
@@ -41,6 +44,11 @@ export function activeThemeColor(cfg: ThemeConfig | null): string {
 
 /** Live top-bar colour: realtime on admin changes and auto-reverts when the override expires. */
 export function useTopBarColor(): string {
+  return activeThemeColor(useTopBarTheme());
+}
+
+/** Live top-bar appearance, including the admin-controlled size and picture. */
+export function useTopBarTheme(): ThemeConfig | null {
   const [cfg, setCfg] = useState<ThemeConfig | null>(null);
   const [, tick] = useState(0);
 
@@ -63,5 +71,5 @@ export function useTopBarColor(): string {
     };
   }, []);
 
-  return activeThemeColor(cfg);
+  return cfg;
 }

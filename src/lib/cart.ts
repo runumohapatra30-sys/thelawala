@@ -16,6 +16,7 @@ export type CartLine = {
 const KEY = "thaleewala.cart.v3";
 let lines: CartLine[] = [];
 const listeners = new Set<() => void>();
+const EMPTY_CART: CartLine[] = [];
 
 if (typeof window !== "undefined") {
   try {
@@ -45,7 +46,7 @@ export function useCart(): CartLine[] {
       return () => listeners.delete(l);
     },
     () => lines,
-    () => [],
+    () => EMPTY_CART,
   );
 }
 
