@@ -20,7 +20,7 @@ import { DynamicPageRenderer, type SectionRegistry } from "@/components/DynamicP
 import { FestiveHero, FestiveSections } from "@/components/FestiveSections";
 import { useHomeSections } from "@/lib/homeSections";
 import { FestivePhotoStrip } from "@/components/FestivePhotoStrip";
-import { activeThemeColor, useTopBarTheme } from "@/lib/appTheme";
+import { activeThemeColor, themeStyle, useTopBarTheme } from "@/lib/appTheme";
 import { Bike, Gift, Heart, Utensils, Wallet, X, Zap } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -83,6 +83,8 @@ function Home() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const topBarTheme = useTopBarTheme();
   const topBarColor = activeThemeColor(topBarTheme);
+  const theme = themeStyle(topBarTheme?.theme_token);
+  const isDefaultTheme = theme.token === "DEFAULT_YELLOW";
   const homeSections = useHomeSections();
   const festiveTheme = homeSections.find((s) => s.section_type === "FESTIVE_GRID_4" && s.cards.some((c) => c.title || c.image_url)) ?? null;
   const otherSections = festiveTheme ? homeSections.filter((s) => s.id !== festiveTheme.id) : homeSections;
@@ -350,16 +352,10 @@ function Home() {
   return (
     <Shell>
       <header
-        style={
-          festiveTheme
-            ? festiveTheme.bg_image_url
-              ? { backgroundImage: `url(${festiveTheme.bg_image_url})`, backgroundSize: "cover", backgroundPosition: "center" }
-              : { background: festiveTheme.bg_color || topBarColor }
-            : { backgroundColor: topBarColor }
-        }
-        className={`relative z-20 flex min-w-0 flex-col gap-4 overflow-hidden px-5 pb-4 pt-4 text-brand-foreground shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)] transition-colors duration-500 ${festiveTheme ? "rounded-b-[2.5rem] pb-6" : ""}`}
+        style={isDefaultTheme ? { backgroundColor: topBarColor } : undefined}
+        className={`relative z-20 flex min-w-0 flex-col gap-4 overflow-hidden rounded-b-[2rem] px-5 pb-6 pt-4 shadow-sm transition-colors duration-500 ${theme.wrapper}`}
       >
-        <div className="pointer-events-none absolute inset-0 brand-header" />
+        {isDefaultTheme ? <div className="pointer-events-none absolute inset-0 brand-header" /> : null}
 
         <div className="relative z-10 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2 sm:gap-3">
           <Link to="/cart" className="min-w-0 text-left">
@@ -444,7 +440,11 @@ function Home() {
 
         {festiveTheme ? (
           <div className="relative z-10 min-w-0 pt-1">
-            <FestiveHero section={festiveTheme} onFilter={(v) => { setQ(v); setActive(null); setVendorFilter(null); }} />
+            <FestiveHero
+              section={festiveTheme}
+              cardClass={theme.card}
+              onFilter={(v) => { setQ(v); setActive(null); setVendorFilter(null); }}
+            />
           </div>
         ) : topBarTheme?.festive_style_active && campaign?.title ? (
           <div className="relative z-10 min-w-0">
@@ -495,15 +495,12 @@ function Home() {
       <main className="flex min-w-0 flex-col gap-4 overflow-x-hidden">
         {topBarTheme?.header_bg_image_url ? (
           <section className="px-5 py-3">
-            <div className="overflow-hidden rounded-2xl bg-muted shadow-sm">
-              <img
-                key={topBarTheme.header_bg_image_url}
-                src={topBarTheme.header_bg_image_url}
-                alt="Thaleewala festive offer"
-                style={{ maxHeight: `${topBarTheme.header_height_px || 220}px` }}
-                className="festive-header-photo block h-auto w-full rounded-2xl object-contain shadow-sm"
-              />
-            </div>
+            <img
+              key={topBarTheme.header_bg_image_url}
+              src={topBarTheme.header_bg_image_url}
+              alt="Thaleewala festive offer"
+              className="festive-header-photo block h-auto w-full rounded-2xl shadow-sm"
+            />
           </section>
         ) : null}
         {vendors.length > 0 ? (

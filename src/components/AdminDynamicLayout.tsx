@@ -13,8 +13,10 @@ import { AdminFestivePhotos } from "@/components/AdminFestivePhotos";
 import {
   BRAND_YELLOW,
   THEME_PRESETS,
+  THEME_TOKENS,
   activeThemeColor,
   loadThemeConfig,
+  themeStyle,
   type ThemeConfig,
 } from "@/lib/appTheme";
 
@@ -314,6 +316,7 @@ export function ThemeController() {
     if (!cfg) return;
     setBusy(true);
     const payload = {
+      theme_token: cfg.theme_token ?? "DEFAULT_YELLOW",
       current_bg_color: cfg.current_bg_color || BRAND_YELLOW,
       temporary_bg_color: cfg.temporary_bg_color || null,
       is_temporary_active: cfg.is_temporary_active,
@@ -333,6 +336,21 @@ export function ThemeController() {
 
   if (!cfg) return null;
   const showing = activeThemeColor(cfg);
+  const look = themeStyle(cfg.theme_token);
+  const isDefaultLook = look.token === "DEFAULT_YELLOW";
+
+  async function pickTheme(token: (typeof THEME_TOKENS)[number]["token"]) {
+    if (!cfg) return;
+    setCfg({ ...cfg, theme_token: token });
+    setBusy(true);
+    const { error } = cfg.id
+      ? await supabase.from("app_theme_config").update({ theme_token: token }).eq("id", cfg.id)
+      : await supabase.from("app_theme_config").insert({ theme_token: token });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Home theme applied to every app.");
+    loadThemeConfig().then(setCfg);
+  }
 
   return (
     <section className="card-soft space-y-2 border border-border p-3">
@@ -345,44 +363,52 @@ export function ThemeController() {
           Reset default
         </button>
       </div>
+      <div className="grid grid-cols-3 gap-2">
+        {THEME_TOKENS.map((t) => (
+          <button
+            key={t.token}
+            disabled={busy}
+            onClick={() => void pickTheme(t.token)}
+            className={`rounded-2xl border p-2 text-[11px] font-bold ${cfg.theme_token === t.token ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+          >
+            <span style={{ background: t.swatch }} className="mb-1 block h-8 w-full rounded-xl" />
+            {t.label}
+          </button>
+        ))}
+      </div>
+
       <div className="flex min-w-0 flex-col gap-3 rounded-2xl border border-border bg-background p-3">
-        <div style={{ backgroundColor: showing }} className="brand-header rounded-xl p-3 text-brand-foreground">
+        <div
+          style={isDefaultLook ? { backgroundColor: showing } : undefined}
+          className={`rounded-xl p-3 ${isDefaultLook ? "brand-header text-brand-foreground" : look.wrapper}`}
+        >
           <p className="text-[9px] font-black uppercase tracking-[0.18em] opacity-80">Thaleewala · Delivering in</p>
           <p className="text-xl font-extrabold">15–20 minutes</p>
           <p className="truncate text-[10px] font-semibold opacity-80">HOME · Bhubaneswar</p>
           <div className="mt-3 rounded-xl bg-card px-3 py-2 text-[11px] font-semibold text-card-foreground shadow-lg">⌕ Search “dahi bara”</div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {[0, 1].map((n) => (
+              <span key={n} className={`h-10 rounded-xl ${look.card}`} />
+            ))}
+          </div>
         </div>
         {cfg.header_bg_image_url ? (
           <img
             src={cfg.header_bg_image_url}
             alt="Festive banner preview"
-            style={{ maxHeight: `${cfg.header_height_px || 220}px` }}
-            className="block h-auto w-full rounded-2xl object-contain"
+            className="block h-auto w-full rounded-2xl"
           />
         ) : (
-          <div
-            style={{ height: `${cfg.header_height_px || 220}px` }}
-            className="grid place-items-center rounded-2xl bg-muted text-xs font-semibold text-muted-foreground"
-          >
+          <div className="grid h-32 place-items-center rounded-2xl bg-muted text-xs font-semibold text-muted-foreground">
             Festive banner preview
           </div>
         )}
       </div>
 
-      <label className="block">
-        <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">
-          Festive banner size · {cfg.header_height_px || 220}px
-        </span>
-        <input
-          type="range"
-          min={100}
-          max={420}
-          step={10}
-          value={cfg.header_height_px || 220}
-          onChange={(e) => setCfg({ ...cfg, header_height_px: Number(e.target.value) })}
-          className="w-full"
-        />
-      </label>
+      <p className="text-[11px] font-semibold text-muted-foreground">
+        The festive photo now sizes itself to its own shape, so nothing gets cut off.
+      </p>
+
 
       <div className="grid grid-cols-2 gap-2">
         <label className="block">

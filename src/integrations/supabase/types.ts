@@ -198,6 +198,7 @@ export type Database = {
           is_temporary_active: boolean
           temporary_bg_color: string | null
           temporary_expires_at: string | null
+          theme_token: string
           updated_at: string
         }
         Insert: {
@@ -209,6 +210,7 @@ export type Database = {
           is_temporary_active?: boolean
           temporary_bg_color?: string | null
           temporary_expires_at?: string | null
+          theme_token?: string
           updated_at?: string
         }
         Update: {
@@ -220,6 +222,7 @@ export type Database = {
           is_temporary_active?: boolean
           temporary_bg_color?: string | null
           temporary_expires_at?: string | null
+          theme_token?: string
           updated_at?: string
         }
         Relationships: []
