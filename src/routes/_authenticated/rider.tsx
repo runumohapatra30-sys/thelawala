@@ -3,6 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { LogoutButton, Shell } from "@/components/Shell";
 import { PayoutPanel } from "@/components/Payouts";
 import { CashSettlement } from "@/components/CashSettlement";
+import { RiderEarningsBreakdown } from "@/components/RiderEarningsBreakdown";
+import { SettlementHistory } from "@/components/SettlementHistory";
+import { splitOrder } from "@/lib/settlement";
 import { OrderChat } from "@/components/OrderChat";
 
 import { LiveMap } from "@/components/LiveMap";
@@ -39,6 +42,7 @@ type Order = {
   drop_lat: number; drop_lng: number; vendor_id: string; partner_id: string | null;
   offered_to: string | null; offer_expires_at: string | null; rejected_partner_ids: string[];
   payment_mode: string; payment_status: string;
+  food_total?: number; base_food_total?: number | null;
   cancel_otp?: string | null; cancel_reason?: string | null;
 };
 
@@ -1150,6 +1154,7 @@ function OfferDrawer({
   const left = Math.min(secs, total);
   const pct = (left / total) * 100;
   const pickupKm = pos ? haversineKm(pos, { lat: Number(vendor.lat), lng: Number(vendor.lng) }) : null;
+  const pay = splitOrder(offer as never);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50">
       <div className="w-full max-w-[480px] rounded-t-3xl bg-card p-4 pb-6">
@@ -1179,9 +1184,15 @@ function OfferDrawer({
           </div>
           <div className="rounded-xl bg-brand-soft p-2">
             <p className="text-[10px] font-bold uppercase text-muted-foreground">You earn</p>
-            <p className="text-sm font-extrabold">{inr(Number(offer.delivery_fee))}</p>
+            <p className="text-sm font-extrabold">{inr(Math.round(pay.riderTotal))}</p>
           </div>
         </div>
+
+        <p className="mt-2 rounded-xl bg-muted/60 px-3 py-2 text-[11px] font-semibold">
+          Delivery fee {inr(Math.round(pay.riderFee))}
+          {pay.riderTip > 0 ? ` · Tip ${inr(Math.round(pay.riderTip))}` : ""}
+          {pay.riderGift > 0 ? ` · Gift bonus ${inr(Math.round(pay.riderGift))}` : ""}
+        </p>
 
         <div className="mt-4">
           <RiderOrderSwipe secs={secs} total={total} onAccept={onAccept} onDecline={onDecline} />
