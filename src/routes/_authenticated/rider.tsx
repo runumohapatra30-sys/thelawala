@@ -189,30 +189,35 @@ function RiderPortal() {
         setOffer(null);
       }
 
+      const MONEY = "delivery_fee,tip_amount,food_total,base_food_total,distance_km,grand_total,status,payment_mode";
+      const riderPay = (rows: unknown[] | null) =>
+        (rows ?? []).reduce((a, d) => a + splitOrder(d as never).riderTotal, 0);
+
       const since = new Date();
       since.setHours(0, 0, 0, 0);
       const { data: done } = await supabase.from("orders")
-        .select("delivery_fee,tip_amount").eq("partner_id", me.id).eq("status", "DELIVERED")
+        .select(MONEY).eq("partner_id", me.id).eq("status", "DELIVERED")
         .gte("delivered_at", since.toISOString());
       setEarnings({
         trips: done?.length ?? 0,
-        total: (done ?? []).reduce((a, d) => a + Number(d.delivery_fee) + Number(d.tip_amount ?? 0), 0),
+        total: riderPay(done),
       });
 
       const weekStart = new Date();
       weekStart.setDate(weekStart.getDate() - 6);
       weekStart.setHours(0, 0, 0, 0);
       const [{ data: wk }, { data: rates }] = await Promise.all([
-        supabase.from("orders").select("delivery_fee,tip_amount").eq("partner_id", me.id).eq("status", "DELIVERED")
+        supabase.from("orders").select(MONEY).eq("partner_id", me.id).eq("status", "DELIVERED")
           .gte("delivered_at", weekStart.toISOString()),
         supabase.from("order_ratings").select("delivery_stars").eq("partner_id", me.id),
       ]);
       const stars = (rates ?? []).map((r) => Number(r.delivery_stars));
       setWeek({
         trips: wk?.length ?? 0,
-        total: (wk ?? []).reduce((a, d) => a + Number(d.delivery_fee) + Number(d.tip_amount ?? 0), 0),
+        total: riderPay(wk),
         rating: stars.length ? Math.round((stars.reduce((a, b) => a + b, 0) / stars.length) * 10) / 10 : 0,
       });
+
     };
     load();
     const t = setInterval(load, 6000);
