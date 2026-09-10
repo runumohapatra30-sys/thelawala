@@ -333,24 +333,12 @@ function Home() {
   return (
     <Shell>
       <header
-        style={{
-          backgroundColor: topBarColor,
-          height: `${topBarTheme?.header_height_px ?? 280}px`,
-        }}
-        className={`relative z-30 overflow-hidden px-5 pb-5 pt-4 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)] transition-[height,background-color] duration-500 ${topBarTheme?.header_bg_image_url ? "text-festive-header-foreground" : "text-brand-foreground"}`}
+        style={{ backgroundColor: topBarColor }}
+        className="relative z-20 flex min-w-0 flex-col gap-4 overflow-hidden px-5 pb-4 pt-4 text-brand-foreground shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)] transition-colors duration-500"
       >
-        {topBarTheme?.header_bg_image_url ? (
-          <img
-            key={topBarTheme.header_bg_image_url}
-            src={topBarTheme.header_bg_image_url}
-            alt=""
-            aria-hidden="true"
-            className="festive-header-photo absolute inset-0 h-full w-full object-cover"
-          />
-        ) : null}
-        <div className={`pointer-events-none absolute inset-0 ${topBarTheme?.header_bg_image_url ? "festive-header-overlay" : "brand-header"}`} />
+        <div className="pointer-events-none absolute inset-0 brand-header" />
 
-        <div className="relative z-10 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+        <div className="relative z-10 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2 sm:gap-3">
           <Link to="/cart" className="min-w-0 text-left">
             <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] opacity-80">
               <span className="live-dot" /> Thaleewala · Delivering in
@@ -363,8 +351,8 @@ function Home() {
               </svg>
             </p>
           </Link>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <InstallAppButton />
+          <div className="flex max-w-[184px] shrink-0 flex-wrap items-center justify-end gap-1.5 sm:max-w-none sm:flex-nowrap">
+            <InstallAppButton className="hidden sm:flex" />
             <Link
               to="/wallet"
               className="press flex items-center gap-1 rounded-full px-2.5 py-2 text-[11px] font-extrabold festive-glass-chip"
@@ -407,7 +395,7 @@ function Home() {
           </div>
         </div>
 
-        <div className="relative z-10 mt-5 flex items-center gap-2.5 rounded-2xl bg-card px-4 py-3.5 text-card-foreground shadow-[0_18px_38px_-18px_rgba(15,23,42,0.65)] ring-1 ring-border/70">
+        <div className="relative z-10 flex min-w-0 items-center gap-2.5 rounded-2xl bg-card px-4 py-3.5 text-card-foreground shadow-[0_18px_38px_-18px_rgba(15,23,42,0.65)] ring-1 ring-border/70">
           <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2.2">
             <circle cx="11" cy="11" r="6.5" /><path d="M16 16l4 4" strokeLinecap="round" />
           </svg>
@@ -431,7 +419,7 @@ function Home() {
         </div>
 
         {topBarTheme?.festive_style_active && campaign?.title ? (
-          <div className="relative z-10 mt-5">
+          <div className="relative z-10 min-w-0">
             <div className="mb-1 flex items-center gap-2 text-brand">
               <span className="h-0.5 w-6 rounded-full bg-brand" />
               <span className="text-[10px] font-black uppercase tracking-[0.2em]">Celebrate</span>
@@ -442,7 +430,7 @@ function Home() {
           </div>
         ) : null}
 
-        <div className="relative z-10 mt-3.5 overflow-hidden rounded-full festive-glass-chip py-1.5">
+        <div className="relative z-10 min-w-0 overflow-hidden rounded-full festive-glass-chip py-1.5">
           <div className="marquee-track">
             {[0, 1].map((n) => (
               <span key={n} aria-hidden={n === 1} className="flex shrink-0 items-center gap-6 pr-6 text-[11px] font-extrabold">
@@ -476,7 +464,21 @@ function Home() {
         </div>
       ) : null}
 
-      <DynamicPageRenderer app="customer" page="home" registry={registry} />
+      <main className="flex min-w-0 flex-col gap-4 overflow-x-hidden">
+        {topBarTheme?.header_bg_image_url ? (
+          <section className="px-5 py-3">
+            <div className="overflow-hidden rounded-2xl bg-muted shadow-sm">
+              <img
+                key={topBarTheme.header_bg_image_url}
+                src={topBarTheme.header_bg_image_url}
+                alt="Thaleewala festive offer"
+                className="festive-header-photo block h-auto max-h-[180px] w-full object-cover"
+              />
+            </div>
+          </section>
+        ) : null}
+        <DynamicPageRenderer app="customer" page="home" registry={registry} />
+      </main>
       <div className="pb-28" />
 
       <HomeChat userId={user?.id} />

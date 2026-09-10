@@ -26,13 +26,13 @@ export function SectionList({
   registry: SectionRegistry;
 }) {
   return (
-    <>
+    <div className="flex min-w-0 flex-col gap-4">
       {[...sections]
         .sort((a, b) => a.order - b.order)
         .filter((s) => s.is_visible && registry[s.type])
         .map((s) => (
           <Fragment key={s.id}>{registry[s.type]!(s.config ?? {})}</Fragment>
         ))}
-    </>
+    </div>
   );
 }
