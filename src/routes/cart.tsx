@@ -34,7 +34,7 @@ function Cart() {
   const { foodTotal, mrpTotal, baseTotal } = cartTotals(lines);
 
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [vendor, setVendor] = useState<{ id: string; stall_name: string; lat: number; lng: number } | null>(null);
+  const [vendor, setVendor] = useState<{ id: string; stall_name: string; lat: number; lng: number; offer_percent: number | null; offer_label: string | null } | null>(null);
   const [form, setForm] = useState({ full_name: "", mobile: "", pincode: "", line: "", landmark: "" });
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [payment, setPayment] = useState<"COD" | "ONLINE">("COD");
@@ -79,7 +79,7 @@ function Cart() {
   useEffect(() => {
     const vid = lines[0]?.vendorId;
     if (!vid) return;
-    supabase.from("vendors").select("id,stall_name,lat,lng").eq("id", vid).maybeSingle().then(({ data }) => setVendor(data));
+    supabase.from("vendors").select("id,stall_name,lat,lng,offer_percent,offer_label").eq("id", vid).maybeSingle().then(({ data }) => setVendor(data));
   }, [lines[0]?.vendorId]);
 
   useEffect(() => {
