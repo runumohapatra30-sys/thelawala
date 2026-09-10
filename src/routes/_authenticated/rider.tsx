@@ -1167,13 +1167,8 @@ function OfferDrawer({
           </div>
         </div>
 
-        <div className="mt-3 flex gap-2">
-          <button onClick={onDecline} className="press flex-1 rounded-xl border-2 border-border py-3 text-sm font-bold">
-            Decline
-          </button>
-          <button onClick={onAccept} className="press flex-[2] rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground">
-            Accept
-          </button>
+        <div className="mt-4">
+          <RiderOrderSwipe secs={secs} total={total} onAccept={onAccept} onDecline={onDecline} />
         </div>
       </div>
     </div>

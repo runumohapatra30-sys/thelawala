@@ -472,7 +472,7 @@ function Home() {
                 key={topBarTheme.header_bg_image_url}
                 src={topBarTheme.header_bg_image_url}
                 alt="Thaleewala festive offer"
-                className="festive-header-photo block h-auto max-h-[180px] w-full object-cover"
+                className="festive-header-photo block h-auto w-full rounded-2xl object-contain shadow-sm"
               />
             </div>
           </section>
