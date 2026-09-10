@@ -115,9 +115,6 @@ function FestivePicks({ section, items, onAdd, qtyOf }: Props & { section: HomeS
                 <div className="mt-1.5 flex items-center justify-between gap-1">
                   <div className="min-w-0">
                     <p className="truncate text-[13px] font-extrabold">{inr(price)}</p>
-                    {mrp > price ? (
-                      <p className="truncate text-[10.5px] font-medium text-muted-foreground line-through">{inr(mrp)}</p>
-                    ) : null}
                   </div>
                   {!i.in_stock ? (
                     <span className="rounded-lg border border-border px-2 py-1 text-[10px] font-bold text-muted-foreground">
