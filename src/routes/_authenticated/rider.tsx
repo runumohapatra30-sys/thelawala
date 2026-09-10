@@ -195,7 +195,7 @@ function RiderPortal() {
 
       const MONEY = "delivery_fee,tip_amount,food_total,base_food_total,distance_km,grand_total,status,payment_mode";
       const riderPay = (rows: unknown[] | null) =>
-        (rows ?? []).reduce((a, d) => a + splitOrder(d as never).riderTotal, 0);
+        (rows ?? []).reduce<number>((a, d) => a + splitOrder(d as never).riderTotal, 0);
 
       const since = new Date();
       since.setHours(0, 0, 0, 0);
