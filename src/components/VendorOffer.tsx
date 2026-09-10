@@ -29,7 +29,10 @@ export function VendorOffer({ vendorId }: { vendorId: string }) {
       .update({ offer_percent: pct, offer_label: label.trim() || null })
       .eq("id", vendorId);
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success(pct > 0 ? `${pct}% offer is live on your stall` : "Offer switched off");
   }
 
