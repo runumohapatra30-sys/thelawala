@@ -9,6 +9,7 @@ import {
   type SectionType,
 } from "@/lib/homeSections";
 import { FestiveSections, type PickItem } from "@/components/FestiveSections";
+import { AdminFestivePhotos } from "@/components/AdminFestivePhotos";
 import {
   BRAND_YELLOW,
   THEME_PRESETS,
@@ -39,6 +40,7 @@ export function AdminDynamicLayout() {
   return (
     <div className="space-y-3">
       <ThemeController />
+      <AdminFestivePhotos />
       <SectionStudio />
     </div>
   );
@@ -298,7 +300,7 @@ export function ThemeController() {
       temporary_bg_color: cfg.temporary_bg_color || null,
       is_temporary_active: cfg.is_temporary_active,
       temporary_expires_at: cfg.temporary_expires_at || null,
-      header_height_px: 180,
+      header_height_px: cfg.header_height_px || 220,
       header_bg_image_url: cfg.header_bg_image_url || null,
       festive_style_active: cfg.festive_style_active,
     };
@@ -319,7 +321,7 @@ export function ThemeController() {
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-bold">Home colour &amp; festive banner</p>
         <button
-          onClick={() => setCfg({ ...cfg, current_bg_color: BRAND_YELLOW, temporary_bg_color: null, is_temporary_active: false, temporary_expires_at: null, header_height_px: 180, header_bg_image_url: null, festive_style_active: false })}
+          onClick={() => setCfg({ ...cfg, current_bg_color: BRAND_YELLOW, temporary_bg_color: null, is_temporary_active: false, temporary_expires_at: null, header_height_px: 220, header_bg_image_url: null, festive_style_active: false })}
           className="rounded-full border border-border px-3 py-1 text-[11px] font-bold text-muted-foreground"
         >
           Reset default
@@ -333,11 +335,36 @@ export function ThemeController() {
           <div className="mt-3 rounded-xl bg-card px-3 py-2 text-[11px] font-semibold text-card-foreground shadow-lg">⌕ Search “dahi bara”</div>
         </div>
         {cfg.header_bg_image_url ? (
-          <img src={cfg.header_bg_image_url} alt="Festive banner preview" className="block h-auto max-h-[180px] w-full rounded-2xl object-cover" />
+          <img
+            src={cfg.header_bg_image_url}
+            alt="Festive banner preview"
+            style={{ maxHeight: `${cfg.header_height_px || 220}px` }}
+            className="block h-auto w-full rounded-2xl object-contain"
+          />
         ) : (
-          <div className="grid aspect-[4/1] max-h-[180px] min-h-20 place-items-center rounded-2xl bg-muted text-xs font-semibold text-muted-foreground">Festive banner preview</div>
+          <div
+            style={{ height: `${cfg.header_height_px || 220}px` }}
+            className="grid place-items-center rounded-2xl bg-muted text-xs font-semibold text-muted-foreground"
+          >
+            Festive banner preview
+          </div>
         )}
       </div>
+
+      <label className="block">
+        <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">
+          Festive banner size · {cfg.header_height_px || 220}px
+        </span>
+        <input
+          type="range"
+          min={100}
+          max={420}
+          step={10}
+          value={cfg.header_height_px || 220}
+          onChange={(e) => setCfg({ ...cfg, header_height_px: Number(e.target.value) })}
+          className="w-full"
+        />
+      </label>
 
       <div className="grid grid-cols-2 gap-2">
         <label className="block">

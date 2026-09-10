@@ -51,6 +51,7 @@ export const SECTION_LABELS: Record<string, string> = {
   banner_carousel: "Offer banner slider",
   festive: "Festive campaign",
   festive_sections: "Festive grid & product picks",
+  festive_photos: "Festive photo strip",
   quick_bites: "Quick bites",
   trending_stalls: "Trending stalls",
   rider_earnings_card: "Rider earnings card",
@@ -79,10 +80,11 @@ export function defaultSections(app: TargetApp, page: string): PageSection[] {
       mk("smart_asset", 1, { content: "image" }),
       mk("dynamic_banner", 2, { height: 140, rounded: 16, content: "video" }),
       mk("banner_carousel", 3, { height: 140, rounded: 16, autoplay: true, content: "image" }),
-      mk("festive", 4),
-      mk("quick_bites", 5, { title: "Quick bites", layout: "circle_rail" }),
-      mk("festive_sections", 6),
-      mk("trending_stalls", 7, { title: "Trending stalls", limit: 6, content: "grid" }),
+      mk("festive_photos", 4),
+      mk("festive", 5),
+      mk("quick_bites", 6, { title: "Quick bites", layout: "circle_rail" }),
+      mk("festive_sections", 7),
+      mk("trending_stalls", 8, { title: "Trending stalls", limit: 6, content: "grid" }),
     ];
   }
   if (app === "customer" && page === "profile") {
@@ -115,7 +117,13 @@ function normalise(raw: unknown, app: TargetApp, page: string): PageSection[] {
       config: (s.config ?? {}) as SectionConfig,
     });
   });
-  return out.length ? out.sort((a, b) => a.order - b.order) : defaultSections(app, page);
+  if (!out.length) return defaultSections(app, page);
+  // Saved layouts made before a new section existed must still show it.
+  const seen = new Set(out.map((s) => s.type));
+  defaultSections(app, page).forEach((d) => {
+    if (!seen.has(d.type)) out.push({ ...d, order: d.order + out.length });
+  });
+  return out.sort((a, b) => a.order - b.order);
 }
 
 export async function loadLayout(app: TargetApp, page: string): Promise<PageSection[]> {

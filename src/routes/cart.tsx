@@ -100,7 +100,7 @@ function Cart() {
           line: data.line,
           landmark: data.landmark ?? "",
         });
-        setCoords({ lat: Number(data.lat), lng: Number(data.lng) });
+        // Every order uses a fresh live location, never the one saved earlier.
       });
   }, [user?.id]);
 
@@ -194,7 +194,7 @@ function Cart() {
     if (!user) return navigate({ to: "/auth" });
     if (!form.full_name || form.mobile.length < 10 || form.pincode.length < 6 || !form.line)
       return setErr("Please fill name, 10-digit mobile, 6-digit pincode and full address.");
-    if (!coords) return setErr("Please set your delivery location on the map.");
+    if (!coords) return setErr("Tap “Use my current location” — every order needs your live location.");
     if (blockedReason) return setErr(blockedReason);
     if (!bill || !vendor) return;
 
@@ -217,8 +217,6 @@ function Cart() {
         pincode: form.pincode,
         line: form.line,
         landmark: form.landmark || null,
-        lat: coords.lat,
-        lng: coords.lng,
         is_default: true,
       });
     }
@@ -364,7 +362,6 @@ function Cart() {
           userId={user?.id}
           onPick={(a) => {
             setForm({ full_name: a.full_name, mobile: a.mobile, pincode: a.pincode, line: a.line, landmark: a.landmark ?? "" });
-            setCoords({ lat: Number(a.lat), lng: Number(a.lng) });
           }}
         />
 

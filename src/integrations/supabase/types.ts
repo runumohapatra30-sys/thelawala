@@ -34,9 +34,9 @@ export type Database = {
           id?: string
           is_default?: boolean
           landmark?: string | null
-          lat: number
+          lat?: number
           line: string
-          lng: number
+          lng?: number
           mobile: string
           pincode: string
           user_id: string
@@ -675,6 +675,39 @@ export type Database = {
           section_type?: string
           subtitle?: string | null
           title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      home_festive_photos: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string
+          is_active: boolean
+          link_url: string | null
+          size_mode: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url: string
+          is_active?: boolean
+          link_url?: string | null
+          size_mode?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          link_url?: string | null
+          size_mode?: string
           updated_at?: string
         }
         Relationships: []

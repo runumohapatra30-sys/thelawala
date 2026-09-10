@@ -80,6 +80,9 @@ export function AddressBook({
                   {a.line}
                   {a.landmark ? `, ${a.landmark}` : ""} — {a.pincode}
                 </p>
+                <p className="mt-0.5 text-[10px] font-semibold text-muted-foreground">
+                  Your live location is still needed at checkout
+                </p>
               </button>
               <div className="mt-1.5 flex gap-2">
                 {!a.is_default ? (
