@@ -9,6 +9,7 @@ import { inr, STATUS_LABEL } from "@/lib/fees";
 import { openInvoice, type InvoiceOrder } from "@/lib/invoice";
 import { OrderDeliveredRating } from "@/components/OrderDeliveredRating";
 import { useSession } from "@/lib/session";
+import { RefundPanel } from "@/components/RefundPanel";
 
 export const Route = createFileRoute("/orders/$id")({
   validateSearch: (s: Record<string, unknown>): { placed?: 1 } => (s['placed'] ? { placed: 1 } : {}),
@@ -58,7 +59,6 @@ function Track() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [reason, setReason] = useState(REASONS[0]!);
   const [splash, setSplash] = useState(Boolean(placed));
-  const [refundMsg, setRefundMsg] = useState<string | null>(null);
   const [tipMsg, setTipMsg] = useState<string | null>(null);
   const [customTip, setCustomTip] = useState("");
   const [rateOpen, setRateOpen] = useState(false);
