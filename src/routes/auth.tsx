@@ -44,13 +44,15 @@ function AuthPage() {
       saved = null;
     }
 
-    const [{ data: vendor }, { data: partner }] = await Promise.all([
+    const [{ data: vendor }, { data: partner }, { data: adminRole }] = await Promise.all([
       supabase.from("vendors").select("id").eq("owner_id", uid).maybeSingle(),
       supabase.from("delivery_partners").select("id").eq("user_id", uid).maybeSingle(),
+      supabase.from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle(),
     ]);
 
     if (saved?.startsWith("/vendor")) return navigate({ to: "/vendor" });
     if (saved?.startsWith("/rider") || saved?.startsWith("/delivery")) return navigate({ to: "/rider" });
+    if (saved?.startsWith("/admin") || adminRole) return navigate({ to: "/admin" });
     if (vendor) return navigate({ to: "/vendor" });
     if (partner) return navigate({ to: "/rider" });
     navigate({ to: "/" });
