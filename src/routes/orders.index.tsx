@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { cart } from "@/lib/cart";
 import { inr, STATUS_LABEL } from "@/lib/fees";
 import { useSession } from "@/lib/session";
 import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
+import { DateRange, OrderFilterBar, PaymentMode, matchesOrderFilters, StatusValue } from "@/components/OrderFilters";
 
 export const Route = createFileRoute("/orders/")({
   head: () => ({
@@ -54,6 +55,11 @@ function Orders() {
   const [delivery, setDelivery] = useState(5);
   const [review, setReview] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+
+  const [statusFilter, setStatusFilter] = useState<StatusValue>("ALL");
+  const [dateFilter, setDateFilter] = useState<DateRange>("ALL");
+  const [paymentFilter, setPaymentFilter] = useState<PaymentMode>("ALL");
+  const [search, setSearch] = useState("");
 
   function orderAgain(o: Row) {
     cart.clear();
@@ -115,6 +121,25 @@ function Orders() {
     })();
   }, [user?.id]);
 
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return rows.filter((o) => {
+      if (!matchesOrderFilters(o, statusFilter, dateFilter, paymentFilter)) return false;
+      if (!term) return true;
+      const stall = (stalls[o.vendor_id] ?? "").toLowerCase();
+      const itemText = items
+        .filter((i) => i.order_id === o.id)
+        .map((i) => i.name)
+        .join(" ")
+        .toLowerCase();
+      return (
+        o.code.toLowerCase().includes(term) ||
+        stall.includes(term) ||
+        itemText.includes(term)
+      );
+    });
+  }, [rows, items, stalls, statusFilter, dateFilter, paymentFilter, search]);
+
   return (
     <Shell>
       <header className="brand-header sticky top-0 z-30 flex items-center gap-3 rounded-b-[2rem] px-4 py-4 shadow-[0_16px_34px_-26px_rgba(15,23,42,0.55)]">
@@ -140,77 +165,94 @@ function Orders() {
         ) : rows.length === 0 ? (
           <p className="py-16 text-center text-sm text-muted-foreground">No orders yet.</p>
         ) : (
-          rows.map((o, idx) => {
-            const its = items.filter((i) => i.order_id === o.id);
-            const thumb = its[0]?.photo_url ?? "/food/food-tiffin.jpg";
-            return (
-              <article
-                key={o.id}
-                style={{ animationDelay: `${Math.min(idx, 8) * 60}ms` }}
-                className="rise-in card-elevated overflow-hidden"
-              >
-                <div className="flex gap-3 p-3">
-                  <img src={thumb} alt={its[0]?.name ?? "Order"} className="h-14 w-14 shrink-0 rounded-xl object-cover" />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="truncate text-sm font-black">{stalls[o.vendor_id] ?? "ThelaWala stall"}</p>
-                      <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black ${PILL[o.status] ?? "bg-brand/20 text-primary"}`}>
-                        {shortStatus(o.status)}
-                      </span>
+          <>
+            <OrderFilterBar
+              mode="customer"
+              status={statusFilter}
+              date={dateFilter}
+              payment={paymentFilter}
+              search={search}
+              onStatus={setStatusFilter}
+              onDate={setDateFilter}
+              onPayment={setPaymentFilter}
+              onSearch={setSearch}
+            />
+            {filtered.length === 0 ? (
+              <p className="py-10 text-center text-sm text-muted-foreground">No orders match your filters.</p>
+            ) : (
+              filtered.map((o, idx) => {
+                const its = items.filter((i) => i.order_id === o.id);
+                const thumb = its[0]?.photo_url ?? "/food/food-tiffin.jpg";
+                return (
+                  <article
+                    key={o.id}
+                    style={{ animationDelay: `${Math.min(idx, 8) * 60}ms` }}
+                    className="rise-in card-elevated overflow-hidden"
+                  >
+                    <div className="flex gap-3 p-3">
+                      <img src={thumb} alt={its[0]?.name ?? "Order"} className="h-14 w-14 shrink-0 rounded-xl object-cover" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="truncate text-sm font-black">{stalls[o.vendor_id] ?? "ThelaWala stall"}</p>
+                          <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black ${PILL[o.status] ?? "bg-brand/20 text-primary"}`}>
+                            {shortStatus(o.status)}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                          #{o.code} · {new Date(o.created_at).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                        <p className="mt-1 line-clamp-2 text-xs text-foreground">
+                          {its.length ? its.map((i) => `${i.name} × ${i.qty}`).join(", ") : "Items loading…"}
+                        </p>
+                        <p className="mt-1 text-sm font-black">{inr(Number(o.grand_total) + Number(o.tip_amount ?? 0))}</p>
+                      </div>
                     </div>
-                    <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                      #{o.code} · {new Date(o.created_at).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                    <p className="mt-1 line-clamp-2 text-xs text-foreground">
-                      {its.length ? its.map((i) => `${i.name} × ${i.qty}`).join(", ") : "Items loading…"}
-                    </p>
-                    <p className="mt-1 text-sm font-black">{inr(Number(o.grand_total) + Number(o.tip_amount ?? 0))}</p>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-3 gap-px border-t border-border bg-border">
-                  <Link
-                    to="/orders/$id"
-                    params={{ id: o.id }}
-                    className="press bg-card py-2.5 text-center text-[11px] font-black text-primary"
-                  >
-                    Track order
-                  </Link>
-                  <button onClick={() => setBillFor(o)} className="press bg-card py-2.5 text-center text-[11px] font-black">
-                    Order details
-                  </button>
-                  <Link
-                    to="/support"
-                    search={{ order: o.id }}
-                    className="press bg-card py-2.5 text-center text-[11px] font-black text-primary"
-                  >
-                    Need help?
-                  </Link>
-                </div>
-                <div className="grid grid-cols-2 gap-px border-t border-border bg-border">
-                  <button onClick={() => orderAgain(o)} className="press bg-card py-2.5 text-center text-[11px] font-black text-primary">
-                    Order again
-                  </button>
-                  {o.status === "DELIVERED" ? (
-                    rated.includes(o.id) ? (
-                      <span className="bg-card py-2.5 text-center text-[11px] font-black text-muted-foreground">Rated ★</span>
-                    ) : (
-                      <button
-                        onClick={() => { setRateFor(o); setFood(5); setDelivery(5); }}
-                        className="press bg-card py-2.5 text-center text-[11px] font-black"
+                    <div className="grid grid-cols-3 gap-px border-t border-border bg-border">
+                      <Link
+                        to="/orders/$id"
+                        params={{ id: o.id }}
+                        className="press bg-card py-2.5 text-center text-[11px] font-black text-primary"
                       >
-                        Rate this order
+                        Track order
+                      </Link>
+                      <button onClick={() => setBillFor(o)} className="press bg-card py-2.5 text-center text-[11px] font-black">
+                        Order details
                       </button>
-                    )
-                  ) : (
-                    <span className="bg-card py-2.5 text-center text-[11px] font-black text-muted-foreground">
-                      {shortStatus(o.status)}
-                    </span>
-                  )}
-                </div>
-              </article>
-            );
-          })
+                      <Link
+                        to="/support"
+                        search={{ order: o.id }}
+                        className="press bg-card py-2.5 text-center text-[11px] font-black text-primary"
+                      >
+                        Need help?
+                      </Link>
+                    </div>
+                    <div className="grid grid-cols-2 gap-px border-t border-border bg-border">
+                      <button onClick={() => orderAgain(o)} className="press bg-card py-2.5 text-center text-[11px] font-black text-primary">
+                        Order again
+                      </button>
+                      {o.status === "DELIVERED" ? (
+                        rated.includes(o.id) ? (
+                          <span className="bg-card py-2.5 text-center text-[11px] font-black text-muted-foreground">Rated ★</span>
+                        ) : (
+                          <button
+                            onClick={() => { setRateFor(o); setFood(5); setDelivery(5); }}
+                            className="press bg-card py-2.5 text-center text-[11px] font-black"
+                          >
+                            Rate this order
+                          </button>
+                        )
+                      ) : (
+                        <span className="bg-card py-2.5 text-center text-[11px] font-black text-muted-foreground">
+                          {shortStatus(o.status)}
+                        </span>
+                      )}
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </>
         )}
       </div>
 

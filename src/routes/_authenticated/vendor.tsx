@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
+import { DateRange, OrderFilterBar, PaymentMode, matchesOrderFilters, StatusValue } from "@/components/OrderFilters";
 import { PayoutPanel } from "@/components/Payouts";
 import { SettlementHistory } from "@/components/SettlementHistory";
 import { VendorHours, PrepCountdown } from "@/components/VendorHours";
@@ -36,8 +37,9 @@ export const Route = createFileRoute("/_authenticated/vendor")({
 type Order = {
   id: string; code: string; status: string; grand_total: number; food_total: number; base_food_total: number | null;
   pickup_otp: string; qr_hash: string | null; customer_name: string; address_line: string; partner_id: string | null;
-  delivery_instructions?: string | null; ready_at?: string | null;
+  delivery_instructions?: string | null; ready_at?: string | null; created_at: string; payment_mode: string;
 };
+type OrderItemName = { id: string; order_id: string; name: string };
 type Item = {
   id: string; name: string; price: number; mrp: number; in_stock: boolean;
   photo_url: string | null; food_type: string; category_id: string | null;
@@ -60,6 +62,7 @@ function VendorPortal() {
   const [vendor, setVendor] = useState<{ id: string; stall_name: string; status: string; is_open: boolean; fssai_number: string | null } | null>(null);
   const vLayout = usePageLayout("vendor", "dashboard");
   const [orders, setOrders] = useState<Order[]>([]);
+  const [orderItems, setOrderItems] = useState<OrderItemName[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
   const [form, setForm] = useState({
@@ -84,6 +87,11 @@ function VendorPortal() {
   const [slip, setSlip] = useState<Order | null>(null);
   const [today, setToday] = useState({ orders: 0, sales: 0, earning: 0, rating: 0 });
 
+  const [statusFilter, setStatusFilter] = useState<StatusValue>("ALL");
+  const [dateFilter, setDateFilter] = useState<DateRange>("ALL");
+  const [paymentFilter, setPaymentFilter] = useState<PaymentMode>("ALL");
+  const [search, setSearch] = useState("");
+
   const newOrders = orders.filter((o) => o.status === "ORDER_PLACED");
   const pending = newOrders.length;
   const { muted, setMuted } = useLoudAlarm(pending > 0);
@@ -101,11 +109,24 @@ function VendorPortal() {
 
   useEffect(() => {
     if (!vendor) return;
-    const load = () => {
-      supabase.from("orders")
-        .select("id,code,status,grand_total,food_total,base_food_total,pickup_otp,qr_hash,customer_name,address_line,partner_id,delivery_instructions,ready_at")
-        .eq("vendor_id", vendor.id).order("created_at", { ascending: false }).limit(30)
-        .then(({ data }) => setOrders((data ?? []) as Order[]));
+    const load = async () => {
+      const { data } = await supabase
+        .from("orders")
+        .select("id,code,status,grand_total,food_total,base_food_total,pickup_otp,qr_hash,customer_name,address_line,payment_mode,partner_id,delivery_instructions,ready_at,created_at")
+        .eq("vendor_id", vendor.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      const list = (data ?? []) as Order[];
+      setOrders(list);
+      if (list.length === 0) {
+        setOrderItems([]);
+        return;
+      }
+      const { data: its } = await supabase
+        .from("order_items")
+        .select("id,order_id,name")
+        .in("order_id", list.map((o) => o.id));
+      setOrderItems((its ?? []) as OrderItemName[]);
     };
     const loadToday = async () => {
       const since = new Date();
@@ -154,6 +175,25 @@ function VendorPortal() {
       supabase.removeChannel(channel);
     };
   }, [vendor?.id]);
+
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return orders.filter((o) => {
+      if (!matchesOrderFilters(o, statusFilter, dateFilter, paymentFilter)) return false;
+      if (!term) return true;
+      const itemText = orderItems
+        .filter((i) => i.order_id === o.id)
+        .map((i) => i.name)
+        .join(" ")
+        .toLowerCase();
+      return (
+        o.code.toLowerCase().includes(term) ||
+        (o.customer_name ?? "").toLowerCase().includes(term) ||
+        (o.address_line ?? "").toLowerCase().includes(term) ||
+        itemText.includes(term)
+      );
+    });
+  }, [orders, orderItems, statusFilter, dateFilter, paymentFilter, search]);
 
   async function setStatus(o: Order, status: string) {
     // Marking an order ready puts it into the rider search queue.
@@ -596,13 +636,24 @@ function VendorPortal() {
 
         <section className={`space-y-2 ${vLayout.find((x) => x.type === "vendor_active_orders")?.is_visible === false ? "hidden" : ""}`}>
           <p className="section-title">Live orders</p>
-          {orders.length === 0 ? (
+          <OrderFilterBar
+            mode="vendor"
+            status={statusFilter}
+            date={dateFilter}
+            payment={paymentFilter}
+            search={search}
+            onStatus={setStatusFilter}
+            onDate={setDateFilter}
+            onPayment={setPaymentFilter}
+            onSearch={setSearch}
+          />
+          {filtered.length === 0 ? (
             <div className="portal-panel border-dashed text-center">
-              <p className="text-sm font-bold">No orders yet</p>
-              <p className="mt-1 text-[11px] text-muted-foreground">New orders will pop up here with an alarm.</p>
+              <p className="text-sm font-bold">No orders match</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">Try clearing filters.</p>
             </div>
           ) : null}
-          {orders.filter((o) => o.status !== "ORDER_PLACED").map((o) => (
+          {filtered.filter((o) => o.status !== "ORDER_PLACED").map((o) => (
             <div key={o.id} className="portal-panel">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
