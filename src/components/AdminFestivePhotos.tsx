@@ -5,6 +5,14 @@ import { uploadSectionImage } from "@/lib/homeSections";
 import { listFestivePhotos, MAX_FESTIVE_PHOTOS, type FestivePhoto } from "@/lib/festivePhotos";
 import { FestivePhotoStrip } from "@/components/FestivePhotoStrip";
 
+const HEIGHT_PRESETS = [
+  { label: "Auto", value: null },
+  { label: "Slim 120", value: 120 },
+  { label: "Medium 180", value: 180 },
+  { label: "Big 240", value: 240 },
+  { label: "Hero 320", value: 320 },
+];
+
 /** Up to five home-screen festive photos: upload, drag to reorder, size, link and live switch. */
 export function AdminFestivePhotos() {
   const [rows, setRows] = useState<FestivePhoto[]>([]);
@@ -74,7 +82,7 @@ export function AdminFestivePhotos() {
         </label>
       </div>
       <p className="text-[11px] text-muted-foreground">
-        Photos run one after another on the home screen. Drag a row to change the order.
+        Photos run one after another on the home screen. Drag a row to change the order. Set a fixed height or leave Auto to use the aspect ratio.
       </p>
 
       {rows.map((r, i) => (
@@ -89,12 +97,12 @@ export function AdminFestivePhotos() {
           <div className="flex items-center gap-2">
             <span className="cursor-grab text-muted-foreground">⋮⋮</span>
             <img src={r.image_url} alt="" className="h-12 w-20 rounded-lg object-cover" />
-            <div className="ml-auto flex shrink-0 gap-1.5">
+            <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-1.5">
               <button
                 onClick={() => void patch(r.id, { size_mode: r.size_mode === "FULL" ? "COMPACT" : "FULL" })}
                 className="rounded-full border border-border px-2.5 py-1 text-[11px] font-bold"
               >
-                {r.size_mode === "FULL" ? "Full size" : "Slim strip"}
+                {r.size_mode === "FULL" ? "Full ratio" : "Slim ratio"}
               </button>
               <button
                 onClick={() => void patch(r.id, { is_active: !r.is_active })}
@@ -105,6 +113,42 @@ export function AdminFestivePhotos() {
               <button onClick={() => void remove(r.id)} className="rounded-full border border-destructive px-2.5 py-1 text-[11px] font-bold text-destructive">✕</button>
             </div>
           </div>
+
+          <div className="space-y-1.5 rounded-xl bg-muted/50 p-2">
+            <p className="text-[11px] font-bold text-muted-foreground">Height on home screen</p>
+            <div className="flex flex-wrap gap-1.5">
+              {HEIGHT_PRESETS.map((p) => (
+                <button
+                  key={p.label}
+                  onClick={() => void patch(r.id, { height_px: p.value })}
+                  className={`rounded-full border px-2.5 py-1 text-[11px] font-bold ${
+                    r.height_px === p.value
+                      ? "border-primary bg-primary/10 text-primary"
+                      : p.value === null && !r.height_px
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-3 pt-1">
+              <input
+                type="range"
+                min={80}
+                max={400}
+                step={10}
+                value={r.height_px ?? 180}
+                onChange={(e) => void patch(r.id, { height_px: Number(e.target.value) })}
+                className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-border accent-primary"
+              />
+              <span className="w-16 shrink-0 text-right text-[11px] font-black tabular-nums">
+                {r.height_px ? `${r.height_px}px` : "Auto"}
+              </span>
+            </div>
+          </div>
+
           <input
             value={r.link_url ?? ""}
             onChange={(e) => setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, link_url: e.target.value } : x)))}
