@@ -298,7 +298,7 @@ export function ThemeController() {
       temporary_bg_color: cfg.temporary_bg_color || null,
       is_temporary_active: cfg.is_temporary_active,
       temporary_expires_at: cfg.temporary_expires_at || null,
-      header_height_px: cfg.header_height_px || 230,
+      header_height_px: cfg.header_height_px || 280,
       header_bg_image_url: cfg.header_bg_image_url || null,
       festive_style_active: cfg.festive_style_active,
     };
