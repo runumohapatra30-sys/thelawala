@@ -410,30 +410,11 @@ function Track() {
             </button>
           ) : null}
         </div>
-        {order.status === "CANCELLED" && (order.payment_status === "PAID" || Number(order.wallet_paid) > 0) ? (
-          <div className="card-soft border border-border p-3">
-            <p className="text-sm font-bold">Refund</p>
-            <p className="text-[11px] text-muted-foreground">
-              Ask for the money back to your ThelaWala wallet. Approved refunds are credited within minutes.
-            </p>
-            <button
-              onClick={async () => {
-                const amount = Math.max(0, Number(order.grand_total) - Number(order.penalty_fee ?? 0));
-                const { error } = await supabase.rpc("request_refund", {
-                  _order_id: order.id,
-                  _amount: amount,
-                  _reason: order.cancel_reason ?? "Order cancelled",
-                  _method: "WALLET",
-                });
-                setRefundMsg(error ? error.message : "Refund requested. We will credit your wallet shortly.");
-              }}
-              className="mt-2 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground"
-            >
-              Request refund
-            </button>
-            {refundMsg ? <p className="mt-2 text-xs font-semibold text-primary">{refundMsg}</p> : null}
-          </div>
+        {order.payment_mode !== "COD" && (order.payment_status === "PAID" || Number(order.wallet_paid) > 0) &&
+        (order.status === "CANCELLED" || order.status === "DELIVERED") ? (
+          <RefundPanel orderId={order.id} amount={Math.max(0, Number(order.grand_total) - Number(order.penalty_fee ?? 0))} />
         ) : null}
+
         <Link to="/terms" className="block text-center text-[11px] text-muted-foreground underline">
           Cancellation &amp; refund terms
         </Link>
