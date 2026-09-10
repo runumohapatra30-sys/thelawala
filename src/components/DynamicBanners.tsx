@@ -47,8 +47,38 @@ export function DynamicBanners() {
     });
   }
 
+  function media(b: DynamicBanner) {
+    if (b.banner_format === "4_GRID") {
+      const images = b.grid_image_urls.slice(0, 4);
+      return (
+        <div className="grid aspect-square w-full grid-cols-2 grid-rows-2 gap-2 bg-muted p-2">
+          {images.map((url, index) => (
+            <img key={`${url}-${index}`} src={url} alt={`Banner tile ${index + 1}`} loading="lazy" decoding="async" className="h-full min-h-0 w-full object-cover" />
+          ))}
+        </div>
+      );
+    }
+    const shape = b.banner_format === "SLIM" ? "aspect-[4/1] max-h-20" : "aspect-video max-h-[180px]";
+    return b.media_type === "video" ? (
+      <video
+        src={b.media_url}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        controls={false}
+        disablePictureInPicture
+        controlsList="nodownload noplaybackrate noremoteplayback"
+        className={`${shape} w-full object-cover [&::-webkit-media-controls]:hidden`}
+      />
+    ) : (
+      <img src={b.media_url} alt="Offer" loading="lazy" decoding="async" className={`${shape} w-full object-cover`} />
+    );
+  }
+
   return (
-    <section className="pt-5">
+    <section className="w-full min-w-0 py-3">
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex gap-3 px-5">
           {rows.map((b) => (
@@ -57,35 +87,12 @@ export function DynamicBanners() {
               type="button"
               onClick={() => open(b)}
               aria-label="Offer banner"
-              className="relative w-[88%] shrink-0 grow-0 basis-[88%] overflow-hidden rounded-2xl shadow-md"
-              style={{
-                height: `${b.height_px}px`,
-                aspectRatio: b.aspect_ratio || undefined,
-                borderRadius: `${b.border_radius}px`,
-              }}
+              className={`relative shrink-0 grow-0 overflow-hidden bg-card shadow-md ${
+                b.banner_format === "4_GRID" ? "w-[82%] basis-[82%] rounded-2xl" : "w-[88%] basis-[88%]"
+              }`}
+              style={{ borderRadius: `${b.banner_format === "SLIM" ? 12 : 16}px` }}
             >
-              {b.media_type === "video" ? (
-                <video
-                  src={b.media_url}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="metadata"
-                  controls={false}
-                  disablePictureInPicture
-                  controlsList="nodownload noplaybackrate noremoteplayback"
-                  className="h-full w-full object-cover [&::-webkit-media-controls]:hidden"
-                />
-              ) : (
-                <img
-                  src={b.media_url}
-                  alt="Offer"
-                  loading="lazy"
-                  decoding="async"
-                  className="h-full w-full object-cover"
-                />
-              )}
+              {media(b)}
             </button>
           ))}
         </div>

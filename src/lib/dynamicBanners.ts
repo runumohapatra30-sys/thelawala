@@ -11,10 +11,14 @@ export type DynamicBanner = {
   border_radius: number;
   is_active: boolean;
   display_order: number;
+  banner_format: BannerFormat;
+  grid_image_urls: string[];
 };
 
+export type BannerFormat = "HERO" | "SLIM" | "4_GRID";
+
 const COLS =
-  "id,media_type,media_url,media_path,target_route,height_px,aspect_ratio,border_radius,is_active,display_order";
+  "id,media_type,media_url,media_path,target_route,height_px,aspect_ratio,border_radius,is_active,display_order,banner_format,grid_image_urls";
 
 export async function listDynamicBanners(onlyActive: boolean): Promise<DynamicBanner[]> {
   let q = supabase
@@ -24,7 +28,11 @@ export async function listDynamicBanners(onlyActive: boolean): Promise<DynamicBa
     .order("created_at");
   if (onlyActive) q = q.eq("is_active", true);
   const { data } = await q;
-  return (data ?? []) as DynamicBanner[];
+  return (data ?? []).map((row) => ({
+    ...row,
+    banner_format: row.banner_format === "SLIM" || row.banner_format === "4_GRID" ? row.banner_format : "HERO",
+    grid_image_urls: Array.isArray(row.grid_image_urls) ? row.grid_image_urls : [],
+  })) as DynamicBanner[];
 }
 
 /** Uploads a banner picture or short video and returns its path plus a long-lived signed URL. */
