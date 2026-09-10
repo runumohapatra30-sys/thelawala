@@ -448,14 +448,19 @@ function VendorPortal() {
             vendor_stats: (cfg) => (
               <>
                 {cfg.title ? <p className="section-title">{cfg.title}</p> : null}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <div className="stat-tile">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Orders today</p>
                     <p className="mt-0.5 text-lg font-black leading-none">{today.orders}</p>
                   </div>
                   <div className="stat-tile">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Your earning today</p>
+                    <p className="mt-0.5 text-lg font-black leading-none text-primary">{inr(Math.round(today.earning))}</p>
+                    <p className="mt-0.5 text-[9px] text-muted-foreground">95% of your price, paid on delivery</p>
+                  </div>
+                  <div className="stat-tile">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Sales today</p>
-                    <p className="mt-0.5 text-lg font-black leading-none text-primary">{inr(Math.round(today.sales))}</p>
+                    <p className="mt-0.5 text-lg font-black leading-none">{inr(Math.round(today.sales))}</p>
                   </div>
                   <div className="stat-tile">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Rating</p>
