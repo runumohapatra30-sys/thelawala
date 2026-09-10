@@ -18,6 +18,7 @@ import { DynamicBanners } from "@/components/DynamicBanners";
 import { DynamicPageRenderer, type SectionRegistry } from "@/components/DynamicPageRenderer";
 import { FestiveSections } from "@/components/FestiveSections";
 import { activeThemeColor, useTopBarTheme } from "@/lib/appTheme";
+import { Bike, Gift, Heart, Utensils, Wallet, X, Zap } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -245,7 +246,7 @@ function Home() {
               onClick={() => setVendorFilter(null)}
               className="press rounded-full border border-primary bg-[color-mix(in_oklab,var(--color-primary)_10%,white)] px-3 py-1.5 text-[11px] font-extrabold text-primary"
             >
-              {vendorName[vendorFilter] ?? "Stall"} ✕
+              <span className="flex items-center gap-1">{vendorName[vendorFilter] ?? "Stall"} <X className="h-3 w-3" /></span>
             </button>
           ) : null}
           <button
@@ -258,7 +259,7 @@ function Home() {
             onClick={() => setOnlyFav((v) => !v)}
             className={`press rounded-full border px-3 py-1.5 text-[11px] font-extrabold ${onlyFav ? "border-primary bg-[color-mix(in_oklab,var(--color-primary)_10%,white)] text-primary" : "border-border text-muted-foreground"}`}
           >
-            ♥ Favourites
+            <span className="flex items-center gap-1"><Heart className="h-3 w-3" /> Favourites</span>
           </button>
         </section>
 
@@ -292,7 +293,7 @@ function Home() {
                       onClick={() => toggleFav(i.id, i.vendor_id)}
                       className={`press absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-card/90 text-sm shadow-md ${favs.includes(i.id) ? "text-destructive" : "text-muted-foreground"}`}
                     >
-                      {favs.includes(i.id) ? "♥" : "♡"}
+                      <Heart className="h-4 w-4" fill={favs.includes(i.id) ? "currentColor" : "none"} />
                     </button>
                   ) : null}
                 </div>
@@ -357,7 +358,7 @@ function Home() {
               to="/wallet"
               className="press flex items-center gap-1 rounded-full px-2.5 py-2 text-[11px] font-extrabold festive-glass-chip"
             >
-              <span aria-hidden="true">👛</span>
+              <Wallet className="h-4 w-4" aria-hidden="true" />
               {inr(balance)}
             </Link>
             <Link
@@ -434,10 +435,10 @@ function Home() {
           <div className="marquee-track">
             {[0, 1].map((n) => (
               <span key={n} aria-hidden={n === 1} className="flex shrink-0 items-center gap-6 pr-6 text-[11px] font-extrabold">
-                <span>⚡ Free delivery on your first order</span>
-                <span>🥘 Fresh from the thela, straight to you</span>
-                <span>🎁 Refer a friend · both earn ₹25</span>
-                <span>🚴 Live tracking on every order</span>
+                <span className="flex items-center gap-1"><Zap className="h-3.5 w-3.5" /> Free delivery on your first order</span>
+                <span className="flex items-center gap-1"><Utensils className="h-3.5 w-3.5" /> Fresh from the thela, straight to you</span>
+                <span className="flex items-center gap-1"><Gift className="h-3.5 w-3.5" /> Refer a friend · both earn ₹25</span>
+                <span className="flex items-center gap-1"><Bike className="h-3.5 w-3.5" /> Live tracking on every order</span>
               </span>
             ))}
           </div>

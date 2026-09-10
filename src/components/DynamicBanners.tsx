@@ -58,7 +58,7 @@ export function DynamicBanners() {
         </div>
       );
     }
-    const shape = b.banner_format === "SLIM" ? "aspect-[4/1] max-h-20" : "aspect-video max-h-[180px]";
+    const shape = b.banner_format === "SLIM" ? "aspect-[4/1]" : "aspect-[4/3]";
     return b.media_type === "video" ? (
       <video
         src={b.media_url}
