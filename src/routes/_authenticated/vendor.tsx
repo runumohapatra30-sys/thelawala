@@ -109,14 +109,21 @@ function VendorPortal() {
       const since = new Date();
       since.setHours(0, 0, 0, 0);
       const [{ data: done }, { data: rates }] = await Promise.all([
-        supabase.from("orders").select("food_total").eq("vendor_id", vendor.id).eq("status", "DELIVERED")
+        supabase.from("orders").select("food_total,base_food_total").eq("vendor_id", vendor.id).eq("status", "DELIVERED")
           .gte("delivered_at", since.toISOString()),
         supabase.from("order_ratings").select("food_stars").eq("vendor_id", vendor.id),
       ]);
       const stars = (rates ?? []).map((r) => Number(r.food_stars));
+      // Stall earning = 95% of the base food total (customer price is base + 10% markup).
+      const earning = (done ?? []).reduce((a, d) => {
+        const food = Number(d.food_total ?? 0);
+        const base = Number(d.base_food_total ?? 0) > 0 ? Number(d.base_food_total) : food / PRICE_MARKUP;
+        return a + base * VENDOR_PAYOUT_RATE;
+      }, 0);
       setToday({
         orders: done?.length ?? 0,
         sales: (done ?? []).reduce((a, d) => a + Number(d.food_total), 0),
+        earning,
         rating: stars.length ? Math.round((stars.reduce((a, b) => a + b, 0) / stars.length) * 10) / 10 : 0,
       });
     };
