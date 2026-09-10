@@ -14,11 +14,13 @@ export const vendorEarning = (base: number | string | null | undefined) =>
   Math.round(Number(base ?? 0) * VENDOR_PAYOUT_RATE);
 
 /** Hard delivery radius. Nothing is delivered beyond this. */
-export const MAX_DELIVERY_KM = 5.0;
+export const MAX_DELIVERY_KM = 15.0;
 
 /** Minimum cart value (vendor base total) for the given distance. */
 export function minimumOrderValue(distanceKm: number): number {
-  return distanceKm > 4.0 ? 199 : 99;
+  if (distanceKm >= 10.0) return 499;
+  if (distanceKm > 4.0) return 199;
+  return 99;
 }
 
 /** Flat, distance-slab delivery fee. */
@@ -26,7 +28,9 @@ export function deliveryFeeForDistance(distanceKm: number): number {
   if (distanceKm <= 1.5) return 15;
   if (distanceKm <= 3.0) return 18;
   if (distanceKm <= 4.0) return 22;
-  return 25;
+  if (distanceKm <= 5.0) return 25;
+  // Beyond the base 5 km slab: ₹6 per extra km (rounded up).
+  return 25 + Math.ceil(distanceKm - 5.0) * 6;
 }
 
 /** Fixed profit the platform keeps from the margin pool. */
@@ -63,16 +67,10 @@ export type CheckoutGate =
 
 /** Radius cap + distance-based minimum order value. */
 export function checkoutGate(distanceKm: number, baseTotal: number): CheckoutGate {
-  if (distanceKm > MAX_DELIVERY_KM) return { ok: false, reason: "Delivery unavailable beyond 5 km." };
+  if (distanceKm > MAX_DELIVERY_KM) return { ok: false, reason: "Delivery unavailable beyond 15 km." };
   const mov = minimumOrderValue(distanceKm);
   if (baseTotal < mov)
-    return {
-      ok: false,
-      reason:
-        distanceKm > 4.0
-          ? "Minimum order for 4-5 km is ₹199."
-          : "Minimum order for this distance is ₹99.",
-    };
+    return { ok: false, reason: `Minimum order for this distance is ₹${mov}.` };
   return { ok: true };
 }
 
