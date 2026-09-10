@@ -50,6 +50,7 @@ export const SECTION_LABELS: Record<string, string> = {
   dynamic_banner: "Studio banner (photo / video)",
   banner_carousel: "Offer banner slider",
   festive: "Festive campaign",
+  festive_sections: "Festive grid & product picks",
   quick_bites: "Quick bites",
   trending_stalls: "Trending stalls",
   rider_earnings_card: "Rider earnings card",
@@ -80,7 +81,8 @@ export function defaultSections(app: TargetApp, page: string): PageSection[] {
       mk("banner_carousel", 3, { height: 140, rounded: 16, autoplay: true, content: "image" }),
       mk("festive", 4),
       mk("quick_bites", 5, { title: "Quick bites", layout: "circle_rail" }),
-      mk("trending_stalls", 6, { title: "Trending stalls", limit: 6, content: "grid" }),
+      mk("festive_sections", 6),
+      mk("trending_stalls", 7, { title: "Trending stalls", limit: 6, content: "grid" }),
     ];
   }
   if (app === "customer" && page === "profile") {

@@ -16,6 +16,8 @@ import { VoiceSearch } from "@/components/VoiceSearch";
 import { DynamicAssetBanner } from "@/components/DynamicAssetBanner";
 import { DynamicBanners } from "@/components/DynamicBanners";
 import { DynamicPageRenderer, type SectionRegistry } from "@/components/DynamicPageRenderer";
+import { FestiveSections } from "@/components/FestiveSections";
+import { useTopBarColor } from "@/lib/appTheme";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -75,6 +77,7 @@ function Home() {
   const [unread, setUnread] = useState(0);
   const [vendorFilter, setVendorFilter] = useState<string | null>(null);
   const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const topBarColor = useTopBarColor();
 
   useEffect(() => {
     activeCampaign().then(setCampaign);
@@ -164,6 +167,14 @@ function Home() {
     ),
     festive: () => (
       <FestiveWidget campaign={campaign} onFilter={(v) => { setQ(v); setActive(null); setVendorFilter(null); }} />
+    ),
+    festive_sections: () => (
+      <FestiveSections
+        items={items}
+        onFilter={(v) => { setQ(v); setActive(null); setVendorFilter(null); }}
+        onAdd={(id) => { const it = items.find((x) => x.id === id); if (it) add(it); }}
+        qtyOf={(id) => lines.find((l) => l.itemId === id)?.qty ?? 0}
+      />
     ),
     quick_bites: (cfg) => (
       <section className="px-5 pt-6">
@@ -320,7 +331,10 @@ function Home() {
 
   return (
     <Shell>
-      <header className="brand-header sticky top-0 z-30 rounded-b-[2.75rem] px-5 pb-5 pt-5 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)]">
+      <header
+        style={{ background: topBarColor }}
+        className="brand-header sticky top-0 z-30 rounded-b-[2.75rem] px-5 pb-5 pt-5 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)]"
+      >
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
           <Link to="/cart" className="min-w-0 text-left">
             <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] opacity-80">
