@@ -298,7 +298,7 @@ export function ThemeController() {
       temporary_bg_color: cfg.temporary_bg_color || null,
       is_temporary_active: cfg.is_temporary_active,
       temporary_expires_at: cfg.temporary_expires_at || null,
-      header_height_px: cfg.header_height_px || 230,
+      header_height_px: cfg.header_height_px || 280,
       header_bg_image_url: cfg.header_bg_image_url || null,
       festive_style_active: cfg.festive_style_active,
     };
@@ -319,22 +319,32 @@ export function ThemeController() {
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-bold">Home header design</p>
         <button
-          onClick={() => setCfg({ ...cfg, current_bg_color: BRAND_YELLOW, temporary_bg_color: null, is_temporary_active: false, temporary_expires_at: null, header_height_px: 230, header_bg_image_url: null, festive_style_active: false })}
+          onClick={() => setCfg({ ...cfg, current_bg_color: BRAND_YELLOW, temporary_bg_color: null, is_temporary_active: false, temporary_expires_at: null, header_height_px: 280, header_bg_image_url: null, festive_style_active: false })}
           className="rounded-full border border-border px-3 py-1 text-[11px] font-bold text-muted-foreground"
         >
           Reset default
         </button>
       </div>
       <div
-        className="flex items-end overflow-hidden rounded-2xl bg-cover bg-center p-4 text-[12px] font-black transition-[height]"
-        style={{ backgroundColor: showing, backgroundImage: cfg.header_bg_image_url ? `linear-gradient(color-mix(in srgb, ${showing} 38%, transparent), color-mix(in srgb, ${showing} 68%, transparent)), url(${cfg.header_bg_image_url})` : undefined, height: `${Math.min(190, Math.max(90, (cfg.header_height_px || 230) * 0.52))}px` }}
+        className="relative overflow-hidden rounded-2xl transition-[height]"
+        style={{ backgroundColor: showing, height: `${Math.min(210, Math.max(130, (cfg.header_height_px || 280) * 0.55))}px` }}
       >
-        Live header preview · {cfg.header_height_px || 230}px
+        {cfg.header_bg_image_url ? <img src={cfg.header_bg_image_url} alt="Header preview" className="absolute inset-0 h-full w-full object-cover" /> : null}
+        <div className={`absolute inset-0 ${cfg.header_bg_image_url ? "festive-header-overlay" : "brand-header"}`} />
+        <div className={`relative flex h-full flex-col justify-between p-4 ${cfg.header_bg_image_url ? "text-festive-header-foreground" : "text-brand-foreground"}`}>
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[0.18em] opacity-80">Thaleewala · Delivering in</p>
+            <p className="text-xl font-extrabold">15–20 minutes</p>
+            <p className="text-[10px] font-semibold opacity-80">HOME · Bhubaneswar</p>
+          </div>
+          <div className="rounded-xl bg-card px-3 py-2 text-[11px] font-semibold text-card-foreground shadow-lg">⌕ Search “dahi bara”</div>
+          <p className="text-[10px] font-black">Live preview · {cfg.header_height_px || 280}px</p>
+        </div>
       </div>
 
       <label className="block">
-        <span className="flex justify-between text-[11px] font-semibold text-muted-foreground"><span>Header height</span><span>{cfg.header_height_px || 230}px</span></span>
-        <input type="range" min={180} max={380} step={5} value={cfg.header_height_px || 230} onChange={(e) => setCfg({ ...cfg, header_height_px: Number(e.target.value) })} className="w-full" />
+        <span className="flex justify-between text-[11px] font-semibold text-muted-foreground"><span>Header height</span><span>{cfg.header_height_px || 280}px</span></span>
+        <input type="range" min={240} max={380} step={5} value={cfg.header_height_px || 280} onChange={(e) => setCfg({ ...cfg, header_height_px: Number(e.target.value) })} className="w-full" />
       </label>
 
       <div className="grid grid-cols-2 gap-2">

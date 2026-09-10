@@ -335,17 +335,25 @@ function Home() {
       <header
         style={{
           backgroundColor: topBarColor,
-          backgroundImage: topBarTheme?.header_bg_image_url
-            ? `linear-gradient(color-mix(in srgb, ${topBarColor} 42%, transparent), color-mix(in srgb, ${topBarColor} 72%, transparent)), url(${topBarTheme.header_bg_image_url})`
-            : undefined,
-          minHeight: `${topBarTheme?.header_height_px ?? 230}px`,
+          height: `${topBarTheme?.header_height_px ?? 280}px`,
         }}
-        className={`brand-header sticky top-0 z-30 bg-cover bg-center px-5 pb-4 pt-4 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)] transition-[min-height,background] duration-300 ${topBarTheme?.festive_style_active ? "rounded-b-[2rem]" : "rounded-b-[2.75rem]"}`}
+        className={`relative z-30 overflow-hidden px-5 pb-5 pt-4 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)] transition-[height,background-color] duration-500 ${topBarTheme?.header_bg_image_url ? "text-festive-header-foreground" : "text-brand-foreground"}`}
       >
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+        {topBarTheme?.header_bg_image_url ? (
+          <img
+            key={topBarTheme.header_bg_image_url}
+            src={topBarTheme.header_bg_image_url}
+            alt=""
+            aria-hidden="true"
+            className="festive-header-photo absolute inset-0 h-full w-full object-cover"
+          />
+        ) : null}
+        <div className={`pointer-events-none absolute inset-0 ${topBarTheme?.header_bg_image_url ? "festive-header-overlay" : "brand-header"}`} />
+
+        <div className="relative z-10 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
           <Link to="/cart" className="min-w-0 text-left">
             <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] opacity-80">
-              <span className="live-dot" /> Live · Delivery in
+              <span className="live-dot" /> Thaleewala · Delivering in
             </p>
             <p className="text-[24px] font-extrabold leading-tight">15–20 minutes</p>
             <p className="mt-1 flex items-center gap-1 text-xs font-semibold opacity-80">
@@ -359,7 +367,7 @@ function Home() {
             <InstallAppButton />
             <Link
               to="/wallet"
-              className="press flex items-center gap-1 rounded-full px-2.5 py-2 text-[11px] font-extrabold glass-chip"
+              className="press flex items-center gap-1 rounded-full px-2.5 py-2 text-[11px] font-extrabold festive-glass-chip"
             >
               <span aria-hidden="true">👛</span>
               {inr(balance)}
@@ -367,7 +375,7 @@ function Home() {
             <Link
               to="/notifications"
               aria-label="Notifications"
-              className="press relative grid h-10 w-10 place-items-center rounded-2xl glass-chip"
+              className="press relative grid h-10 w-10 place-items-center rounded-2xl festive-glass-chip"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path d="M6 9a6 6 0 1112 0c0 4 1.5 5.5 1.5 5.5h-15S6 13 6 9zM10 19a2 2 0 004 0" strokeLinecap="round" strokeLinejoin="round" />
@@ -381,7 +389,7 @@ function Home() {
             <Link
               to={user ? "/profile" : "/auth"}
               aria-label="Your account"
-              className="press grid h-10 w-10 place-items-center rounded-2xl glass-chip"
+              className="press grid h-10 w-10 place-items-center rounded-2xl festive-glass-chip"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <circle cx="12" cy="8" r="3.4" /><path d="M4.5 20a7.5 7.5 0 0115 0" strokeLinecap="round" />
@@ -390,7 +398,7 @@ function Home() {
             <button
               aria-label="More options"
               onClick={() => setMenu((m) => !m)}
-              className="press grid h-10 w-10 place-items-center rounded-2xl glass-chip"
+              className="press grid h-10 w-10 place-items-center rounded-2xl festive-glass-chip"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
                 <circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" />
@@ -399,7 +407,7 @@ function Home() {
           </div>
         </div>
 
-        <div className="relative mt-4 flex items-center gap-2.5 rounded-2xl bg-card px-4 py-3 shadow-[0_14px_30px_-18px_rgba(15,23,42,0.5)]">
+        <div className="relative z-10 mt-5 flex items-center gap-2.5 rounded-2xl bg-card px-4 py-3.5 text-card-foreground shadow-[0_18px_38px_-18px_rgba(15,23,42,0.65)] ring-1 ring-border/70">
           <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2.2">
             <circle cx="11" cy="11" r="6.5" /><path d="M16 16l4 4" strokeLinecap="round" />
           </svg>
@@ -422,7 +430,19 @@ function Home() {
           />
         </div>
 
-        <div className="mt-3.5 overflow-hidden rounded-full glass-chip py-1.5">
+        {topBarTheme?.festive_style_active && campaign?.title ? (
+          <div className="relative z-10 mt-5">
+            <div className="mb-1 flex items-center gap-2 text-brand">
+              <span className="h-0.5 w-6 rounded-full bg-brand" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Celebrate</span>
+            </div>
+            <p className="line-clamp-1 text-[clamp(1.4rem,7vw,2.1rem)] font-extrabold leading-none drop-shadow-md">
+              {campaign.title}
+            </p>
+          </div>
+        ) : null}
+
+        <div className="relative z-10 mt-3.5 overflow-hidden rounded-full festive-glass-chip py-1.5">
           <div className="marquee-track">
             {[0, 1].map((n) => (
               <span key={n} aria-hidden={n === 1} className="flex shrink-0 items-center gap-6 pr-6 text-[11px] font-extrabold">
