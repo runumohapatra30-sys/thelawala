@@ -135,6 +135,23 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  // Clear all cached data on logout/account switch so the previous
+  // account's orders, wallet, etc. never leak into the next session.
+  useEffect(() => {
+    let prevUserId: string | null = null;
+    supabase.auth.getSession().then(({ data }) => {
+      prevUserId = data.session?.user?.id ?? null;
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      const nextUserId = session?.user?.id ?? null;
+      if (event === "SIGNED_OUT" || (nextUserId && prevUserId && nextUserId !== prevUserId)) {
+        queryClient.clear();
+      }
+      prevUserId = nextUserId;
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [queryClient]);
+
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}

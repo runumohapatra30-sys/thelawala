@@ -98,6 +98,7 @@ function Orders() {
       const { data } = await supabase
         .from("orders")
         .select("id,code,status,grand_total,food_total,delivery_fee,platform_fee,handling_fee,packing_fee,surge_fee,tip_amount,payment_mode,distance_km,created_at,vendor_id,address_line")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(40);
       const list = (data ?? []) as Row[];
