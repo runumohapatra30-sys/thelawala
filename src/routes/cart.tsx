@@ -244,7 +244,7 @@ function Cart() {
         surge_fee: bill.surgeFee,
         grand_total: netTotal,
         coupon_code: coupon?.code ?? null,
-        discount_amount: couponOff,
+        discount_amount: Math.round((couponOff + stallOff) * 100) / 100,
         wallet_paid: walletUse,
         tip_amount: tip,
         delivery_instructions: instructions.trim() || null,
@@ -478,8 +478,14 @@ function Cart() {
           <p className="text-sm font-bold">Bill details</p>
           {bill ? (
             <dl className="mt-2 space-y-1.5 text-sm">
-              <Row label="Item total (MRP)" value={inr(bill.mrpTotal)} />
-              {bill.discount > 0 ? <Row label="Stall discount" value={`− ${inr(bill.discount)}`} good /> : null}
+              <Row label="Item total" value={inr(bill.foodTotal)} />
+              {stallOff > 0 ? (
+                <Row
+                  label={`${vendor?.stall_name ?? "Stall"} offer (${Number(vendor?.offer_percent ?? 0)}% off)`}
+                  value={`− ${inr(stallOff)}`}
+                  good
+                />
+              ) : null}
               <Row label={`Delivery fee (${bill.distanceKm} km)`} value={bill.deliveryFee ? inr(bill.deliveryFee) : "FREE"} />
               {bill.platformFee ? <Row label="Platform fee" value={inr(bill.platformFee)} /> : null}
               {bill.handlingFee ? <Row label="Handling fee" value={inr(bill.handlingFee)} /> : null}
