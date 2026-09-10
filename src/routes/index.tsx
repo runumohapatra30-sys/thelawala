@@ -17,7 +17,7 @@ import { VoiceSearch } from "@/components/VoiceSearch";
 import { DynamicAssetBanner } from "@/components/DynamicAssetBanner";
 import { DynamicBanners } from "@/components/DynamicBanners";
 import { DynamicPageRenderer, type SectionRegistry } from "@/components/DynamicPageRenderer";
-import { FestiveHero, FestiveSections } from "@/components/FestiveSections";
+import { FestiveAmbience, FestiveHero, FestiveSections } from "@/components/FestiveSections";
 import { useHomeSections } from "@/lib/homeSections";
 import { FestivePhotoStrip } from "@/components/FestivePhotoStrip";
 import { activeThemeColor, themeStyle, useTopBarTheme } from "@/lib/appTheme";
@@ -356,6 +356,7 @@ function Home() {
         className={`relative z-20 flex min-w-0 flex-col gap-4 overflow-hidden rounded-b-[2rem] px-5 pb-6 pt-4 shadow-sm transition-colors duration-500 ${theme.wrapper}`}
       >
         {isDefaultTheme ? <div className="pointer-events-none absolute inset-0 brand-header" /> : null}
+        {festiveTheme ? <FestiveAmbience /> : null}
 
         <div className="relative z-10 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2 sm:gap-3">
           <Link to="/cart" className="min-w-0 text-left">
