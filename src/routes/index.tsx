@@ -178,6 +178,7 @@ function Home() {
     festive: () => (
       <FestiveWidget campaign={campaign} onFilter={(v) => { setQ(v); setActive(null); setVendorFilter(null); }} />
     ),
+    festive_photos: () => <FestivePhotoStrip />,
     festive_sections: () => (
       <FestiveSections
         items={items}
@@ -483,6 +484,7 @@ function Home() {
                 key={topBarTheme.header_bg_image_url}
                 src={topBarTheme.header_bg_image_url}
                 alt="Thaleewala festive offer"
+                style={{ maxHeight: `${topBarTheme.header_height_px || 220}px` }}
                 className="festive-header-photo block h-auto w-full rounded-2xl object-contain shadow-sm"
               />
             </div>
