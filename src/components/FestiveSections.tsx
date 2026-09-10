@@ -107,11 +107,6 @@ function FestivePicks({ section, items, onAdd, qtyOf }: Props & { section: HomeS
                     loading="lazy"
                     className="aspect-square w-full rounded-xl object-cover"
                   />
-                  {off > 0 ? (
-                    <span className="absolute left-1.5 top-1.5 rounded-full bg-[#2563EB] px-2 py-0.5 text-[9.5px] font-black text-white shadow">
-                      {inr(off)} OFF
-                    </span>
-                  ) : null}
                 </div>
                 <p className="mt-1.5 flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
                   <span aria-hidden>⏱</span> 14 mins
