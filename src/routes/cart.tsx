@@ -160,9 +160,11 @@ function Cart() {
   const distanceKm = vendor && coords ? haversineKm(coords, { lat: Number(vendor.lat), lng: Number(vendor.lng) }) : 0;
   const gate = vendor && coords ? checkoutGate(distanceKm, baseTotal) : ({ ok: true } as const);
   const blockedReason = gate.ok ? null : gate.reason;
-  const bill = settings ? computeBill({ settings, foodTotal, mrpTotal, distanceKm }) : null;
+  // No automatic MRP discount any more: a discount exists only when the stall runs its own offer.
+  const bill = settings ? computeBill({ settings, foodTotal, mrpTotal: foodTotal, distanceKm }) : null;
+  const stallOff = stallOfferDiscount(foodTotal, vendor?.offer_percent);
   const couponOff = coupon ? couponDiscount(coupon, foodTotal) : 0;
-  const netTotal = bill ? Math.max(0, Math.round((bill.grandTotal - couponOff + tip) * 100) / 100) : 0;
+  const netTotal = bill ? Math.max(0, Math.round((bill.grandTotal - stallOff - couponOff + tip) * 100) / 100) : 0;
   const walletUse = bill && useWallet ? Math.min(walletBalance, netTotal) : 0;
   const payable = bill ? Math.round((netTotal - walletUse) * 100) / 100 : 0;
 
