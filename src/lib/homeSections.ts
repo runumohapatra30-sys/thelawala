@@ -29,6 +29,7 @@ export function toCards(value: unknown): GridCard[] {
       title: String(v["title"] ?? ""),
       image_url: String(v["image_url"] ?? ""),
       filter: String(v["filter"] ?? ""),
+      tag: String(v["tag"] ?? ""),
     }));
 }
 
