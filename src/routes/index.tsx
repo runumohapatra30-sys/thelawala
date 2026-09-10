@@ -331,7 +331,10 @@ function Home() {
 
   return (
     <Shell>
-      <header className="brand-header sticky top-0 z-30 rounded-b-[2.75rem] px-5 pb-5 pt-5 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)]">
+      <header
+        style={{ background: topBarColor }}
+        className="brand-header sticky top-0 z-30 rounded-b-[2.75rem] px-5 pb-5 pt-5 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)]"
+      >
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
           <Link to="/cart" className="min-w-0 text-left">
             <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] opacity-80">
