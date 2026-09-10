@@ -9,6 +9,7 @@ import {
   type SectionType,
 } from "@/lib/homeSections";
 import { FestiveSections, type PickItem } from "@/components/FestiveSections";
+import { AdminFestivePhotos } from "@/components/AdminFestivePhotos";
 import {
   BRAND_YELLOW,
   THEME_PRESETS,
@@ -39,6 +40,7 @@ export function AdminDynamicLayout() {
   return (
     <div className="space-y-3">
       <ThemeController />
+      <AdminFestivePhotos />
       <SectionStudio />
     </div>
   );
