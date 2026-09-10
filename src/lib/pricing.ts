@@ -75,3 +75,10 @@ export function checkoutGate(distanceKm: number, baseTotal: number): CheckoutGat
     };
   return { ok: true };
 }
+
+/** Discount the stall itself is running, in rupees, on the customer item total. */
+export function stallOfferDiscount(itemTotal: number, offerPercent: number | null | undefined): number {
+  const pct = Math.max(0, Math.min(70, Number(offerPercent ?? 0)));
+  if (!pct) return 0;
+  return Math.round(itemTotal * pct) / 100;
+}
