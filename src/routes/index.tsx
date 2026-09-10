@@ -8,6 +8,7 @@ import { inr } from "@/lib/fees";
 import { customerPrice } from "@/lib/pricing";
 import { foodImage } from "@/lib/foodImage";
 import { InstallAppButton } from "@/components/InstallApp";
+import { UpdateAppButton } from "@/components/PwaUpdater";
 import { useSession } from "@/lib/session";
 import { BannerCarousel } from "@/components/BannerCarousel";
 import { FestiveWidget } from "@/components/FestiveWidget";
@@ -353,6 +354,7 @@ function Home() {
             </p>
           </Link>
           <div className="flex max-w-[184px] shrink-0 flex-wrap items-center justify-end gap-1.5 sm:max-w-none sm:flex-nowrap">
+            <UpdateAppButton />
             <InstallAppButton className="hidden sm:flex" />
             <Link
               to="/wallet"
