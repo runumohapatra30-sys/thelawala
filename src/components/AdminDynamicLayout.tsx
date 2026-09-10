@@ -316,6 +316,7 @@ export function ThemeController() {
     if (!cfg) return;
     setBusy(true);
     const payload = {
+      theme_token: cfg.theme_token ?? "DEFAULT_YELLOW",
       current_bg_color: cfg.current_bg_color || BRAND_YELLOW,
       temporary_bg_color: cfg.temporary_bg_color || null,
       is_temporary_active: cfg.is_temporary_active,
@@ -335,6 +336,21 @@ export function ThemeController() {
 
   if (!cfg) return null;
   const showing = activeThemeColor(cfg);
+  const look = themeStyle(cfg.theme_token);
+  const isDefaultLook = look.token === "DEFAULT_YELLOW";
+
+  async function pickTheme(token: (typeof THEME_TOKENS)[number]["token"]) {
+    if (!cfg) return;
+    setCfg({ ...cfg, theme_token: token });
+    setBusy(true);
+    const { error } = cfg.id
+      ? await supabase.from("app_theme_config").update({ theme_token: token }).eq("id", cfg.id)
+      : await supabase.from("app_theme_config").insert({ theme_token: token });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Home theme applied to every app.");
+    loadThemeConfig().then(setCfg);
+  }
 
   return (
     <section className="card-soft space-y-2 border border-border p-3">
