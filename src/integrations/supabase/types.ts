@@ -686,6 +686,7 @@ export type Database = {
         Row: {
           created_at: string
           display_order: number
+          height_px: number | null
           id: string
           image_url: string
           is_active: boolean
@@ -696,6 +697,7 @@ export type Database = {
         Insert: {
           created_at?: string
           display_order?: number
+          height_px?: number | null
           id?: string
           image_url: string
           is_active?: boolean
@@ -706,6 +708,7 @@ export type Database = {
         Update: {
           created_at?: string
           display_order?: number
+          height_px?: number | null
           id?: string
           image_url?: string
           is_active?: boolean
