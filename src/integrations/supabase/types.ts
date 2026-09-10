@@ -1691,6 +1691,8 @@ export type Database = {
           lat: number
           lng: number
           mobile: string | null
+          offer_label: string | null
+          offer_percent: number
           open_time: string
           owner_id: string | null
           owner_name: string | null
@@ -1726,6 +1728,8 @@ export type Database = {
           lat?: number
           lng?: number
           mobile?: string | null
+          offer_label?: string | null
+          offer_percent?: number
           open_time?: string
           owner_id?: string | null
           owner_name?: string | null
@@ -1761,6 +1765,8 @@ export type Database = {
           lat?: number
           lng?: number
           mobile?: string | null
+          offer_label?: string | null
+          offer_percent?: number
           open_time?: string
           owner_id?: string | null
           owner_name?: string | null
