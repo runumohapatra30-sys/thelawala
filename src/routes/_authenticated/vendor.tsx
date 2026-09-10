@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { SectionList } from "@/components/DynamicPageRenderer";
 import { usePageLayout } from "@/lib/pageLayout";
 import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
+import { PRICE_MARKUP, VENDOR_PAYOUT_RATE } from "@/lib/pricing";
 
 export const Route = createFileRoute("/_authenticated/vendor")({
   head: () => ({
@@ -31,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/vendor")({
 });
 
 type Order = {
-  id: string; code: string; status: string; grand_total: number; food_total: number;
+  id: string; code: string; status: string; grand_total: number; food_total: number; base_food_total: number | null;
   pickup_otp: string; qr_hash: string | null; customer_name: string; address_line: string; partner_id: string | null;
   delivery_instructions?: string | null; ready_at?: string | null;
 };
@@ -79,7 +80,7 @@ function VendorPortal() {
   const [dishSaving, setDishSaving] = useState(false);
   const [dishOpen, setDishOpen] = useState(false);
   const [slip, setSlip] = useState<Order | null>(null);
-  const [today, setToday] = useState({ orders: 0, sales: 0, rating: 0 });
+  const [today, setToday] = useState({ orders: 0, sales: 0, earning: 0, rating: 0 });
 
   const newOrders = orders.filter((o) => o.status === "ORDER_PLACED");
   const pending = newOrders.length;
@@ -100,7 +101,7 @@ function VendorPortal() {
     if (!vendor) return;
     const load = () => {
       supabase.from("orders")
-        .select("id,code,status,grand_total,food_total,pickup_otp,qr_hash,customer_name,address_line,partner_id,delivery_instructions,ready_at")
+        .select("id,code,status,grand_total,food_total,base_food_total,pickup_otp,qr_hash,customer_name,address_line,partner_id,delivery_instructions,ready_at")
         .eq("vendor_id", vendor.id).order("created_at", { ascending: false }).limit(30)
         .then(({ data }) => setOrders((data ?? []) as Order[]));
     };
@@ -108,14 +109,21 @@ function VendorPortal() {
       const since = new Date();
       since.setHours(0, 0, 0, 0);
       const [{ data: done }, { data: rates }] = await Promise.all([
-        supabase.from("orders").select("food_total").eq("vendor_id", vendor.id).eq("status", "DELIVERED")
+        supabase.from("orders").select("food_total,base_food_total").eq("vendor_id", vendor.id).eq("status", "DELIVERED")
           .gte("delivered_at", since.toISOString()),
         supabase.from("order_ratings").select("food_stars").eq("vendor_id", vendor.id),
       ]);
       const stars = (rates ?? []).map((r) => Number(r.food_stars));
+      // Stall earning = 95% of the base food total (customer price is base + 10% markup).
+      const earning = (done ?? []).reduce((a, d) => {
+        const food = Number(d.food_total ?? 0);
+        const base = Number(d.base_food_total ?? 0) > 0 ? Number(d.base_food_total) : food / PRICE_MARKUP;
+        return a + base * VENDOR_PAYOUT_RATE;
+      }, 0);
       setToday({
         orders: done?.length ?? 0,
         sales: (done ?? []).reduce((a, d) => a + Number(d.food_total), 0),
+        earning,
         rating: stars.length ? Math.round((stars.reduce((a, b) => a + b, 0) / stars.length) * 10) / 10 : 0,
       });
     };
@@ -440,14 +448,19 @@ function VendorPortal() {
             vendor_stats: (cfg) => (
               <>
                 {cfg.title ? <p className="section-title">{cfg.title}</p> : null}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <div className="stat-tile">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Orders today</p>
                     <p className="mt-0.5 text-lg font-black leading-none">{today.orders}</p>
                   </div>
                   <div className="stat-tile">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Your earning today</p>
+                    <p className="mt-0.5 text-lg font-black leading-none text-primary">{inr(Math.round(today.earning))}</p>
+                    <p className="mt-0.5 text-[9px] text-muted-foreground">95% of your price, paid on delivery</p>
+                  </div>
+                  <div className="stat-tile">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Sales today</p>
-                    <p className="mt-0.5 text-lg font-black leading-none text-primary">{inr(Math.round(today.sales))}</p>
+                    <p className="mt-0.5 text-lg font-black leading-none">{inr(Math.round(today.sales))}</p>
                   </div>
                   <div className="stat-tile">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Rating</p>
@@ -601,6 +614,11 @@ function VendorPortal() {
                 </div>
                 <p className="shrink-0 text-base font-black">{inr(Number(o.grand_total))}</p>
               </div>
+              {o.status === "DELIVERED" ? (
+                <p className="mt-2 rounded-xl bg-primary/10 px-2.5 py-1.5 text-[11px] font-black text-primary">
+                  ✅ Order delivered — you earned {inr(Math.round((Number(o.base_food_total ?? 0) > 0 ? Number(o.base_food_total) : Number(o.food_total) / PRICE_MARKUP) * VENDOR_PAYOUT_RATE))}
+                </p>
+              ) : null}
 
               <div className="mt-3 flex flex-wrap gap-2">
                 {o.status === "PREPARING" ? (
