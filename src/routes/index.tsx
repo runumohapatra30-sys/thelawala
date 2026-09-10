@@ -309,9 +309,9 @@ function Home() {
                 </p>
                 <div className="mt-2.5 flex items-center justify-between px-0.5">
                   <p className="text-[15px] font-extrabold text-primary">
-                    {inr(shownPrice)}{" "}
+                    {inr(offerPrice)}{" "}
                     {off > 0 ? (
-                      <span className="text-[11px] font-medium text-muted-foreground line-through">{inr(shownMrp)}</span>
+                      <span className="text-[11px] font-medium text-muted-foreground line-through">{inr(shownPrice)}</span>
                     ) : null}
                   </p>
                   {!i.in_stock ? null : line ? (
