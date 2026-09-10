@@ -18,6 +18,7 @@ import { DynamicAssetBanner } from "@/components/DynamicAssetBanner";
 import { DynamicBanners } from "@/components/DynamicBanners";
 import { DynamicPageRenderer, type SectionRegistry } from "@/components/DynamicPageRenderer";
 import { FestiveSections } from "@/components/FestiveSections";
+import { FestivePhotoStrip } from "@/components/FestivePhotoStrip";
 import { activeThemeColor, useTopBarTheme } from "@/lib/appTheme";
 import { Bike, Gift, Heart, Utensils, Wallet, X, Zap } from "lucide-react";
 
