@@ -17,7 +17,8 @@ import { VoiceSearch } from "@/components/VoiceSearch";
 import { DynamicAssetBanner } from "@/components/DynamicAssetBanner";
 import { DynamicBanners } from "@/components/DynamicBanners";
 import { DynamicPageRenderer, type SectionRegistry } from "@/components/DynamicPageRenderer";
-import { FestiveSections } from "@/components/FestiveSections";
+import { FestiveHero, FestiveSections } from "@/components/FestiveSections";
+import { useHomeSections } from "@/lib/homeSections";
 import { FestivePhotoStrip } from "@/components/FestivePhotoStrip";
 import { activeThemeColor, useTopBarTheme } from "@/lib/appTheme";
 import { Bike, Gift, Heart, Utensils, Wallet, X, Zap } from "lucide-react";
@@ -82,6 +83,9 @@ function Home() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const topBarTheme = useTopBarTheme();
   const topBarColor = activeThemeColor(topBarTheme);
+  const homeSections = useHomeSections();
+  const festiveTheme = homeSections.find((s) => s.section_type === "FESTIVE_GRID_4" && s.cards.some((c) => c.title || c.image_url)) ?? null;
+  const otherSections = festiveTheme ? homeSections.filter((s) => s.id !== festiveTheme.id) : homeSections;
 
   useEffect(() => {
     activeCampaign().then(setCampaign);
