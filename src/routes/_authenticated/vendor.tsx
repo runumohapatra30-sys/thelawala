@@ -109,11 +109,24 @@ function VendorPortal() {
 
   useEffect(() => {
     if (!vendor) return;
-    const load = () => {
-      supabase.from("orders")
-        .select("id,code,status,grand_total,food_total,base_food_total,pickup_otp,qr_hash,customer_name,address_line,partner_id,delivery_instructions,ready_at")
-        .eq("vendor_id", vendor.id).order("created_at", { ascending: false }).limit(30)
-        .then(({ data }) => setOrders((data ?? []) as Order[]));
+    const load = async () => {
+      const { data } = await supabase
+        .from("orders")
+        .select("id,code,status,grand_total,food_total,base_food_total,pickup_otp,qr_hash,customer_name,address_line,payment_mode,partner_id,delivery_instructions,ready_at,created_at")
+        .eq("vendor_id", vendor.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      const list = (data ?? []) as Order[];
+      setOrders(list);
+      if (list.length === 0) {
+        setOrderItems([]);
+        return;
+      }
+      const { data: its } = await supabase
+        .from("order_items")
+        .select("id,order_id,name")
+        .in("order_id", list.map((o) => o.id));
+      setOrderItems((its ?? []) as OrderItemName[]);
     };
     const loadToday = async () => {
       const since = new Date();
