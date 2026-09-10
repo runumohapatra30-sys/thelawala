@@ -20,7 +20,14 @@ export function FestivePhotoStrip({ photos }: { photos?: FestivePhoto[] }) {
 
   if (rows.length === 0) return null;
   const current = rows[Math.min(n, rows.length - 1)]!;
-  const ratio = current.size_mode === "COMPACT" ? "aspect-[4/1]" : "aspect-[16/9]";
+
+  // Admin can set an exact pixel height. If not set, fall back to the aspect ratio size mode.
+  const fixedHeight = current.height_px ? `${current.height_px}px` : null;
+  const ratioClass = fixedHeight
+    ? "h-auto"
+    : current.size_mode === "COMPACT"
+      ? "aspect-[4/1]"
+      : "aspect-[16/9]";
 
   const picture = (
     <img
@@ -28,7 +35,8 @@ export function FestivePhotoStrip({ photos }: { photos?: FestivePhoto[] }) {
       src={current.image_url}
       alt="Festive offer"
       loading="lazy"
-      className={`fade-swap block w-full ${ratio} rounded-2xl object-cover`}
+      style={fixedHeight ? { height: fixedHeight, maxHeight: fixedHeight } : undefined}
+      className={`fade-swap block w-full ${ratioClass} rounded-2xl object-cover`}
     />
   );
 

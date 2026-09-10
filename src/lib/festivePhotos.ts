@@ -6,13 +6,14 @@ export type FestivePhoto = {
   image_url: string;
   link_url: string | null;
   size_mode: "FULL" | "COMPACT";
+  height_px: number | null;
   display_order: number;
   is_active: boolean;
 };
 
 export const MAX_FESTIVE_PHOTOS = 5;
 
-const COLS = "id,image_url,link_url,size_mode,display_order,is_active";
+const COLS = "id,image_url,link_url,size_mode,height_px,display_order,is_active";
 
 export async function listFestivePhotos(onlyActive: boolean): Promise<FestivePhoto[]> {
   let q = supabase.from("home_festive_photos").select(COLS).order("display_order").order("created_at");
@@ -21,6 +22,7 @@ export async function listFestivePhotos(onlyActive: boolean): Promise<FestivePho
   return (data ?? []).map((r) => ({
     ...r,
     size_mode: r.size_mode === "COMPACT" ? "COMPACT" : "FULL",
+    height_px: r.height_px ? Number(r.height_px) : null,
   })) as FestivePhoto[];
 }
 
