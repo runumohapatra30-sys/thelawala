@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type SectionType = "FESTIVE_GRID_4" | "FESTIVE_PICKS_PRODUCTS";
 
-export type GridCard = { title: string; image_url: string; filter: string };
+export type GridCard = { title: string; image_url: string; filter: string; tag: string };
 
 export type HomeSection = {
   id: string;
