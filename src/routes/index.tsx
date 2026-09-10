@@ -49,7 +49,7 @@ type Item = {
   food_type: string;
 };
 type Category = { id: string; name: string; emoji: string | null };
-type Vendor = { id: string; stall_name: string; is_open: boolean };
+type Vendor = { id: string; stall_name: string; is_open: boolean; offer_percent: number | null; offer_label: string | null };
 
 const TINTS = [
   "bg-[color-mix(in_oklab,var(--color-brand)_28%,white)]",
@@ -85,7 +85,7 @@ function Home() {
   useEffect(() => {
     activeCampaign().then(setCampaign);
     supabase.from("categories").select("id,name,emoji").order("sort_order").then(({ data }) => setCats(data ?? []));
-    supabase.from("vendors").select("id,stall_name,is_open").eq("status", "APPROVED").then(({ data }) => setVendors(data ?? []));
+    supabase.from("vendors").select("id,stall_name,is_open,offer_percent,offer_label").eq("status", "APPROVED").then(({ data }) => setVendors((data ?? []) as Vendor[]));
     supabase
       .from("menu_items")
       .select("id,vendor_id,category_id,name,details,photo_url,unit,price,mrp,in_stock,food_type")
@@ -132,6 +132,10 @@ function Home() {
 
   const vendorName = useMemo(
     () => Object.fromEntries(vendors.map((v) => [v.id, v.stall_name])),
+    [vendors],
+  );
+  const vendorOffer = useMemo(
+    () => Object.fromEntries(vendors.map((v) => [v.id, Number(v.offer_percent ?? 0)])),
     [vendors],
   );
 
