@@ -87,6 +87,11 @@ function VendorPortal() {
   const [slip, setSlip] = useState<Order | null>(null);
   const [today, setToday] = useState({ orders: 0, sales: 0, earning: 0, rating: 0 });
 
+  const [statusFilter, setStatusFilter] = useState<StatusValue>("ALL");
+  const [dateFilter, setDateFilter] = useState<DateRange>("ALL");
+  const [paymentFilter, setPaymentFilter] = useState<PaymentMode>("ALL");
+  const [search, setSearch] = useState("");
+
   const newOrders = orders.filter((o) => o.status === "ORDER_PLACED");
   const pending = newOrders.length;
   const { muted, setMuted } = useLoudAlarm(pending > 0);
