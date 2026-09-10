@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { HandCoins, IndianRupee, Megaphone, ReceiptText, RotateCcw, SlidersHorizontal, Users } from "lucide-react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { SupportQueue } from "@/components/SupportQueue";
 import { PayoutQueue, LiveOrders, CustomerManager } from "@/components/AdminPanels";
@@ -11,11 +12,15 @@ import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 import { AdminApprovals } from "@/components/AdminApprovals";
 import { RevenueSplit } from "@/components/RevenueSplit";
 import { CashRemittances } from "@/components/CashRemittances";
+import { AdminOrdersSection } from "@/components/admin/AdminOrdersSection";
+import { AdminSettlement } from "@/components/admin/AdminSettlement";
+import { AdminRefunds } from "@/components/admin/AdminRefunds";
 import { supabase } from "@/integrations/supabase/client";
 import { listCoupons, type Coupon } from "@/lib/coupons";
-import { inr, STATUS_LABEL, type Settings } from "@/lib/fees";
+import { inr, type Settings } from "@/lib/fees";
 import { useIsAdmin, useSession } from "@/lib/session";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
