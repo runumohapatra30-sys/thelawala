@@ -221,6 +221,7 @@ function SectionStudio() {
                 <div key={n} className="grid grid-cols-2 gap-2 rounded-xl border border-border p-2">
                   <input value={c.title} onChange={(e) => upCard(n, { title: e.target.value })} placeholder={`Card ${n + 1} title`} className={inputCls} />
                   <input value={c.filter} onChange={(e) => upCard(n, { filter: e.target.value })} placeholder="Filter word (e.g. modak)" className={inputCls} />
+                  <input value={c.tag ?? ""} onChange={(e) => upCard(n, { tag: e.target.value })} placeholder="Tag (e.g. From ₹109)" className={`${inputCls} col-span-2`} />
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
