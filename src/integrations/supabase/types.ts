@@ -182,6 +182,33 @@ export type Database = {
         }
         Relationships: []
       }
+      app_theme_config: {
+        Row: {
+          current_bg_color: string
+          id: string
+          is_temporary_active: boolean
+          temporary_bg_color: string | null
+          temporary_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          current_bg_color?: string
+          id?: string
+          is_temporary_active?: boolean
+          temporary_bg_color?: string | null
+          temporary_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          current_bg_color?: string
+          id?: string
+          is_temporary_active?: boolean
+          temporary_bg_color?: string | null
+          temporary_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       banners: {
         Row: {
           category_id: string | null
@@ -591,6 +618,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      home_dynamic_sections: {
+        Row: {
+          bg_color: string | null
+          bg_image_url: string | null
+          cards: Json
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          item_ids: string[]
+          section_type: string
+          subtitle: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          bg_color?: string | null
+          bg_image_url?: string | null
+          cards?: Json
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          item_ids?: string[]
+          section_type?: string
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          bg_color?: string | null
+          bg_image_url?: string | null
+          cards?: Json
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          item_ids?: string[]
+          section_type?: string
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       menu_items: {
         Row: {
