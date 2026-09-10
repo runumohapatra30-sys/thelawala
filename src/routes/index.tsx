@@ -186,6 +186,7 @@ function Home() {
     festive_photos: () => <FestivePhotoStrip />,
     festive_sections: () => (
       <FestiveSections
+        sections={otherSections}
         items={items}
         onFilter={(v) => { setQ(v); setActive(null); setVendorFilter(null); }}
         onAdd={(id) => { const it = items.find((x) => x.id === id); if (it) add(it); }}
@@ -349,8 +350,14 @@ function Home() {
   return (
     <Shell>
       <header
-        style={{ backgroundColor: topBarColor }}
-        className="relative z-20 flex min-w-0 flex-col gap-4 overflow-hidden px-5 pb-4 pt-4 text-brand-foreground shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)] transition-colors duration-500"
+        style={
+          festiveTheme
+            ? festiveTheme.bg_image_url
+              ? { backgroundImage: `url(${festiveTheme.bg_image_url})`, backgroundSize: "cover", backgroundPosition: "center" }
+              : { background: festiveTheme.bg_color || topBarColor }
+            : { backgroundColor: topBarColor }
+        }
+        className={`relative z-20 flex min-w-0 flex-col gap-4 overflow-hidden px-5 pb-4 pt-4 text-brand-foreground shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)] transition-colors duration-500 ${festiveTheme ? "rounded-b-[2.5rem] pb-6" : ""}`}
       >
         <div className="pointer-events-none absolute inset-0 brand-header" />
 
