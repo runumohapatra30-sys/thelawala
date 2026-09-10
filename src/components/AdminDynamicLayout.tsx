@@ -21,7 +21,7 @@ import {
 const inputCls =
   "w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary";
 
-const blankCard = (): GridCard => ({ title: "", image_url: "", filter: "" });
+const blankCard = (): GridCard => ({ title: "", image_url: "", filter: "", tag: "" });
 
 const blankSection = (type: SectionType): HomeSection => ({
   id: "",
