@@ -62,6 +62,7 @@ function VendorPortal() {
   const [vendor, setVendor] = useState<{ id: string; stall_name: string; status: string; is_open: boolean; fssai_number: string | null } | null>(null);
   const vLayout = usePageLayout("vendor", "dashboard");
   const [orders, setOrders] = useState<Order[]>([]);
+  const [orderItems, setOrderItems] = useState<OrderItemName[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
   const [form, setForm] = useState({
