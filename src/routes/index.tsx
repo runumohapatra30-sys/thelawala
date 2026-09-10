@@ -442,7 +442,11 @@ function Home() {
           />
         </div>
 
-        {topBarTheme?.festive_style_active && campaign?.title ? (
+        {festiveTheme ? (
+          <div className="relative z-10 min-w-0 pt-1">
+            <FestiveHero section={festiveTheme} onFilter={(v) => { setQ(v); setActive(null); setVendorFilter(null); }} />
+          </div>
+        ) : topBarTheme?.festive_style_active && campaign?.title ? (
           <div className="relative z-10 min-w-0">
             <div className="mb-1 flex items-center gap-2 text-brand">
               <span className="h-0.5 w-6 rounded-full bg-brand" />
