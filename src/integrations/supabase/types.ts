@@ -1313,45 +1313,54 @@ export type Database = {
       refund_requests: {
         Row: {
           admin_note: string | null
+          admin_response: string | null
           amount: number
           bank_account_no: string | null
           bank_holder: string | null
           bank_ifsc: string | null
+          completed_at: string | null
           created_at: string
           id: string
           method: string
           order_id: string
           reason: string | null
+          reviewed_at: string | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           admin_note?: string | null
+          admin_response?: string | null
           amount?: number
           bank_account_no?: string | null
           bank_holder?: string | null
           bank_ifsc?: string | null
+          completed_at?: string | null
           created_at?: string
           id?: string
           method?: string
           order_id: string
           reason?: string | null
+          reviewed_at?: string | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           admin_note?: string | null
+          admin_response?: string | null
           amount?: number
           bank_account_no?: string | null
           bank_holder?: string | null
           bank_ifsc?: string | null
+          completed_at?: string | null
           created_at?: string
           id?: string
           method?: string
           order_id?: string
           reason?: string | null
+          reviewed_at?: string | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -1403,6 +1412,69 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "delivery_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      settlements: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          paid_at: string
+          partner_id: string | null
+          party_type: string
+          period_from: string | null
+          period_to: string | null
+          reference: string | null
+          updated_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          paid_at?: string
+          partner_id?: string | null
+          party_type: string
+          period_from?: string | null
+          period_to?: string | null
+          reference?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          paid_at?: string
+          partner_id?: string | null
+          party_type?: string
+          period_from?: string | null
+          period_to?: string | null
+          reference?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "settlements_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlements_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
             referencedColumns: ["id"]
           },
         ]
@@ -1835,6 +1907,10 @@ export type Database = {
           size_bytes: number
         }[]
       }
+      advance_refund: {
+        Args: { _request_id: string; _response?: string; _status: string }
+        Returns: undefined
+      }
       apply_referral: { Args: { _code: string }; Returns: string }
       complete_delivery: {
         Args: { _order_id: string; _otp: string; _proof_path: string }
@@ -1875,6 +1951,7 @@ export type Database = {
         Returns: boolean
       }
       partner_balance: { Args: { _partner_id: string }; Returns: number }
+      partner_settled: { Args: { _partner_id: string }; Returns: number }
       request_payout: {
         Args: {
           _amount: number
@@ -1903,6 +1980,7 @@ export type Database = {
       rider_cash_in_hand: { Args: { _partner_id: string }; Returns: number }
       sweep_dispatch: { Args: never; Returns: number }
       vendor_balance: { Args: { _vendor_id: string }; Returns: number }
+      vendor_settled: { Args: { _vendor_id: string }; Returns: number }
       wallet_credit: {
         Args: {
           _amount: number

@@ -9,6 +9,7 @@ import { inr, STATUS_LABEL } from "@/lib/fees";
 import { openInvoice, type InvoiceOrder } from "@/lib/invoice";
 import { OrderDeliveredRating } from "@/components/OrderDeliveredRating";
 import { useSession } from "@/lib/session";
+import { RefundPanel } from "@/components/RefundPanel";
 
 export const Route = createFileRoute("/orders/$id")({
   validateSearch: (s: Record<string, unknown>): { placed?: 1 } => (s['placed'] ? { placed: 1 } : {}),
@@ -58,7 +59,6 @@ function Track() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [reason, setReason] = useState(REASONS[0]!);
   const [splash, setSplash] = useState(Boolean(placed));
-  const [refundMsg, setRefundMsg] = useState<string | null>(null);
   const [tipMsg, setTipMsg] = useState<string | null>(null);
   const [customTip, setCustomTip] = useState("");
   const [rateOpen, setRateOpen] = useState(false);
@@ -410,30 +410,11 @@ function Track() {
             </button>
           ) : null}
         </div>
-        {order.status === "CANCELLED" && (order.payment_status === "PAID" || Number(order.wallet_paid) > 0) ? (
-          <div className="card-soft border border-border p-3">
-            <p className="text-sm font-bold">Refund</p>
-            <p className="text-[11px] text-muted-foreground">
-              Ask for the money back to your ThelaWala wallet. Approved refunds are credited within minutes.
-            </p>
-            <button
-              onClick={async () => {
-                const amount = Math.max(0, Number(order.grand_total) - Number(order.penalty_fee ?? 0));
-                const { error } = await supabase.rpc("request_refund", {
-                  _order_id: order.id,
-                  _amount: amount,
-                  _reason: order.cancel_reason ?? "Order cancelled",
-                  _method: "WALLET",
-                });
-                setRefundMsg(error ? error.message : "Refund requested. We will credit your wallet shortly.");
-              }}
-              className="mt-2 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground"
-            >
-              Request refund
-            </button>
-            {refundMsg ? <p className="mt-2 text-xs font-semibold text-primary">{refundMsg}</p> : null}
-          </div>
+        {order.payment_mode !== "COD" && (order.payment_status === "PAID" || Number(order.wallet_paid) > 0) &&
+        (order.status === "CANCELLED" || order.status === "DELIVERED") ? (
+          <RefundPanel orderId={order.id} amount={Math.max(0, Number(order.grand_total) - Number(order.penalty_fee ?? 0))} />
         ) : null}
+
         <Link to="/terms" className="block text-center text-[11px] text-muted-foreground underline">
           Cancellation &amp; refund terms
         </Link>

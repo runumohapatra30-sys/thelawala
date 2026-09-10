@@ -3,6 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { LogoutButton, Shell } from "@/components/Shell";
 import { PayoutPanel } from "@/components/Payouts";
 import { CashSettlement } from "@/components/CashSettlement";
+import { RiderEarningsBreakdown } from "@/components/RiderEarningsBreakdown";
+import { SettlementHistory } from "@/components/SettlementHistory";
+import { splitOrder } from "@/lib/settlement";
 import { OrderChat } from "@/components/OrderChat";
 
 import { LiveMap } from "@/components/LiveMap";
@@ -39,6 +42,7 @@ type Order = {
   drop_lat: number; drop_lng: number; vendor_id: string; partner_id: string | null;
   offered_to: string | null; offer_expires_at: string | null; rejected_partner_ids: string[];
   payment_mode: string; payment_status: string;
+  food_total?: number; base_food_total?: number | null;
   cancel_otp?: string | null; cancel_reason?: string | null;
 };
 
@@ -189,30 +193,35 @@ function RiderPortal() {
         setOffer(null);
       }
 
+      const MONEY = "delivery_fee,tip_amount,food_total,base_food_total,distance_km,grand_total,status,payment_mode";
+      const riderPay = (rows: unknown[] | null) =>
+        (rows ?? []).reduce<number>((a, d) => a + splitOrder(d as never).riderTotal, 0);
+
       const since = new Date();
       since.setHours(0, 0, 0, 0);
       const { data: done } = await supabase.from("orders")
-        .select("delivery_fee,tip_amount").eq("partner_id", me.id).eq("status", "DELIVERED")
+        .select(MONEY).eq("partner_id", me.id).eq("status", "DELIVERED")
         .gte("delivered_at", since.toISOString());
       setEarnings({
         trips: done?.length ?? 0,
-        total: (done ?? []).reduce((a, d) => a + Number(d.delivery_fee) + Number(d.tip_amount ?? 0), 0),
+        total: riderPay(done),
       });
 
       const weekStart = new Date();
       weekStart.setDate(weekStart.getDate() - 6);
       weekStart.setHours(0, 0, 0, 0);
       const [{ data: wk }, { data: rates }] = await Promise.all([
-        supabase.from("orders").select("delivery_fee,tip_amount").eq("partner_id", me.id).eq("status", "DELIVERED")
+        supabase.from("orders").select(MONEY).eq("partner_id", me.id).eq("status", "DELIVERED")
           .gte("delivered_at", weekStart.toISOString()),
         supabase.from("order_ratings").select("delivery_stars").eq("partner_id", me.id),
       ]);
       const stars = (rates ?? []).map((r) => Number(r.delivery_stars));
       setWeek({
         trips: wk?.length ?? 0,
-        total: (wk ?? []).reduce((a, d) => a + Number(d.delivery_fee) + Number(d.tip_amount ?? 0), 0),
+        total: riderPay(wk),
         rating: stars.length ? Math.round((stars.reduce((a, b) => a + b, 0) / stars.length) * 10) / 10 : 0,
       });
+
     };
     load();
     const t = setInterval(load, 6000);
@@ -691,12 +700,21 @@ function RiderPortal() {
                 </div>
 
                 <div className="mt-3">
+                  <RiderEarningsBreakdown partnerId={me.id} />
+                </div>
+
+                <div className="mt-3">
+                  <SettlementHistory party="PARTNER" id={me.id} />
+                </div>
+
+                <div className="mt-3">
                   <CashSettlement partnerId={me.id} userId={user?.id ?? ""} />
                 </div>
 
                 <div className="mt-3">
                   <PayoutPanel party="PARTNER" id={me.id} />
                 </div>
+
                 {cfg.title ? <p className="section-title pt-1">{cfg.title}</p> : null}
               </>
             ),
@@ -1136,6 +1154,7 @@ function OfferDrawer({
   const left = Math.min(secs, total);
   const pct = (left / total) * 100;
   const pickupKm = pos ? haversineKm(pos, { lat: Number(vendor.lat), lng: Number(vendor.lng) }) : null;
+  const pay = splitOrder(offer as never);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50">
       <div className="w-full max-w-[480px] rounded-t-3xl bg-card p-4 pb-6">
@@ -1165,9 +1184,15 @@ function OfferDrawer({
           </div>
           <div className="rounded-xl bg-brand-soft p-2">
             <p className="text-[10px] font-bold uppercase text-muted-foreground">You earn</p>
-            <p className="text-sm font-extrabold">{inr(Number(offer.delivery_fee))}</p>
+            <p className="text-sm font-extrabold">{inr(Math.round(pay.riderTotal))}</p>
           </div>
         </div>
+
+        <p className="mt-2 rounded-xl bg-muted/60 px-3 py-2 text-[11px] font-semibold">
+          Delivery fee {inr(Math.round(pay.riderFee))}
+          {pay.riderTip > 0 ? ` · Tip ${inr(Math.round(pay.riderTip))}` : ""}
+          {pay.riderGift > 0 ? ` · Gift bonus ${inr(Math.round(pay.riderGift))}` : ""}
+        </p>
 
         <div className="mt-4">
           <RiderOrderSwipe secs={secs} total={total} onAccept={onAccept} onDecline={onDecline} />

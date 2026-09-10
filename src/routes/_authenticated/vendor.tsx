@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { PayoutPanel } from "@/components/Payouts";
+import { SettlementHistory } from "@/components/SettlementHistory";
 import { VendorHours, PrepCountdown } from "@/components/VendorHours";
 import { supabase } from "@/integrations/supabase/client";
 import { offerToNearestPartner } from "@/lib/dispatch";
@@ -471,7 +472,10 @@ function VendorPortal() {
             ),
             vendor_settings: () => (
               <div className="mt-3">
-                <PayoutPanel party="VENDOR" id={vendor.id} />
+                <SettlementHistory party="VENDOR" id={vendor.id} />
+                <div className="mt-3">
+                  <PayoutPanel party="VENDOR" id={vendor.id} />
+                </div>
                 <p className="section-title pt-1">Stall settings</p>
                 <VendorHours vendorId={vendor.id} />
               </div>
