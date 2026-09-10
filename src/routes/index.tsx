@@ -49,7 +49,7 @@ type Item = {
   food_type: string;
 };
 type Category = { id: string; name: string; emoji: string | null };
-type Vendor = { id: string; stall_name: string; is_open: boolean; offer_percent: number | null; offer_label: string | null };
+type Vendor = { id: string; stall_name: string; is_open: boolean; photo_url: string | null; offer_percent: number | null; offer_label: string | null };
 
 const TINTS = [
   "bg-[color-mix(in_oklab,var(--color-brand)_28%,white)]",
@@ -85,7 +85,7 @@ function Home() {
   useEffect(() => {
     activeCampaign().then(setCampaign);
     supabase.from("categories").select("id,name,emoji").order("sort_order").then(({ data }) => setCats(data ?? []));
-    supabase.from("vendors").select("id,stall_name,is_open,offer_percent,offer_label").eq("status", "APPROVED").then(({ data }) => setVendors((data ?? []) as Vendor[]));
+    supabase.from("vendors").select("id,stall_name,is_open,photo_url,offer_percent,offer_label").eq("status", "APPROVED").then(({ data }) => setVendors((data ?? []) as Vendor[]));
     supabase
       .from("menu_items")
       .select("id,vendor_id,category_id,name,details,photo_url,unit,price,mrp,in_stock,food_type")
@@ -139,11 +139,14 @@ function Home() {
     [vendors],
   );
 
+  const query = q.trim().toLowerCase();
   const shown = items.filter(
     (i) =>
       (!active || i.category_id === active) &&
       (!vendorFilter || i.vendor_id === vendorFilter) &&
-      (!q || i.name.toLowerCase().includes(q.toLowerCase())) &&
+      (!query ||
+        i.name.toLowerCase().includes(query) ||
+        (vendorName[i.vendor_id] ?? "").toLowerCase().includes(query)) &&
       (!onlyVeg || i.food_type !== "NONVEG") &&
       (!onlyFav || favs.includes(i.id)),
   );
@@ -323,7 +326,7 @@ function Home() {
                   ) : (
                     <button
                       onClick={() => add(i)}
-                      className="press shine rounded-full border border-primary bg-[color-mix(in_oklab,var(--color-primary)_8%,white)] px-3.5 py-1.5 text-[11px] font-extrabold text-primary shadow-[0_8px_18px_-12px_var(--color-primary)]"
+                      className="press shine rounded-full border border-primary bg-[color-mix(in_oklab,var(--color-primary)_8%,white)] px-2.5 py-1 text-[10px] font-extrabold text-primary shadow-[0_8px_18px_-12px_var(--color-primary)]"
                     >
                       ADD
                     </button>
@@ -410,7 +413,7 @@ function Home() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder='Search "dahi bara"'
+            placeholder='Search "dahi bara" or a stall name'
             className="min-w-0 flex-1 bg-transparent text-sm font-medium text-foreground outline-none"
           />
           <VoiceSearch
@@ -482,6 +485,36 @@ function Home() {
                 alt="Thaleewala festive offer"
                 className="festive-header-photo block h-auto w-full rounded-2xl object-contain shadow-sm"
               />
+            </div>
+          </section>
+        ) : null}
+        {vendors.length > 0 ? (
+          <section className="px-5 pt-2">
+            <h2 className="text-[17px] font-extrabold">Your stalls</h2>
+            <p className="mt-0.5 text-xs font-medium text-muted-foreground">Tap a stall to see only their food</p>
+            <div className="mt-3 flex snap-x gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {vendors.map((v) => (
+                <button
+                  key={v.id}
+                  onClick={() => { setVendorFilter(vendorFilter === v.id ? null : v.id); setActive(null); }}
+                  className="press w-[70px] shrink-0 snap-start text-center"
+                >
+                  <span
+                    className={`relative block aspect-square overflow-hidden rounded-full bg-muted shadow-[0_10px_20px_-14px_rgba(15,23,42,0.8)] ${vendorFilter === v.id ? "ring-2 ring-primary ring-offset-2" : ""}`}
+                  >
+                    <img
+                      src={v.photo_url ?? foodImage(v.stall_name)}
+                      alt={v.stall_name}
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  </span>
+                  <span className="mt-1.5 block truncate text-[10.5px] font-extrabold leading-tight">{v.stall_name}</span>
+                  {Number(v.offer_percent ?? 0) > 0 ? (
+                    <span className="block text-[9px] font-black text-primary">{v.offer_percent}% OFF</span>
+                  ) : null}
+                </button>
+              ))}
             </div>
           </section>
         ) : null}
