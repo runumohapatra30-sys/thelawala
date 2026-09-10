@@ -47,11 +47,10 @@ export function AdminRefunds() {
 
   async function advance(r: Req, status: string) {
     setBusy(r.id);
-    const { error } = await supabase.rpc("advance_refund", {
-      _request_id: r.id,
-      _status: status,
-      _response: reply[r.id] || undefined,
-    });
+    const args: Record<string, unknown> = { _request_id: r.id, _status: status };
+    if (reply[r.id]) args["_response"] = reply[r.id];
+    const { error } = await supabase.rpc("advance_refund", args as never);
+
     setBusy(null);
     if (error) { toast.error(error.message); return; }
     toast.success(`Refund marked as ${REFUND_LABEL[status] ?? status}.`);
