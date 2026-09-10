@@ -567,7 +567,13 @@ function Cart() {
           >
             <span className="text-sm font-black">{bill ? inr(payable) : "—"}</span>
             <span className="text-sm font-black">
-              {busy ? "PLACING…" : blockedReason ? "Not available" : "Select Payment Method ›"}
+              {busy
+                ? "PLACING…"
+                : !hasLocation
+                  ? "Set your address first"
+                  : blockedReason
+                    ? "Not available"
+                    : "Select Payment Method ›"}
             </span>
           </button>
         </div>
