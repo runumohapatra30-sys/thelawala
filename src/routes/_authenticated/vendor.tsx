@@ -176,6 +176,25 @@ function VendorPortal() {
     };
   }, [vendor?.id]);
 
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return orders.filter((o) => {
+      if (!matchesOrderFilters(o, statusFilter, dateFilter, paymentFilter)) return false;
+      if (!term) return true;
+      const itemText = orderItems
+        .filter((i) => i.order_id === o.id)
+        .map((i) => i.name)
+        .join(" ")
+        .toLowerCase();
+      return (
+        o.code.toLowerCase().includes(term) ||
+        (o.customer_name ?? "").toLowerCase().includes(term) ||
+        (o.address_line ?? "").toLowerCase().includes(term) ||
+        itemText.includes(term)
+      );
+    });
+  }, [orders, orderItems, statusFilter, dateFilter, paymentFilter, search]);
+
   async function setStatus(o: Order, status: string) {
     // Marking an order ready puts it into the rider search queue.
     const effective = status === "READY_FOR_PICKUP" ? "SEARCHING_RIDER" : status;
