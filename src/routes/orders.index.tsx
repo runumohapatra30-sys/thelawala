@@ -121,6 +121,25 @@ function Orders() {
     })();
   }, [user?.id]);
 
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return rows.filter((o) => {
+      if (!matchesOrderFilters(o, statusFilter, dateFilter, paymentFilter)) return false;
+      if (!term) return true;
+      const stall = (stalls[o.vendor_id] ?? "").toLowerCase();
+      const itemText = items
+        .filter((i) => i.order_id === o.id)
+        .map((i) => i.name)
+        .join(" ")
+        .toLowerCase();
+      return (
+        o.code.toLowerCase().includes(term) ||
+        stall.includes(term) ||
+        itemText.includes(term)
+      );
+    });
+  }, [rows, items, stalls, statusFilter, dateFilter, paymentFilter, search]);
+
   return (
     <Shell>
       <header className="brand-header sticky top-0 z-30 flex items-center gap-3 rounded-b-[2rem] px-4 py-4 shadow-[0_16px_34px_-26px_rgba(15,23,42,0.55)]">
