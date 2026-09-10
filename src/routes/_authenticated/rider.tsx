@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { DynamicPageRenderer } from "@/components/DynamicPageRenderer";
 import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 import { Html5Qrcode } from "html5-qrcode";
+import { RiderOrderSwipe } from "@/components/RiderOrderSwipe";
 
 export const Route = createFileRoute("/_authenticated/rider")({
   head: () => ({
@@ -116,7 +117,7 @@ function RiderPortal() {
   const [offer, setOffer] = useState<Order | null>(null);
   const [active, setActive] = useState<Order | null>(null);
   const [vendor, setVendor] = useState<Vendor | null>(null);
-  const [secs, setSecs] = useState(45);
+  const [secs, setSecs] = useState(30);
   const [scanOpen, setScanOpen] = useState(false);
   const [scanErr, setScanErr] = useState<string | null>(null);
   const [dropCode, setDropCode] = useState("");
@@ -240,6 +241,7 @@ function RiderPortal() {
 
   useEffect(() => {
     if (!offer) return;
+    setSecs(30);
     const t = setInterval(() => setSecs((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(t);
   }, [offer?.id]);
@@ -1167,13 +1169,8 @@ function OfferDrawer({
           </div>
         </div>
 
-        <div className="mt-3 flex gap-2">
-          <button onClick={onDecline} className="press flex-1 rounded-xl border-2 border-border py-3 text-sm font-bold">
-            Decline
-          </button>
-          <button onClick={onAccept} className="press flex-[2] rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground">
-            Accept
-          </button>
+        <div className="mt-4">
+          <RiderOrderSwipe secs={secs} total={total} onAccept={onAccept} onDecline={onDecline} />
         </div>
       </div>
     </div>
