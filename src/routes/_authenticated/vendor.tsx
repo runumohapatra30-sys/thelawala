@@ -37,8 +37,9 @@ export const Route = createFileRoute("/_authenticated/vendor")({
 type Order = {
   id: string; code: string; status: string; grand_total: number; food_total: number; base_food_total: number | null;
   pickup_otp: string; qr_hash: string | null; customer_name: string; address_line: string; partner_id: string | null;
-  delivery_instructions?: string | null; ready_at?: string | null;
+  delivery_instructions?: string | null; ready_at?: string | null; created_at: string; payment_mode: string;
 };
+type OrderItemName = { id: string; order_id: string; name: string };
 type Item = {
   id: string; name: string; price: number; mrp: number; in_stock: boolean;
   photo_url: string | null; food_type: string; category_id: string | null;
