@@ -696,12 +696,21 @@ function RiderPortal() {
                 </div>
 
                 <div className="mt-3">
+                  <RiderEarningsBreakdown partnerId={me.id} />
+                </div>
+
+                <div className="mt-3">
+                  <SettlementHistory party="PARTNER" id={me.id} />
+                </div>
+
+                <div className="mt-3">
                   <CashSettlement partnerId={me.id} userId={user?.id ?? ""} />
                 </div>
 
                 <div className="mt-3">
                   <PayoutPanel party="PARTNER" id={me.id} />
                 </div>
+
                 {cfg.title ? <p className="section-title pt-1">{cfg.title}</p> : null}
               </>
             ),
