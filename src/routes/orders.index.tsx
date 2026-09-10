@@ -165,77 +165,94 @@ function Orders() {
         ) : rows.length === 0 ? (
           <p className="py-16 text-center text-sm text-muted-foreground">No orders yet.</p>
         ) : (
-          rows.map((o, idx) => {
-            const its = items.filter((i) => i.order_id === o.id);
-            const thumb = its[0]?.photo_url ?? "/food/food-tiffin.jpg";
-            return (
-              <article
-                key={o.id}
-                style={{ animationDelay: `${Math.min(idx, 8) * 60}ms` }}
-                className="rise-in card-elevated overflow-hidden"
-              >
-                <div className="flex gap-3 p-3">
-                  <img src={thumb} alt={its[0]?.name ?? "Order"} className="h-14 w-14 shrink-0 rounded-xl object-cover" />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="truncate text-sm font-black">{stalls[o.vendor_id] ?? "ThelaWala stall"}</p>
-                      <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black ${PILL[o.status] ?? "bg-brand/20 text-primary"}`}>
-                        {shortStatus(o.status)}
-                      </span>
+          <>
+            <OrderFilterBar
+              mode="customer"
+              status={statusFilter}
+              date={dateFilter}
+              payment={paymentFilter}
+              search={search}
+              onStatus={setStatusFilter}
+              onDate={setDateFilter}
+              onPayment={setPaymentFilter}
+              onSearch={setSearch}
+            />
+            {filtered.length === 0 ? (
+              <p className="py-10 text-center text-sm text-muted-foreground">No orders match your filters.</p>
+            ) : (
+              filtered.map((o, idx) => {
+                const its = items.filter((i) => i.order_id === o.id);
+                const thumb = its[0]?.photo_url ?? "/food/food-tiffin.jpg";
+                return (
+                  <article
+                    key={o.id}
+                    style={{ animationDelay: `${Math.min(idx, 8) * 60}ms` }}
+                    className="rise-in card-elevated overflow-hidden"
+                  >
+                    <div className="flex gap-3 p-3">
+                      <img src={thumb} alt={its[0]?.name ?? "Order"} className="h-14 w-14 shrink-0 rounded-xl object-cover" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="truncate text-sm font-black">{stalls[o.vendor_id] ?? "ThelaWala stall"}</p>
+                          <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black ${PILL[o.status] ?? "bg-brand/20 text-primary"}`}>
+                            {shortStatus(o.status)}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                          #{o.code} · {new Date(o.created_at).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                        <p className="mt-1 line-clamp-2 text-xs text-foreground">
+                          {its.length ? its.map((i) => `${i.name} × ${i.qty}`).join(", ") : "Items loading…"}
+                        </p>
+                        <p className="mt-1 text-sm font-black">{inr(Number(o.grand_total) + Number(o.tip_amount ?? 0))}</p>
+                      </div>
                     </div>
-                    <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                      #{o.code} · {new Date(o.created_at).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                    <p className="mt-1 line-clamp-2 text-xs text-foreground">
-                      {its.length ? its.map((i) => `${i.name} × ${i.qty}`).join(", ") : "Items loading…"}
-                    </p>
-                    <p className="mt-1 text-sm font-black">{inr(Number(o.grand_total) + Number(o.tip_amount ?? 0))}</p>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-3 gap-px border-t border-border bg-border">
-                  <Link
-                    to="/orders/$id"
-                    params={{ id: o.id }}
-                    className="press bg-card py-2.5 text-center text-[11px] font-black text-primary"
-                  >
-                    Track order
-                  </Link>
-                  <button onClick={() => setBillFor(o)} className="press bg-card py-2.5 text-center text-[11px] font-black">
-                    Order details
-                  </button>
-                  <Link
-                    to="/support"
-                    search={{ order: o.id }}
-                    className="press bg-card py-2.5 text-center text-[11px] font-black text-primary"
-                  >
-                    Need help?
-                  </Link>
-                </div>
-                <div className="grid grid-cols-2 gap-px border-t border-border bg-border">
-                  <button onClick={() => orderAgain(o)} className="press bg-card py-2.5 text-center text-[11px] font-black text-primary">
-                    Order again
-                  </button>
-                  {o.status === "DELIVERED" ? (
-                    rated.includes(o.id) ? (
-                      <span className="bg-card py-2.5 text-center text-[11px] font-black text-muted-foreground">Rated ★</span>
-                    ) : (
-                      <button
-                        onClick={() => { setRateFor(o); setFood(5); setDelivery(5); }}
-                        className="press bg-card py-2.5 text-center text-[11px] font-black"
+                    <div className="grid grid-cols-3 gap-px border-t border-border bg-border">
+                      <Link
+                        to="/orders/$id"
+                        params={{ id: o.id }}
+                        className="press bg-card py-2.5 text-center text-[11px] font-black text-primary"
                       >
-                        Rate this order
+                        Track order
+                      </Link>
+                      <button onClick={() => setBillFor(o)} className="press bg-card py-2.5 text-center text-[11px] font-black">
+                        Order details
                       </button>
-                    )
-                  ) : (
-                    <span className="bg-card py-2.5 text-center text-[11px] font-black text-muted-foreground">
-                      {shortStatus(o.status)}
-                    </span>
-                  )}
-                </div>
-              </article>
-            );
-          })
+                      <Link
+                        to="/support"
+                        search={{ order: o.id }}
+                        className="press bg-card py-2.5 text-center text-[11px] font-black text-primary"
+                      >
+                        Need help?
+                      </Link>
+                    </div>
+                    <div className="grid grid-cols-2 gap-px border-t border-border bg-border">
+                      <button onClick={() => orderAgain(o)} className="press bg-card py-2.5 text-center text-[11px] font-black text-primary">
+                        Order again
+                      </button>
+                      {o.status === "DELIVERED" ? (
+                        rated.includes(o.id) ? (
+                          <span className="bg-card py-2.5 text-center text-[11px] font-black text-muted-foreground">Rated ★</span>
+                        ) : (
+                          <button
+                            onClick={() => { setRateFor(o); setFood(5); setDelivery(5); }}
+                            className="press bg-card py-2.5 text-center text-[11px] font-black"
+                          >
+                            Rate this order
+                          </button>
+                        )
+                      ) : (
+                        <span className="bg-card py-2.5 text-center text-[11px] font-black text-muted-foreground">
+                          {shortStatus(o.status)}
+                        </span>
+                      )}
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </>
         )}
       </div>
 
