@@ -298,7 +298,7 @@ export function ThemeController() {
       temporary_bg_color: cfg.temporary_bg_color || null,
       is_temporary_active: cfg.is_temporary_active,
       temporary_expires_at: cfg.temporary_expires_at || null,
-      header_height_px: cfg.header_height_px || 280,
+      header_height_px: 180,
       header_bg_image_url: cfg.header_bg_image_url || null,
       festive_style_active: cfg.festive_style_active,
     };
@@ -307,7 +307,7 @@ export function ThemeController() {
       : await supabase.from("app_theme_config").insert(payload);
     setBusy(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Header design applied to the live app.");
+    toast.success("Home colour and festive banner applied to the live app.");
     loadThemeConfig().then(setCfg);
   }
 
@@ -317,39 +317,31 @@ export function ThemeController() {
   return (
     <section className="card-soft space-y-2 border border-border p-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-bold">Home header design</p>
+        <p className="text-sm font-bold">Home colour &amp; festive banner</p>
         <button
-          onClick={() => setCfg({ ...cfg, current_bg_color: BRAND_YELLOW, temporary_bg_color: null, is_temporary_active: false, temporary_expires_at: null, header_height_px: 280, header_bg_image_url: null, festive_style_active: false })}
+          onClick={() => setCfg({ ...cfg, current_bg_color: BRAND_YELLOW, temporary_bg_color: null, is_temporary_active: false, temporary_expires_at: null, header_height_px: 180, header_bg_image_url: null, festive_style_active: false })}
           className="rounded-full border border-border px-3 py-1 text-[11px] font-bold text-muted-foreground"
         >
           Reset default
         </button>
       </div>
-      <div
-        className="relative overflow-hidden rounded-2xl transition-[height]"
-        style={{ backgroundColor: showing, height: `${Math.min(210, Math.max(130, (cfg.header_height_px || 280) * 0.55))}px` }}
-      >
-        {cfg.header_bg_image_url ? <img src={cfg.header_bg_image_url} alt="Header preview" className="absolute inset-0 h-full w-full object-cover" /> : null}
-        <div className={`absolute inset-0 ${cfg.header_bg_image_url ? "festive-header-overlay" : "brand-header"}`} />
-        <div className={`relative flex h-full flex-col justify-between p-4 ${cfg.header_bg_image_url ? "text-festive-header-foreground" : "text-brand-foreground"}`}>
-          <div>
-            <p className="text-[9px] font-black uppercase tracking-[0.18em] opacity-80">Thaleewala · Delivering in</p>
-            <p className="text-xl font-extrabold">15–20 minutes</p>
-            <p className="text-[10px] font-semibold opacity-80">HOME · Bhubaneswar</p>
-          </div>
-          <div className="rounded-xl bg-card px-3 py-2 text-[11px] font-semibold text-card-foreground shadow-lg">⌕ Search “dahi bara”</div>
-          <p className="text-[10px] font-black">Live preview · {cfg.header_height_px || 280}px</p>
+      <div className="flex min-w-0 flex-col gap-3 rounded-2xl border border-border bg-background p-3">
+        <div style={{ backgroundColor: showing }} className="brand-header rounded-xl p-3 text-brand-foreground">
+          <p className="text-[9px] font-black uppercase tracking-[0.18em] opacity-80">Thaleewala · Delivering in</p>
+          <p className="text-xl font-extrabold">15–20 minutes</p>
+          <p className="truncate text-[10px] font-semibold opacity-80">HOME · Bhubaneswar</p>
+          <div className="mt-3 rounded-xl bg-card px-3 py-2 text-[11px] font-semibold text-card-foreground shadow-lg">⌕ Search “dahi bara”</div>
         </div>
+        {cfg.header_bg_image_url ? (
+          <img src={cfg.header_bg_image_url} alt="Festive banner preview" className="block h-auto max-h-[180px] w-full rounded-2xl object-cover" />
+        ) : (
+          <div className="grid aspect-[4/1] max-h-[180px] min-h-20 place-items-center rounded-2xl bg-muted text-xs font-semibold text-muted-foreground">Festive banner preview</div>
+        )}
       </div>
-
-      <label className="block">
-        <span className="flex justify-between text-[11px] font-semibold text-muted-foreground"><span>Header height</span><span>{cfg.header_height_px || 280}px</span></span>
-        <input type="range" min={240} max={380} step={5} value={cfg.header_height_px || 280} onChange={(e) => setCfg({ ...cfg, header_height_px: Number(e.target.value) })} className="w-full" />
-      </label>
 
       <div className="grid grid-cols-2 gap-2">
         <label className="block">
-          <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">Header background photo</span>
+          <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">Festive banner photo</span>
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"

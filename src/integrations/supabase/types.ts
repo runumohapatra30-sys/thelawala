@@ -113,9 +113,11 @@ export type Database = {
       app_dynamic_banners: {
         Row: {
           aspect_ratio: string
+          banner_format: string
           border_radius: number
           created_at: string
           display_order: number
+          grid_image_urls: string[]
           height_px: number
           id: string
           is_active: boolean
@@ -127,9 +129,11 @@ export type Database = {
         }
         Insert: {
           aspect_ratio?: string
+          banner_format?: string
           border_radius?: number
           created_at?: string
           display_order?: number
+          grid_image_urls?: string[]
           height_px?: number
           id?: string
           is_active?: boolean
@@ -141,9 +145,11 @@ export type Database = {
         }
         Update: {
           aspect_ratio?: string
+          banner_format?: string
           border_radius?: number
           created_at?: string
           display_order?: number
+          grid_image_urls?: string[]
           height_px?: number
           id?: string
           is_active?: boolean
