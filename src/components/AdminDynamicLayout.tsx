@@ -23,7 +23,7 @@ import {
 const inputCls =
   "w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary";
 
-const blankCard = (): GridCard => ({ title: "", image_url: "", filter: "", tag: "" });
+const blankCard = (): GridCard => ({ title: "", image_url: "", video_url: "", filter: "", tag: "" });
 
 const blankSection = (type: SectionType): HomeSection => ({
   id: "",
@@ -69,7 +69,15 @@ function SectionStudio() {
   }, []);
 
   async function pickImage(file: File, apply: (url: string) => void) {
-    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) { toast.error("Use a JPG, PNG or WebP picture."); return; }
+    if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) { toast.error("Use a JPG, PNG, GIF or WebP picture."); return; }
+    const up = await uploadSectionImage(file);
+    if ("error" in up) { toast.error(up.error); return; }
+    apply(up.url);
+  }
+
+  async function pickVideo(file: File, apply: (url: string) => void) {
+    if (!/^video\/(mp4|webm)$/.test(file.type)) { toast.error("Use a short MP4 or WebM clip."); return; }
+    if (file.size > 8 * 1024 * 1024) { toast.error("Keep the clip under 8 MB so it loads fast."); return; }
     const up = await uploadSectionImage(file);
     if ("error" in up) { toast.error(up.error); return; }
     apply(up.url);
@@ -85,7 +93,7 @@ function SectionStudio() {
       subtitle: editing.subtitle || null,
       bg_color: editing.bg_color || null,
       bg_image_url: editing.bg_image_url || null,
-      cards: editing.cards.filter((c) => c.title || c.image_url),
+      cards: editing.cards.filter((c) => c.title || c.image_url || c.video_url),
       item_ids: editing.item_ids,
       is_active: publish,
       display_order: Number(editing.display_order) || 1,
@@ -224,13 +232,34 @@ function SectionStudio() {
                   <input value={c.title} onChange={(e) => upCard(n, { title: e.target.value })} placeholder={`Card ${n + 1} title`} className={inputCls} />
                   <input value={c.filter} onChange={(e) => upCard(n, { filter: e.target.value })} placeholder="Filter word (e.g. modak)" className={inputCls} />
                   <input value={c.tag ?? ""} onChange={(e) => upCard(n, { tag: e.target.value })} placeholder="Tag (e.g. From ₹109)" className={`${inputCls} col-span-2`} />
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) pickImage(f, (url) => upCard(n, { image_url: url })); }}
-                    className="col-span-2 w-full rounded-xl border border-border px-2 py-2 text-[11px]"
-                  />
-                  {c.image_url ? <img src={c.image_url} alt="" className="col-span-2 aspect-[4/1] w-full rounded-lg object-cover" /> : null}
+                  <label className="col-span-2 block">
+                    <span className="mb-1 block text-[10.5px] font-semibold text-muted-foreground">Photo (JPG / PNG / GIF)</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) pickImage(f, (url) => upCard(n, { image_url: url })); }}
+                      className="w-full rounded-xl border border-border px-2 py-2 text-[11px]"
+                    />
+                  </label>
+                  <label className="col-span-2 block">
+                    <span className="mb-1 block text-[10.5px] font-semibold text-muted-foreground">Or upload MP4 / WebM clip (plays on loop)</span>
+                    <input
+                      type="file"
+                      accept="video/mp4,video/webm"
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) pickVideo(f, (url) => upCard(n, { video_url: url })); }}
+                      className="w-full rounded-xl border border-border px-2 py-2 text-[11px]"
+                    />
+                  </label>
+                  {c.video_url ? (
+                    <div className="col-span-2 space-y-1">
+                      <video src={c.video_url} autoPlay loop muted playsInline className="aspect-video w-full rounded-lg object-cover" />
+                      <button onClick={() => upCard(n, { video_url: "" })} className="rounded-full border border-border px-2.5 py-1 text-[10.5px] font-bold text-muted-foreground">
+                        Remove clip
+                      </button>
+                    </div>
+                  ) : c.image_url ? (
+                    <img src={c.image_url} alt="" className="col-span-2 aspect-[4/1] w-full rounded-lg object-cover" />
+                  ) : null}
                 </div>
               ))}
             </div>
