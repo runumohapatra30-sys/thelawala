@@ -614,6 +614,11 @@ function VendorPortal() {
                 </div>
                 <p className="shrink-0 text-base font-black">{inr(Number(o.grand_total))}</p>
               </div>
+              {o.status === "DELIVERED" ? (
+                <p className="mt-2 rounded-xl bg-primary/10 px-2.5 py-1.5 text-[11px] font-black text-primary">
+                  ✅ Order delivered — you earned {inr(Math.round((Number(o.base_food_total ?? 0) > 0 ? Number(o.base_food_total) : Number(o.food_total) / PRICE_MARKUP) * VENDOR_PAYOUT_RATE))}
+                </p>
+              ) : null}
 
               <div className="mt-3 flex flex-wrap gap-2">
                 {o.status === "PREPARING" ? (
