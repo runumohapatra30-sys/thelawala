@@ -409,7 +409,7 @@ function Cart() {
           </button>
           {coords && vendor ? (
             <p className="text-xs text-muted-foreground">
-              {distanceKm} km from {vendor.stall_name} · minimum order {inr(minimumOrderValue(distanceKm))} · we deliver up to 5 km
+              {distanceKm} km from {vendor.stall_name} · minimum order {inr(minimumOrderValue(distanceKm))} · we deliver up to 15 km
             </p>
           ) : null}
         </div>
