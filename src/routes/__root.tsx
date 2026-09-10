@@ -12,6 +12,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
+import { supabase } from "@/integrations/supabase/client";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -134,6 +135,23 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  // Clear all cached data on logout/account switch so the previous
+  // account's orders, wallet, etc. never leak into the next session.
+  useEffect(() => {
+    let prevUserId: string | null = null;
+    supabase.auth.getSession().then(({ data }) => {
+      prevUserId = data.session?.user?.id ?? null;
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      const nextUserId = session?.user?.id ?? null;
+      if (event === "SIGNED_OUT" || (nextUserId && prevUserId && nextUserId !== prevUserId)) {
+        queryClient.clear();
+      }
+      prevUserId = nextUserId;
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>
