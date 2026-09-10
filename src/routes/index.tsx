@@ -16,6 +16,8 @@ import { VoiceSearch } from "@/components/VoiceSearch";
 import { DynamicAssetBanner } from "@/components/DynamicAssetBanner";
 import { DynamicBanners } from "@/components/DynamicBanners";
 import { DynamicPageRenderer, type SectionRegistry } from "@/components/DynamicPageRenderer";
+import { FestiveSections } from "@/components/FestiveSections";
+import { useTopBarColor } from "@/lib/appTheme";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -75,6 +77,7 @@ function Home() {
   const [unread, setUnread] = useState(0);
   const [vendorFilter, setVendorFilter] = useState<string | null>(null);
   const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const topBarColor = useTopBarColor();
 
   useEffect(() => {
     activeCampaign().then(setCampaign);
