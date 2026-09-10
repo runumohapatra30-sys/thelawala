@@ -49,7 +49,7 @@ type Item = {
   food_type: string;
 };
 type Category = { id: string; name: string; emoji: string | null };
-type Vendor = { id: string; stall_name: string; is_open: boolean; offer_percent: number | null; offer_label: string | null };
+type Vendor = { id: string; stall_name: string; is_open: boolean; photo_url: string | null; offer_percent: number | null; offer_label: string | null };
 
 const TINTS = [
   "bg-[color-mix(in_oklab,var(--color-brand)_28%,white)]",
@@ -85,7 +85,7 @@ function Home() {
   useEffect(() => {
     activeCampaign().then(setCampaign);
     supabase.from("categories").select("id,name,emoji").order("sort_order").then(({ data }) => setCats(data ?? []));
-    supabase.from("vendors").select("id,stall_name,is_open,offer_percent,offer_label").eq("status", "APPROVED").then(({ data }) => setVendors((data ?? []) as Vendor[]));
+    supabase.from("vendors").select("id,stall_name,is_open,photo_url,offer_percent,offer_label").eq("status", "APPROVED").then(({ data }) => setVendors((data ?? []) as Vendor[]));
     supabase
       .from("menu_items")
       .select("id,vendor_id,category_id,name,details,photo_url,unit,price,mrp,in_stock,food_type")
@@ -139,11 +139,14 @@ function Home() {
     [vendors],
   );
 
+  const query = q.trim().toLowerCase();
   const shown = items.filter(
     (i) =>
       (!active || i.category_id === active) &&
       (!vendorFilter || i.vendor_id === vendorFilter) &&
-      (!q || i.name.toLowerCase().includes(q.toLowerCase())) &&
+      (!query ||
+        i.name.toLowerCase().includes(query) ||
+        (vendorName[i.vendor_id] ?? "").toLowerCase().includes(query)) &&
       (!onlyVeg || i.food_type !== "NONVEG") &&
       (!onlyFav || favs.includes(i.id)),
   );
