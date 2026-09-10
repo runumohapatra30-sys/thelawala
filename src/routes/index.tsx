@@ -272,8 +272,9 @@ function Home() {
           {shown.map((i, idx) => {
             const line = lines.find((l) => l.itemId === i.id);
             const shownPrice = customerPrice(i.price);
-            const shownMrp = customerPrice(i.mrp);
-            const off = shownMrp > shownPrice ? Math.round(((shownMrp - shownPrice) / shownMrp) * 100) : 0;
+            // Discounts only exist when the stall itself runs an offer.
+            const off = vendorOffer[i.vendor_id] ?? 0;
+            const offerPrice = off > 0 ? Math.round(shownPrice * (100 - off)) / 100 : shownPrice;
             return (
               <div key={i.id} style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }} className="press rise-in card-elevated p-2.5 hover:-translate-y-0.5">
                 <div className="relative">
