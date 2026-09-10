@@ -48,8 +48,13 @@ export function computeBill({
   distanceKm,
   penaltyFee = 0,
 }: BillInput): Bill {
-  // Hyperlocal slab pricing: ₹15 / ₹18 / ₹22 / ₹25 by distance.
-  let deliveryFee = deliveryFeeForDistance(distanceKm);
+  // Admin-controlled per-km pricing: base fee covers the base distance, then
+  // every extra metre is charged at the admin's per-km rate.
+  const baseKm = Number(s.base_delivery_distance_km ?? 0);
+  const perKm = Number(s.extra_fee_per_km ?? 0);
+  const extraKm = Math.max(0, distanceKm - baseKm);
+  let deliveryFee = Number(s.base_delivery_fee ?? 0) + extraKm * perKm;
+  if (!Number.isFinite(deliveryFee) || deliveryFee <= 0) deliveryFee = deliveryFeeForDistance(distanceKm);
   const threshold = s.free_delivery_threshold;
   if (threshold != null && foodTotal >= Number(threshold)) deliveryFee = 0;
   deliveryFee = r2(deliveryFee);
