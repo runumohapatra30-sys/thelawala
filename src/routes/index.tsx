@@ -534,6 +534,7 @@ function Home() {
             </div>
           </section>
         ) : null}
+        <FestivePhotoStrip />
         <DynamicPageRenderer app="customer" page="home" registry={registry} />
       </main>
       <div className="pb-28" />
