@@ -48,7 +48,10 @@ export function marginSplit(baseTotal: number, distanceKm: number) {
   const vendorPayout = r2(baseTotal * VENDOR_PAYOUT_RATE);
   const marginPool = r2(customerItemTotal - vendorPayout);
   const retained = platformRetainedProfit(distanceKm);
-  const riderGift = Math.max(0, r2(marginPool - retained));
+  // Leftover margin is shared 50/50: half to the rider as a gift, half to the company.
+  const leftover = Math.max(0, r2(marginPool - retained));
+  const riderGift = r2(leftover * 0.5);
+  const companyShare = r2(leftover - riderGift);
   const deliveryFee = deliveryFeeForDistance(distanceKm);
   return {
     customerItemTotal,
