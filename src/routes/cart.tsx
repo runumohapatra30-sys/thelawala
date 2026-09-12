@@ -89,20 +89,31 @@ function Cart() {
       .select("*")
       .eq("user_id", user.id)
       .order("is_default", { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .order("created_at", { ascending: false })
+      .limit(2)
       .then(({ data }) => {
-        if (!data) return;
+        const list = (data ?? []) as SavedAddress[];
+        setSaved(list);
+        const first = list[0];
+        if (!first) return;
+        // A saved location already carries its map point, so we do not ask again.
         setForm({
-          full_name: data.full_name,
-          mobile: data.mobile,
-          pincode: data.pincode,
-          line: data.line,
-          landmark: data.landmark ?? "",
+          full_name: first.full_name,
+          mobile: first.mobile,
+          pincode: first.pincode,
+          line: first.line,
+          landmark: first.landmark ?? "",
         });
-        // Every order uses a fresh live location, never the one saved earlier.
+        if (!coordsRef.current && Number(first.lat) && Number(first.lng))
+          setCoords({ lat: Number(first.lat), lng: Number(first.lng) });
       });
   }, [user?.id]);
+
+  function pickSaved(a: SavedAddress) {
+    setForm({ full_name: a.full_name, mobile: a.mobile, pincode: a.pincode, line: a.line, landmark: a.landmark ?? "" });
+    setCoords({ lat: Number(a.lat), lng: Number(a.lng) });
+    setPickerOpen(false);
+  }
 
   async function fillFromCoords(lat: number, lng: number, overwrite: boolean) {
     try {
