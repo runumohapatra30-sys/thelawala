@@ -57,7 +57,7 @@ export function marginSplit(baseTotal: number, distanceKm: number) {
     customerItemTotal,
     vendorPayout,
     marginPool,
-    platformProfit: retained,
+    platformProfit: r2(retained + companyShare),
     riderGift,
     deliveryFee,
     riderPayout: r2(deliveryFee + riderGift),
