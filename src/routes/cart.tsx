@@ -208,7 +208,10 @@ function Cart() {
       .maybeSingle();
     await supabase.from("addresses").update({ is_default: false }).eq("user_id", user.id);
     if (sameAddr) {
-      await supabase.from("addresses").update({ is_default: true }).eq("id", sameAddr.id);
+      await supabase
+        .from("addresses")
+        .update({ is_default: true, lat: coords.lat, lng: coords.lng })
+        .eq("id", sameAddr.id);
     } else {
       await supabase.from("addresses").insert({
         user_id: user.id,
@@ -217,8 +220,19 @@ function Cart() {
         pincode: form.pincode,
         line: form.line,
         landmark: form.landmark || null,
+        lat: coords.lat,
+        lng: coords.lng,
         is_default: true,
       });
+      // Only two saved locations are kept — drop the oldest extras.
+      const { data: all } = await supabase
+        .from("addresses")
+        .select("id")
+        .eq("user_id", user.id)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false });
+      const extra = (all ?? []).slice(2).map((a) => a.id);
+      if (extra.length) await supabase.from("addresses").delete().in("id", extra);
     }
 
     const { data: order, error } = await supabase
