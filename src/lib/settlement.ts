@@ -76,7 +76,7 @@ export function splitOrder(o: MoneyOrder): OrderSplit {
     riderTotal: Math.round((fee + tip + gift) * 100) / 100,
     charges,
     discount,
-    platformProfit: Math.round((retained + charges - discount) * 100) / 100,
+    platformProfit: Math.round((retained + companyShare + charges - discount) * 100) / 100,
   };
 }
 
