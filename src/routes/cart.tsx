@@ -49,6 +49,8 @@ function Cart() {
   const [tip, setTip] = useState(0);
   const [instructions, setInstructions] = useState("");
   const [locating, setLocating] = useState(false);
+  const [saved, setSaved] = useState<SavedAddress[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const autoTried = useRef(false);
   const coordsRef = useRef(coords);
   const formRef = useRef(form);
