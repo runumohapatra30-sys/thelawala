@@ -358,12 +358,56 @@ function Cart() {
           </div>
         </div>
 
-        <AddressBook
-          userId={user?.id}
-          onPick={(a) => {
-            setForm({ full_name: a.full_name, mobile: a.mobile, pincode: a.pincode, line: a.line, landmark: a.landmark ?? "" });
-          }}
-        />
+        <div className="card-elevated rise-in flex items-center gap-3 p-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold">Delivering to</p>
+            <p className="truncate text-[12px] text-muted-foreground">
+              {coords ? form.line || "Selected location" : "No location chosen yet"}
+            </p>
+          </div>
+          <button
+            onClick={() => setPickerOpen(true)}
+            className="press shrink-0 rounded-full border border-primary px-3 py-1.5 text-[11px] font-black text-primary"
+          >
+            {coords ? "Change" : "Choose"}
+          </button>
+        </div>
+
+        {pickerOpen ? (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setPickerOpen(false)}>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-[480px] space-y-2 rounded-t-3xl bg-card p-4 pb-6"
+            >
+              <p className="text-sm font-black">Choose delivery location</p>
+              <p className="text-[11px] text-muted-foreground">Pick a saved location or use your current one.</p>
+              {saved.map((a) => (
+                <button
+                  key={a.id}
+                  onClick={() => pickSaved(a)}
+                  className="press block w-full rounded-2xl border border-border p-3 text-left"
+                >
+                  <p className="truncate text-[13px] font-black">{a.full_name} · {a.mobile}</p>
+                  <p className="truncate text-[11px] text-muted-foreground">
+                    {a.line}{a.landmark ? `, ${a.landmark}` : ""} — {a.pincode}
+                  </p>
+                </button>
+              ))}
+              <button
+                onClick={() => { setPickerOpen(false); locate(true); }}
+                className="press w-full rounded-2xl bg-primary py-3 text-sm font-black text-primary-foreground"
+              >
+                Use my current location
+              </button>
+              <button
+                onClick={() => { setPickerOpen(false); setCoords(null); document.getElementById("delivery-details")?.scrollIntoView({ behavior: "smooth" }); }}
+                className="press w-full rounded-2xl border border-border py-3 text-sm font-black"
+              >
+                Add a new address
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         <div id="delivery-details" className="card-elevated rise-in space-y-2 border border-border p-3">
 
