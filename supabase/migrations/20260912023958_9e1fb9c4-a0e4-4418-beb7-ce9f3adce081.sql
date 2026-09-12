@@ -1,0 +1,2 @@
+ALTER TABLE public.wallets DROP CONSTRAINT IF EXISTS wallets_status_check;
+ALTER TABLE public.wallets ADD CONSTRAINT wallets_status_check CHECK (status = ANY (ARRAY['ACTIVE'::text,'CLOSURE_REQUESTED'::text,'CLOSED'::text]));
