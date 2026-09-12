@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
-import { AddressBook } from "@/components/AddressBook";
+import type { SavedAddress } from "@/components/AddressBook";
 import { supabase } from "@/integrations/supabase/client";
 import { cart, cartTotals, useCart } from "@/lib/cart";
 import { couponDiscount, findCoupon, listCoupons, type Coupon } from "@/lib/coupons";
@@ -49,6 +49,8 @@ function Cart() {
   const [tip, setTip] = useState(0);
   const [instructions, setInstructions] = useState("");
   const [locating, setLocating] = useState(false);
+  const [saved, setSaved] = useState<SavedAddress[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const autoTried = useRef(false);
   const coordsRef = useRef(coords);
   const formRef = useRef(form);
@@ -89,20 +91,31 @@ function Cart() {
       .select("*")
       .eq("user_id", user.id)
       .order("is_default", { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .order("created_at", { ascending: false })
+      .limit(2)
       .then(({ data }) => {
-        if (!data) return;
+        const list = (data ?? []) as SavedAddress[];
+        setSaved(list);
+        const first = list[0];
+        if (!first) return;
+        // A saved location already carries its map point, so we do not ask again.
         setForm({
-          full_name: data.full_name,
-          mobile: data.mobile,
-          pincode: data.pincode,
-          line: data.line,
-          landmark: data.landmark ?? "",
+          full_name: first.full_name,
+          mobile: first.mobile,
+          pincode: first.pincode,
+          line: first.line,
+          landmark: first.landmark ?? "",
         });
-        // Every order uses a fresh live location, never the one saved earlier.
+        if (!coordsRef.current && Number(first.lat) && Number(first.lng))
+          setCoords({ lat: Number(first.lat), lng: Number(first.lng) });
       });
   }, [user?.id]);
+
+  function pickSaved(a: SavedAddress) {
+    setForm({ full_name: a.full_name, mobile: a.mobile, pincode: a.pincode, line: a.line, landmark: a.landmark ?? "" });
+    setCoords({ lat: Number(a.lat), lng: Number(a.lng) });
+    setPickerOpen(false);
+  }
 
   async function fillFromCoords(lat: number, lng: number, overwrite: boolean) {
     try {
@@ -150,9 +163,10 @@ function Cart() {
   useEffect(() => {
     if (autoTried.current) return;
     autoTried.current = true;
+    // No silent location prompt: the customer picks from a small popup instead.
     const t = setTimeout(() => {
-      if (!coordsRef.current && !formRef.current.line) locate(true);
-    }, 400);
+      if (!coordsRef.current) setPickerOpen(true);
+    }, 500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -208,7 +222,10 @@ function Cart() {
       .maybeSingle();
     await supabase.from("addresses").update({ is_default: false }).eq("user_id", user.id);
     if (sameAddr) {
-      await supabase.from("addresses").update({ is_default: true }).eq("id", sameAddr.id);
+      await supabase
+        .from("addresses")
+        .update({ is_default: true, lat: coords.lat, lng: coords.lng })
+        .eq("id", sameAddr.id);
     } else {
       await supabase.from("addresses").insert({
         user_id: user.id,
@@ -217,8 +234,19 @@ function Cart() {
         pincode: form.pincode,
         line: form.line,
         landmark: form.landmark || null,
+        lat: coords.lat,
+        lng: coords.lng,
         is_default: true,
       });
+      // Only two saved locations are kept — drop the oldest extras.
+      const { data: all } = await supabase
+        .from("addresses")
+        .select("id")
+        .eq("user_id", user.id)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false });
+      const extra = (all ?? []).slice(2).map((a) => a.id);
+      if (extra.length) await supabase.from("addresses").delete().in("id", extra);
     }
 
     const { data: order, error } = await supabase
@@ -358,12 +386,56 @@ function Cart() {
           </div>
         </div>
 
-        <AddressBook
-          userId={user?.id}
-          onPick={(a) => {
-            setForm({ full_name: a.full_name, mobile: a.mobile, pincode: a.pincode, line: a.line, landmark: a.landmark ?? "" });
-          }}
-        />
+        <div className="card-elevated rise-in flex items-center gap-3 p-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold">Delivering to</p>
+            <p className="truncate text-[12px] text-muted-foreground">
+              {coords ? form.line || "Selected location" : "No location chosen yet"}
+            </p>
+          </div>
+          <button
+            onClick={() => setPickerOpen(true)}
+            className="press shrink-0 rounded-full border border-primary px-3 py-1.5 text-[11px] font-black text-primary"
+          >
+            {coords ? "Change" : "Choose"}
+          </button>
+        </div>
+
+        {pickerOpen ? (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setPickerOpen(false)}>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-[480px] space-y-2 rounded-t-3xl bg-card p-4 pb-6"
+            >
+              <p className="text-sm font-black">Choose delivery location</p>
+              <p className="text-[11px] text-muted-foreground">Pick a saved location or use your current one.</p>
+              {saved.map((a) => (
+                <button
+                  key={a.id}
+                  onClick={() => pickSaved(a)}
+                  className="press block w-full rounded-2xl border border-border p-3 text-left"
+                >
+                  <p className="truncate text-[13px] font-black">{a.full_name} · {a.mobile}</p>
+                  <p className="truncate text-[11px] text-muted-foreground">
+                    {a.line}{a.landmark ? `, ${a.landmark}` : ""} — {a.pincode}
+                  </p>
+                </button>
+              ))}
+              <button
+                onClick={() => { setPickerOpen(false); locate(true); }}
+                className="press w-full rounded-2xl bg-primary py-3 text-sm font-black text-primary-foreground"
+              >
+                Use my current location
+              </button>
+              <button
+                onClick={() => { setPickerOpen(false); setCoords(null); document.getElementById("delivery-details")?.scrollIntoView({ behavior: "smooth" }); }}
+                className="press w-full rounded-2xl border border-border py-3 text-sm font-black"
+              >
+                Add a new address
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         <div id="delivery-details" className="card-elevated rise-in space-y-2 border border-border p-3">
 
