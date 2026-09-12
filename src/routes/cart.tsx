@@ -161,9 +161,10 @@ function Cart() {
   useEffect(() => {
     if (autoTried.current) return;
     autoTried.current = true;
+    // No silent location prompt: the customer picks from a small popup instead.
     const t = setTimeout(() => {
-      if (!coordsRef.current && !formRef.current.line) locate(true);
-    }, 400);
+      if (!coordsRef.current) setPickerOpen(true);
+    }, 500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
