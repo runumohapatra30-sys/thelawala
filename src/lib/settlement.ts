@@ -59,7 +59,10 @@ export function splitOrder(o: MoneyOrder): OrderSplit {
   const vendor = Math.round(base * VENDOR_PAYOUT_RATE * 100) / 100;
   const pool = food - vendor;
   const retained = platformRetainedProfit(n(o.distance_km));
-  const gift = Math.max(0, Math.round((pool - retained) * 100) / 100);
+  // Leftover margin is shared 50/50 between the rider gift and the company.
+  const leftover = Math.max(0, Math.round((pool - retained) * 100) / 100);
+  const gift = Math.round(leftover * 50) / 100;
+  const companyShare = Math.round((leftover - gift) * 100) / 100;
   const fee = n(o.delivery_fee);
   const tip = n(o.tip_amount);
   const charges = n(o.platform_fee) + n(o.handling_fee) + n(o.packing_fee) + n(o.surge_fee);
