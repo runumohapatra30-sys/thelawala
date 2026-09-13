@@ -172,6 +172,17 @@ function Cart() {
       async (p) => {
         setCoords({ lat: p.coords.latitude, lng: p.coords.longitude });
         await fillFromCoords(p.coords.latitude, p.coords.longitude, overwrite);
+        setForm((f) => {
+          try {
+            localStorage.setItem(
+              "tw_last_location",
+              JSON.stringify({ lat: p.coords.latitude, lng: p.coords.longitude, line: f.line, pincode: f.pincode, landmark: f.landmark }),
+            );
+          } catch {
+            /* remembering the location is optional */
+          }
+          return f;
+        });
         setLocating(false);
       },
       () => {
