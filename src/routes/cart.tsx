@@ -136,6 +136,14 @@ function Cart() {
   function pickSaved(a: SavedAddress) {
     setForm({ full_name: a.full_name, mobile: a.mobile, pincode: a.pincode, line: a.line, landmark: a.landmark ?? "" });
     setCoords({ lat: Number(a.lat), lng: Number(a.lng) });
+    try {
+      localStorage.setItem(
+        "tw_last_location",
+        JSON.stringify({ lat: Number(a.lat), lng: Number(a.lng), line: a.line, pincode: a.pincode, landmark: a.landmark ?? "" }),
+      );
+    } catch {
+      /* remembering the location is optional */
+    }
     setPickerOpen(false);
   }
 
