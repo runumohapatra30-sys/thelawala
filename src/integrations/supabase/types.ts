@@ -1922,6 +1922,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_assign_partner: {
+        Args: { _order_id: string; _partner_id: string }
+        Returns: undefined
+      }
       admin_daily_report: {
         Args: { _from: string; _to: string }
         Returns: {
@@ -1957,6 +1961,7 @@ export type Database = {
         Returns: undefined
       }
       apply_referral: { Args: { _code: string }; Returns: string }
+      auto_cancel_stale_orders: { Args: never; Returns: number }
       complete_delivery: {
         Args: { _order_id: string; _otp: string; _proof_path: string }
         Returns: undefined
