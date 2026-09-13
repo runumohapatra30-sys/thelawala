@@ -111,6 +111,28 @@ function Cart() {
       });
   }, [user?.id]);
 
+  // The last location the customer used is remembered, so we never ask for it again
+  // unless they choose a new address themselves.
+  useEffect(() => {
+    if (coordsRef.current) return;
+    try {
+      const raw = localStorage.getItem("tw_last_location");
+      if (!raw) return;
+      const saved = JSON.parse(raw) as { lat: number; lng: number; line?: string; pincode?: string; landmark?: string };
+      if (!Number(saved.lat) || !Number(saved.lng)) return;
+      setCoords({ lat: Number(saved.lat), lng: Number(saved.lng) });
+      setForm((f) => ({
+        ...f,
+        line: f.line || saved.line || "",
+        pincode: f.pincode || saved.pincode || "",
+        landmark: f.landmark || saved.landmark || "",
+      }));
+    } catch {
+      /* remembered location is optional */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function pickSaved(a: SavedAddress) {
     setForm({ full_name: a.full_name, mobile: a.mobile, pincode: a.pincode, line: a.line, landmark: a.landmark ?? "" });
     setCoords({ lat: Number(a.lat), lng: Number(a.lng) });
