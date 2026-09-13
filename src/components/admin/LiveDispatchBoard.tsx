@@ -152,7 +152,7 @@ export function LiveDispatchBoard() {
   );
 }
 
-function Tile({ label, value, tone }: { label: string; value: string; tone?: "warn" }) {
+function Tile({ label, value, tone }: { label: string; value: string; tone?: "warn" | undefined }) {
   return (
     <div className={`rounded-xl border p-2 text-center ${tone === "warn" ? "border-destructive/40 bg-destructive/5" : "border-border"}`}>
       <p className="text-base font-black">{value}</p>
