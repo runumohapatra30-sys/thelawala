@@ -13,6 +13,7 @@ import { AdminApprovals } from "@/components/AdminApprovals";
 import { RevenueSplit } from "@/components/RevenueSplit";
 import { CashRemittances } from "@/components/CashRemittances";
 import { AdminOrdersSection } from "@/components/admin/AdminOrdersSection";
+import { LiveDispatchBoard } from "@/components/admin/LiveDispatchBoard";
 import { AdminSettlement } from "@/components/admin/AdminSettlement";
 import { AdminRefunds } from "@/components/admin/AdminRefunds";
 import { supabase } from "@/integrations/supabase/client";
@@ -131,6 +132,7 @@ function Admin() {
 
         {tab === "orders" ? (
           <>
+            <LiveDispatchBoard />
             <AdminOrdersSection />
             <LiveOrders />
           </>

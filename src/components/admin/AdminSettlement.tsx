@@ -131,8 +131,14 @@ export function AdminSettlement() {
       </div>
 
       <div className="card-soft border border-border p-3">
-        <p className="text-sm font-bold">To be paid · {inr(Math.round(totalPending))}</p>
-        <p className="text-[11px] text-muted-foreground">{PAYOUT_CYCLE[party]}. Commission is already deducted from these amounts.</p>
+        <p className="text-[11px] font-semibold text-muted-foreground">Total still to pay</p>
+        <p className="text-xl font-black text-primary">{inr(Math.round(totalPending))}</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">{PAYOUT_CYCLE[party]}. Commission is already deducted.</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          {party === "VENDOR"
+            ? "Earned = 95% of the stall's own price on delivered orders. To pay = earned − already paid."
+            : "Earned = delivery fee + tip + bonus. Cash held is the COD money the partner still has, so it is taken off. To pay = earned − already paid − cash held."}
+        </p>
       </div>
 
       {busy ? <p className="text-xs text-muted-foreground">Loading…</p> : null}
@@ -142,12 +148,16 @@ export function AdminSettlement() {
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
               <p className="truncate text-sm font-bold">{r.name}</p>
-              <p className="text-[11px] text-muted-foreground">
-                Earned {inr(Math.round(r.earned))} · Paid {inr(Math.round(r.settled))}
-                {party === "PARTNER" ? ` · Cash held ${inr(Math.round(r.cashInHand))}` : ""}
-              </p>
+              <div className="mt-1 space-y-0.5 text-[11px] text-muted-foreground">
+                <p>Earned so far · <span className="font-bold text-foreground">{inr(Math.round(r.earned))}</span></p>
+                <p>Already paid · <span className="font-bold text-foreground">{inr(Math.round(r.settled))}</span></p>
+                {party === "PARTNER" ? (
+                  <p>Cash still with them · <span className="font-bold text-foreground">{inr(Math.round(r.cashInHand))}</span></p>
+                ) : null}
+              </div>
             </div>
             <div className="text-right">
+              <p className="text-[10px] font-semibold text-muted-foreground">Pay now</p>
               <p className="text-sm font-black text-primary">{inr(Math.round(r.pending))}</p>
               <button
                 onClick={() => { setOpenId(openId === r.id ? null : r.id); setAmount(String(Math.round(r.pending))); setRef(""); }}
