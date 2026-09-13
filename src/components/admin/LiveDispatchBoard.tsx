@@ -30,6 +30,8 @@ export function LiveDispatchBoard() {
   const [, setTick] = useState(0);
 
   async function load() {
+    // Keeps offers moving to the next partner and closes orders nobody picked up.
+    await supabase.rpc("sweep_dispatch");
     const [{ data }, { data: rs }] = await Promise.all([
       supabase
         .from("orders")
