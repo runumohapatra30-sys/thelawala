@@ -21,6 +21,7 @@ import { DynamicPageRenderer } from "@/components/DynamicPageRenderer";
 import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 import { Html5Qrcode } from "html5-qrcode";
 import { RiderOrderSwipe } from "@/components/RiderOrderSwipe";
+import { RiderCodUpiQr } from "@/components/RiderCodUpiQr";
 
 export const Route = createFileRoute("/_authenticated/rider")({
   head: () => ({
