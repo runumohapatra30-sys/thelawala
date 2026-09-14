@@ -392,7 +392,7 @@ function Cart() {
 
     cart.clear();
 
-    if (payable > 0 && payment === "ONLINE") {
+    if (payable > 0 && payment === "ONLINE" && isPayu) {
       try {
         await startOnlinePayment({
           gateway: settings?.payment_gateway,
