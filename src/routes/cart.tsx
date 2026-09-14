@@ -7,7 +7,7 @@ import { cart, cartTotals, useCart } from "@/lib/cart";
 import { couponDiscount, findCoupon, listCoupons, type Coupon } from "@/lib/coupons";
 import { computeBill, haversineKm, inr, type Settings } from "@/lib/fees";
 import { checkoutGate, minimumOrderValue, stallOfferDiscount } from "@/lib/pricing";
-import { startOnlinePayment } from "@/lib/checkout";
+import { payInAppWithCashfree, startOnlinePayment } from "@/lib/checkout";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/cart")({
