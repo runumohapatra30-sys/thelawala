@@ -21,6 +21,7 @@ import { DynamicPageRenderer } from "@/components/DynamicPageRenderer";
 import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 import { Html5Qrcode } from "html5-qrcode";
 import { RiderOrderSwipe } from "@/components/RiderOrderSwipe";
+import { RiderCodUpiQr } from "@/components/RiderCodUpiQr";
 
 export const Route = createFileRoute("/_authenticated/rider")({
   head: () => ({
@@ -801,6 +802,11 @@ function RiderPortal() {
                 <>
                   <p className="text-[11px] font-bold uppercase tracking-wide">Collect cash</p>
                   <p className="text-2xl font-black">{inr(Number(trip.grand_total))}</p>
+                  <RiderCodUpiQr
+                    orderId={trip.id}
+                    amount={Math.round(Number(trip.grand_total))}
+                    onPaid={() => setActive((p) => (p ? { ...p, payment_status: "PAID", payment_mode: "ONLINE" } : p))}
+                  />
                 </>
               ) : (
                 <>

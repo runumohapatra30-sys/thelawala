@@ -7,7 +7,7 @@ import { cart, cartTotals, useCart } from "@/lib/cart";
 import { couponDiscount, findCoupon, listCoupons, type Coupon } from "@/lib/coupons";
 import { computeBill, haversineKm, inr, type Settings } from "@/lib/fees";
 import { checkoutGate, minimumOrderValue, stallOfferDiscount } from "@/lib/pricing";
-import { startOnlinePayment } from "@/lib/checkout";
+import { payInAppWithCashfree, startOnlinePayment } from "@/lib/checkout";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/cart")({
@@ -290,6 +290,29 @@ function Cart() {
       if (extra.length) await supabase.from("addresses").delete().in("id", extra);
     }
 
+    // Online payment happens first, inside the app. No payment, no order.
+    const isPayu = (settings?.payment_gateway ?? "").toUpperCase() === "PAYU";
+    let paidRef: string | null = null;
+    if (payable > 0 && payment === "ONLINE" && !isPayu) {
+      try {
+        const res = await payInAppWithCashfree({
+          amount: payable,
+          purpose: "ORDER",
+          name: form.full_name,
+          email: user.email ?? "",
+          mobile: form.mobile,
+        });
+        if (!res.ok) {
+          setBusy(false);
+          return setErr(res.message);
+        }
+        paidRef = res.reference;
+      } catch (e) {
+        setBusy(false);
+        return setErr(e instanceof Error ? e.message : "Could not open the payment window.");
+      }
+    }
+
     const { data: order, error } = await supabase
       .from("orders")
       .insert({
@@ -317,7 +340,8 @@ function Cart() {
         tip_amount: tip,
         delivery_instructions: instructions.trim() || null,
         payment_mode: payable === 0 ? "WALLET" : payment,
-        payment_status: payable === 0 ? "PAID" : "PENDING",
+        payment_status: payable === 0 || paidRef ? "PAID" : "PENDING",
+        gateway_reference_id: paidRef,
         pickup_otp: otp(),
         delivery_otp: pin4(),
         status: "ORDER_PLACED",
@@ -368,7 +392,7 @@ function Cart() {
 
     cart.clear();
 
-    if (payable > 0 && payment === "ONLINE") {
+    if (payable > 0 && payment === "ONLINE" && isPayu) {
       try {
         await startOnlinePayment({
           gateway: settings?.payment_gateway,
