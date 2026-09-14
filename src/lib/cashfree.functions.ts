@@ -99,3 +99,24 @@ export const createCashfreePayment = createServerFn({ method: "POST" })
 
     return { paymentSessionId: body.payment_session_id, cfOrderId, live };
   });
+
+export type CashfreeVerdict = { status: "SUCCESS" | "PENDING" | "FAILED"; amount: number; reference: string };
+
+/** Asks Cashfree what really happened. Only "SUCCESS" may place an order. */
+export const verifyCashfreePayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { cfOrderId: string }) => {
+    if (!input?.cfOrderId) throw new Error("Missing payment reference");
+    return input;
+  })
+  .handler(async ({ data }): Promise<CashfreeVerdict> => {
+    const { appId, secret, base } = await cashfreeCreds();
+    const res = await fetch(`${base}/orders/${encodeURIComponent(data.cfOrderId)}`, {
+      headers: { "x-api-version": "2023-08-01", "x-client-id": appId, "x-client-secret": secret },
+    });
+    const order = (await res.json()) as { order_status?: string; order_amount?: number; cf_order_id?: string | number };
+    if (!res.ok) return { status: "FAILED", amount: 0, reference: data.cfOrderId };
+    const s = order.order_status ?? "";
+    const status = s === "PAID" ? "SUCCESS" : s === "ACTIVE" ? "PENDING" : "FAILED";
+    return { status, amount: Number(order.order_amount ?? 0), reference: String(order.cf_order_id ?? data.cfOrderId) };
+  });
