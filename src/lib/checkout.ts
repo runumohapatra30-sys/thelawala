@@ -75,3 +75,34 @@ export async function startOnlinePayment(args: PayArgs): Promise<void> {
   const cashfree = factory({ mode: live ? "production" : "sandbox" });
   await cashfree.checkout({ paymentSessionId, redirectTarget: "_self" });
 }
+
+export type PaymentOutcome =
+  | { ok: true; reference: string }
+  | { ok: false; message: string };
+
+/**
+ * Opens Cashfree's Drop checkout inside the app (UPI apps + QR in a modal),
+ * then confirms the real status with Cashfree before anything is placed.
+ */
+export async function payInAppWithCashfree(args: Omit<PayArgs, "gateway">): Promise<PaymentOutcome> {
+  const payload = {
+    amount: args.amount,
+    purpose: args.purpose,
+    orderId: args.orderId ?? null,
+    name: args.name,
+    email: args.email,
+    mobile: args.mobile,
+    origin: window.location.origin,
+  };
+
+  const { paymentSessionId, cfOrderId, live } = await createCashfreePayment({ data: payload });
+  const factory = await loadCashfreeSdk();
+  const cashfree = factory({ mode: live ? "production" : "sandbox" });
+  const result = await cashfree.checkout({ paymentSessionId, redirectTarget: "_modal" });
+
+  const verdict = await verifyCashfreePayment({ data: { cfOrderId } });
+  if (verdict.status === "SUCCESS") return { ok: true, reference: verdict.reference };
+  if (verdict.status === "PENDING")
+    return { ok: false, message: "Payment is still pending. Nothing was charged and your order was not placed." };
+  return { ok: false, message: result?.error?.message ?? "Payment failed or was cancelled. Your order was not placed." };
+}
