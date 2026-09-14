@@ -1,4 +1,4 @@
-import { createCashfreePayment } from "@/lib/cashfree.functions";
+import { createCashfreePayment, verifyCashfreePayment } from "@/lib/cashfree.functions";
 import { createPayuPayment } from "@/lib/payu.functions";
 
 export type PayArgs = {
