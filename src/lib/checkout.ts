@@ -11,8 +11,10 @@ export type PayArgs = {
   mobile: string;
 };
 
+type CashfreeResult = { error?: { message?: string }; paymentDetails?: { paymentMessage?: string } };
+
 type CashfreeSdk = {
-  checkout: (opts: { paymentSessionId: string; redirectTarget?: string }) => Promise<unknown>;
+  checkout: (opts: { paymentSessionId: string; redirectTarget?: string | "_modal" }) => Promise<CashfreeResult>;
 };
 
 declare global {
