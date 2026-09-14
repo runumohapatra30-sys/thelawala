@@ -290,6 +290,29 @@ function Cart() {
       if (extra.length) await supabase.from("addresses").delete().in("id", extra);
     }
 
+    // Online payment happens first, inside the app. No payment, no order.
+    const isPayu = (settings?.payment_gateway ?? "").toUpperCase() === "PAYU";
+    let paidRef: string | null = null;
+    if (payable > 0 && payment === "ONLINE" && !isPayu) {
+      try {
+        const res = await payInAppWithCashfree({
+          amount: payable,
+          purpose: "ORDER",
+          name: form.full_name,
+          email: user.email ?? "",
+          mobile: form.mobile,
+        });
+        if (!res.ok) {
+          setBusy(false);
+          return setErr(res.message);
+        }
+        paidRef = res.reference;
+      } catch (e) {
+        setBusy(false);
+        return setErr(e instanceof Error ? e.message : "Could not open the payment window.");
+      }
+    }
+
     const { data: order, error } = await supabase
       .from("orders")
       .insert({
