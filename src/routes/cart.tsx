@@ -391,23 +391,6 @@ function Cart() {
 
     cart.clear();
 
-    if (payable > 0 && payment === "ONLINE" && isPayu) {
-      try {
-        await startOnlinePayment({
-          gateway: settings?.payment_gateway,
-          amount: payable,
-          purpose: "ORDER",
-          orderId: order.id,
-          name: form.full_name,
-          email: user.email ?? "",
-          mobile: form.mobile,
-        });
-        return;
-      } catch (e) {
-        setBusy(false);
-        return setErr(e instanceof Error ? e.message : "Could not open the payment page.");
-      }
-    }
 
     setBusy(false);
     navigate({ to: "/orders/$id", params: { id: order.id }, search: { placed: 1 } });
