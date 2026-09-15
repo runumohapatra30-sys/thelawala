@@ -120,3 +120,62 @@ export const verifyCashfreePayment = createServerFn({ method: "POST" })
     const status = s === "PAID" ? "SUCCESS" : s === "ACTIVE" ? "PENDING" : "FAILED";
     return { status, amount: Number(order.order_amount ?? 0), reference: String(order.cf_order_id ?? data.cfOrderId) };
   });
+
+export type UpiQr = { cfOrderId: string; qrImage: string };
+
+/**
+ * Creates a real Cashfree order for the exact amount and returns a dynamic UPI QR
+ * image for it, so delivery partners never show a static/dummy UPI id.
+ */
+export const createCashfreeUpiQr = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { amount: number; orderId: string; name: string; mobile: string }) => {
+    if (!input || !(input.amount > 0)) throw new Error("Amount must be more than zero");
+    if (!input.orderId) throw new Error("Missing order");
+    return input;
+  })
+  .handler(async ({ data, context }): Promise<UpiQr> => {
+    const { appId, secret, base } = await cashfreeCreds();
+    const cfOrderId = `TWQR${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    const phone = data.mobile.replace(/\D/g, "").slice(-10) || "9999999999";
+    const headers = {
+      "content-type": "application/json",
+      "x-api-version": "2023-08-01",
+      "x-client-id": appId,
+      "x-client-secret": secret,
+    };
+
+    const orderRes = await fetch(`${base}/orders`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        order_id: cfOrderId,
+        order_amount: Number(data.amount.toFixed(2)),
+        order_currency: "INR",
+        customer_details: {
+          customer_id: context.userId,
+          customer_phone: phone,
+          customer_name: (data.name || "Customer").slice(0, 40),
+        },
+        order_tags: { user_id: context.userId, purpose: "ORDER", order_id: data.orderId },
+      }),
+    });
+    const order = (await orderRes.json()) as { payment_session_id?: string; message?: string };
+    if (!orderRes.ok || !order.payment_session_id) {
+      throw new Error(order.message ?? "Could not create the payment QR right now.");
+    }
+
+    const payRes = await fetch(`${base}/orders/sessions`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        payment_session_id: order.payment_session_id,
+        payment_method: { upi: { channel: "qrcode" } },
+      }),
+    });
+    const pay = (await payRes.json()) as { data?: { payload?: { qrcode?: string } }; message?: string };
+    const qrImage = pay.data?.payload?.qrcode ?? "";
+    if (!payRes.ok || !qrImage) throw new Error(pay.message ?? "Could not create the payment QR right now.");
+
+    return { cfOrderId, qrImage };
+  });
