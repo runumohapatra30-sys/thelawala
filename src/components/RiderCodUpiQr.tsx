@@ -1,20 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { createCashfreeUpiQr, verifyCashfreePayment } from "@/lib/cashfree.functions";
+import { createCashfreeCollectSession, verifyCashfreePayment } from "@/lib/cashfree.functions";
+import { loadCashfreeSdk } from "@/lib/checkout";
 
 type Props = { orderId: string; amount: number; onPaid: () => void };
 
 /**
- * Takes a real UPI payment at the door with a dynamic Cashfree QR for the exact bill.
- * The order is marked paid only after Cashfree confirms the money arrived.
+ * Collects a real UPI payment at the door using the official Cashfree checkout
+ * (order created through the PG /orders API). The order is marked paid only
+ * after Cashfree's order-status API confirms the money arrived.
  */
 export function RiderCodUpiQr({ orderId, amount, onPaid }: Props) {
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [qr, setQr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [cfOrderId, setCfOrderId] = useState<string | null>(null);
-  const [note, setNote] = useState("Waiting for the payment…");
+  const [note, setNote] = useState("");
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -23,92 +23,90 @@ export function RiderCodUpiQr({ orderId, amount, onPaid }: Props) {
     };
   }, []);
 
-  async function start() {
-    setOpen(true);
-    setLoading(true);
-    setQr(null);
-    try {
-      const res = await createCashfreeUpiQr({ data: { amount, orderId, name: "Customer", mobile: "" } });
-      setQr(res.qrImage);
-      setCfOrderId(res.cfOrderId);
-      setNote("Waiting for the payment…");
-      if (timer.current) clearInterval(timer.current);
-      timer.current = setInterval(() => void check(res.cfOrderId, true), 5000);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not create the payment QR.");
-      setOpen(false);
+  async function markPaid(reference: string) {
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        payment_status: "PAID",
+        payment_mode: "ONLINE",
+        gateway_reference_id: reference,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", orderId);
+    if (error) {
+      toast.error(error.message);
+      return;
     }
-    setLoading(false);
+    toast.success("Payment received online.");
+    onPaid();
   }
 
-  async function check(id: string, silent = false) {
+  async function check(id: string, silent = false): Promise<boolean> {
     try {
       const verdict = await verifyCashfreePayment({ data: { cfOrderId: id } });
       if (verdict.status === "SUCCESS") {
         if (timer.current) clearInterval(timer.current);
-        const { error } = await supabase
-          .from("orders")
-          .update({
-            payment_status: "PAID",
-            payment_mode: "ONLINE",
-            gateway_reference_id: verdict.reference,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", orderId);
-        if (error) {
-          toast.error(error.message);
-          return;
-        }
-        toast.success("Payment received online.");
-        setOpen(false);
-        onPaid();
-        return;
+        setNote("");
+        await markPaid(verdict.reference);
+        return true;
       }
       setNote(verdict.status === "PENDING" ? "Payment pending — not received yet." : "Payment not received yet.");
       if (!silent) toast.error("Payment Pending / Not Received");
     } catch {
       if (!silent) toast.error("Could not check the payment right now.");
     }
+    return false;
   }
 
-  function close() {
-    if (timer.current) clearInterval(timer.current);
-    setOpen(false);
-  }
+  async function start() {
+    setBusy(true);
+    setNote("");
+    try {
+      const session = await createCashfreeCollectSession({
+        data: { amount, orderId, name: "Customer", mobile: "" },
+      });
+      setCfOrderId(session.cfOrderId);
 
-  if (!open) {
-    return (
-      <button
-        onClick={() => void start()}
-        className="press mt-2 w-full rounded-xl border-2 border-primary py-2.5 text-sm font-bold text-primary"
-      >
-        Pay Online via UPI QR
-      </button>
-    );
+      try {
+        const factory = await loadCashfreeSdk();
+        const cashfree = factory({ mode: session.live ? "production" : "sandbox" });
+        await cashfree.checkout({ paymentSessionId: session.paymentSessionId, redirectTarget: "_modal" });
+      } catch {
+        if (session.paymentLink) window.open(session.paymentLink, "_blank", "noopener");
+      }
+
+      const done = await check(session.cfOrderId, true);
+      if (!done) {
+        setNote("Payment pending — not received yet.");
+        if (timer.current) clearInterval(timer.current);
+        timer.current = setInterval(() => void check(session.cfOrderId, true), 5000);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not start the payment.");
+    }
+    setBusy(false);
   }
 
   return (
-    <div className="mt-3 rounded-2xl border border-border bg-card p-3 text-center">
-      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Scan to pay</p>
-      <p className="text-2xl font-black">₹{amount}</p>
-      {loading || !qr ? (
-        <p className="my-8 text-xs font-semibold text-muted-foreground">Creating a secure QR…</p>
-      ) : (
-        <img src={qr} alt="Secure UPI QR code for this order" className="mx-auto my-3 h-56 w-56 rounded-xl bg-white p-2" />
+    <div className="mt-2">
+      <button
+        onClick={() => void start()}
+        disabled={busy}
+        className="press w-full rounded-xl border-2 border-primary py-2.5 text-sm font-bold text-primary disabled:opacity-60"
+      >
+        {busy ? "Opening secure payment…" : "Pay Online via UPI"}
+      </button>
+      {note && (
+        <div className="mt-2 flex items-center gap-2">
+          <p className="flex-1 text-xs font-semibold text-muted-foreground">{note}</p>
+          <button
+            onClick={() => cfOrderId && void check(cfOrderId)}
+            className="press rounded-lg border border-border px-3 py-1.5 text-xs font-bold"
+          >
+            Check payment
+          </button>
+        </div>
       )}
-      <p className="text-xs font-semibold text-muted-foreground">{note}</p>
-      <div className="mt-2 flex gap-2">
-        <button onClick={close} className="press flex-1 rounded-xl border border-border py-2.5 text-sm font-bold">
-          Close
-        </button>
-        <button
-          onClick={() => cfOrderId && void check(cfOrderId)}
-          disabled={!cfOrderId}
-          className="press flex-1 rounded-xl bg-foreground py-2.5 text-sm font-bold text-background disabled:opacity-60"
-        >
-          Check payment
-        </button>
-      </div>
     </div>
   );
 }

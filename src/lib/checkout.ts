@@ -38,7 +38,7 @@ function submitForm(action: string, fields: Record<string, string>) {
   form.submit();
 }
 
-async function loadCashfreeSdk(): Promise<NonNullable<Window["Cashfree"]>> {
+export async function loadCashfreeSdk(): Promise<NonNullable<Window["Cashfree"]>> {
   if (window.Cashfree) return window.Cashfree;
   await new Promise<void>((resolve, reject) => {
     const el = document.createElement("script");
