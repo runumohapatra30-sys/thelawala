@@ -208,46 +208,36 @@ function Orders() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-px border-t border-border bg-border">
+                    <div className="flex items-center gap-2 border-t border-border p-2.5">
+                      <button
+                        onClick={() => orderAgain(o)}
+                        className="press flex-1 rounded-xl bg-primary py-2.5 text-center text-xs font-black text-primary-foreground"
+                      >
+                        Order again
+                      </button>
                       <Link
                         to="/orders/$id"
                         params={{ id: o.id }}
-                        className="press bg-card py-2.5 text-center text-[11px] font-black text-primary"
+                        className="press flex-1 rounded-xl border border-border py-2.5 text-center text-xs font-black"
                       >
-                        Track order
+                        {o.status === "DELIVERED" || o.status === "CANCELLED" ? "View order" : "Track"}
                       </Link>
-                      <button onClick={() => setBillFor(o)} className="press bg-card py-2.5 text-center text-[11px] font-black">
-                        Order details
-                      </button>
-                      <Link
-                        to="/support"
-                        search={{ order: o.id }}
-                        className="press bg-card py-2.5 text-center text-[11px] font-black text-primary"
+                      <button
+                        onClick={() => setBillFor(o)}
+                        aria-label="Order details"
+                        className="press grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border text-sm font-black"
                       >
-                        Need help?
-                      </Link>
-                    </div>
-                    <div className="grid grid-cols-2 gap-px border-t border-border bg-border">
-                      <button onClick={() => orderAgain(o)} className="press bg-card py-2.5 text-center text-[11px] font-black text-primary">
-                        Order again
+                        ⋯
                       </button>
-                      {o.status === "DELIVERED" ? (
-                        rated.includes(o.id) ? (
-                          <span className="bg-card py-2.5 text-center text-[11px] font-black text-muted-foreground">Rated ★</span>
-                        ) : (
-                          <button
-                            onClick={() => { setRateFor(o); setFood(5); setDelivery(5); }}
-                            className="press bg-card py-2.5 text-center text-[11px] font-black"
-                          >
-                            Rate this order
-                          </button>
-                        )
-                      ) : (
-                        <span className="bg-card py-2.5 text-center text-[11px] font-black text-muted-foreground">
-                          {shortStatus(o.status)}
-                        </span>
-                      )}
                     </div>
+                    {o.status === "DELIVERED" && !rated.includes(o.id) ? (
+                      <button
+                        onClick={() => { setRateFor(o); setFood(5); setDelivery(5); }}
+                        className="press w-full border-t border-border py-2 text-center text-[11px] font-black text-primary"
+                      >
+                        Rate this order
+                      </button>
+                    ) : null}
                   </article>
                 );
               })
