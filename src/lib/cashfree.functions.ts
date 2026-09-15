@@ -121,33 +121,32 @@ export const verifyCashfreePayment = createServerFn({ method: "POST" })
     return { status, amount: Number(order.order_amount ?? 0), reference: String(order.cf_order_id ?? data.cfOrderId) };
   });
 
-export type UpiQr = { cfOrderId: string; qrImage: string };
+export type CollectSession = { cfOrderId: string; paymentSessionId: string; paymentLink: string | null; live: boolean };
 
 /**
- * Creates a real Cashfree order for the exact amount and returns a dynamic UPI QR
- * image for it, so delivery partners never show a static/dummy UPI id.
+ * Creates a real Cashfree order (PG /orders only — never the restricted /orders/pay)
+ * and returns the payment session for the official Cashfree checkout SDK.
  */
-export const createCashfreeUpiQr = createServerFn({ method: "POST" })
+export const createCashfreeCollectSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { amount: number; orderId: string; name: string; mobile: string }) => {
     if (!input || !(input.amount > 0)) throw new Error("Amount must be more than zero");
     if (!input.orderId) throw new Error("Missing order");
     return input;
   })
-  .handler(async ({ data, context }): Promise<UpiQr> => {
-    const { appId, secret, base } = await cashfreeCreds();
+  .handler(async ({ data, context }): Promise<CollectSession> => {
+    const { appId, secret, base, live } = await cashfreeCreds();
     const cfOrderId = `TWQR${Date.now()}${Math.floor(Math.random() * 1000)}`;
     const phone = data.mobile.replace(/\D/g, "").slice(-10) || "9999999999";
-    const headers = {
-      "content-type": "application/json",
-      "x-api-version": "2023-08-01",
-      "x-client-id": appId,
-      "x-client-secret": secret,
-    };
 
     const orderRes = await fetch(`${base}/orders`, {
       method: "POST",
-      headers,
+      headers: {
+        "content-type": "application/json",
+        "x-api-version": "2023-08-01",
+        "x-client-id": appId,
+        "x-client-secret": secret,
+      },
       body: JSON.stringify({
         order_id: cfOrderId,
         order_amount: Number(data.amount.toFixed(2)),
@@ -160,22 +159,20 @@ export const createCashfreeUpiQr = createServerFn({ method: "POST" })
         order_tags: { user_id: context.userId, purpose: "ORDER", order_id: data.orderId },
       }),
     });
-    const order = (await orderRes.json()) as { payment_session_id?: string; message?: string };
+    const order = (await orderRes.json()) as {
+      payment_session_id?: string;
+      payment_link?: string;
+      message?: string;
+    };
     if (!orderRes.ok || !order.payment_session_id) {
-      throw new Error(order.message ?? "Could not create the payment QR right now.");
+      throw new Error(order.message ?? "Could not start the payment right now.");
     }
 
-    const payRes = await fetch(`${base}/orders/sessions`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        payment_session_id: order.payment_session_id,
-        payment_method: { upi: { channel: "qrcode" } },
-      }),
-    });
-    const pay = (await payRes.json()) as { data?: { payload?: { qrcode?: string } }; message?: string };
-    const qrImage = pay.data?.payload?.qrcode ?? "";
-    if (!payRes.ok || !qrImage) throw new Error(pay.message ?? "Could not create the payment QR right now.");
-
-    return { cfOrderId, qrImage };
+    return {
+      cfOrderId,
+      paymentSessionId: order.payment_session_id,
+      paymentLink: order.payment_link ?? null,
+      live,
+    };
   });
+
