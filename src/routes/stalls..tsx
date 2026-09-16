@@ -8,7 +8,7 @@ import { customerPrice } from "@/lib/pricing";
 import { foodImage } from "@/lib/foodImage";
 import { Heart, Search, Share2, Info, Timer, Bike } from "lucide-react";
 
-export const Route = createFileRoute("/stalls/$id")({
+export const Route = createFileRoute("/stalls/")({
   component: StallDetail,
 });
 
