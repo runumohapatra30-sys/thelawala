@@ -1,5 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { ActiveOrderTracker } from "@/components/ActiveOrderTracker";
 import { HomeChat } from "@/components/HomeChat";
 import { Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,6 +65,7 @@ const TINTS = [
 
 function Home() {
   const { user } = useSession();
+  const navigate = useNavigate();
   const lines = useCart();
   const { count, foodTotal } = cartTotals(lines);
   const [items, setItems] = useState<Item[]>([]);
@@ -179,7 +181,7 @@ function Home() {
     banner_carousel: () => (
       <BannerCarousel
         onCategory={(id) => { setActive(id); setVendorFilter(null); }}
-        onVendor={(id) => { setVendorFilter(id); setActive(null); }}
+        onVendor={(id) => navigate({ to: "/stalls/$id", params: { id } })}
       />
     ),
     festive: () => (
@@ -504,6 +506,7 @@ function Home() {
             />
           </section>
         ) : null}
+        <ActiveOrderTracker userId={user?.id} />
         {vendors.length > 0 ? (
           <section className="px-5 pt-2">
             <h2 className="text-[17px] font-extrabold">Your stalls</h2>
@@ -512,7 +515,7 @@ function Home() {
               {vendors.map((v) => (
                 <button
                   key={v.id}
-                  onClick={() => { setVendorFilter(vendorFilter === v.id ? null : v.id); setActive(null); }}
+                  onClick={() => navigate({ to: "/stalls/$id", params: { id: v.id } })}
                   className="press w-[70px] shrink-0 snap-start text-center"
                 >
                   <span
