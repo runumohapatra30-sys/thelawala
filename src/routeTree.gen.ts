@@ -23,7 +23,7 @@ import { Route as AuthenticatedRiderRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedVendorRouteImport } from './routes/_authenticated/vendor'
 import { Route as OrdersIndexRouteImport } from './routes/orders.index'
 import { Route as OrdersIdRouteImport } from './routes/orders.$id'
-import { Route as StallsRouteImport } from './routes/stalls.'
+import { Route as StallsIdRouteImport } from './routes/stalls.$id'
 import { Route as SupportIndexRouteImport } from './routes/support.index'
 import { Route as SupportIdRouteImport } from './routes/support.$id'
 import { Route as ApiPublicCashfreeCallbackRouteImport } from './routes/api/public/cashfree/callback'
@@ -98,9 +98,9 @@ const OrdersIdRoute = OrdersIdRouteImport.update({
   path: '/orders/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StallsRoute = StallsRouteImport.update({
-  id: '/stalls/',
-  path: '/stalls/',
+const StallsIdRoute = StallsIdRouteImport.update({
+  id: '/stalls/$id',
+  path: '/stalls/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SupportIndexRoute = SupportIndexRouteImport.update({
@@ -135,10 +135,10 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
   '/wallet': typeof WalletRoute
-  '/stalls/': typeof StallsRoute
   '/rider': typeof AuthenticatedRiderRoute
   '/vendor': typeof AuthenticatedVendorRoute
   '/orders/$id': typeof OrdersIdRoute
+  '/stalls/$id': typeof StallsIdRoute
   '/support/$id': typeof SupportIdRoute
   '/orders/': typeof OrdersIndexRoute
   '/support/': typeof SupportIndexRoute
@@ -155,10 +155,10 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
   '/wallet': typeof WalletRoute
-  '/stalls': typeof StallsRoute
   '/rider': typeof AuthenticatedRiderRoute
   '/vendor': typeof AuthenticatedVendorRoute
   '/orders/$id': typeof OrdersIdRoute
+  '/stalls/$id': typeof StallsIdRoute
   '/support/$id': typeof SupportIdRoute
   '/orders': typeof OrdersIndexRoute
   '/support': typeof SupportIndexRoute
@@ -177,10 +177,10 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
   '/wallet': typeof WalletRoute
-  '/stalls/': typeof StallsRoute
   '/_authenticated/rider': typeof AuthenticatedRiderRoute
   '/_authenticated/vendor': typeof AuthenticatedVendorRoute
   '/orders/$id': typeof OrdersIdRoute
+  '/stalls/$id': typeof StallsIdRoute
   '/support/$id': typeof SupportIdRoute
   '/orders/': typeof OrdersIndexRoute
   '/support/': typeof SupportIndexRoute
@@ -199,10 +199,10 @@ export interface FileRouteTypes {
     | '/profile'
     | '/terms'
     | '/wallet'
-    | '/stalls/'
     | '/rider'
     | '/vendor'
     | '/orders/$id'
+    | '/stalls/$id'
     | '/support/$id'
     | '/orders/'
     | '/support/'
@@ -219,10 +219,10 @@ export interface FileRouteTypes {
     | '/profile'
     | '/terms'
     | '/wallet'
-    | '/stalls'
     | '/rider'
     | '/vendor'
     | '/orders/$id'
+    | '/stalls/$id'
     | '/support/$id'
     | '/orders'
     | '/support'
@@ -240,10 +240,10 @@ export interface FileRouteTypes {
     | '/profile'
     | '/terms'
     | '/wallet'
-    | '/stalls/'
     | '/_authenticated/rider'
     | '/_authenticated/vendor'
     | '/orders/$id'
+    | '/stalls/$id'
     | '/support/$id'
     | '/orders/'
     | '/support/'
@@ -262,8 +262,8 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   TermsRoute: typeof TermsRoute
   WalletRoute: typeof WalletRoute
-  StallsRoute: typeof StallsRoute
   OrdersIdRoute: typeof OrdersIdRoute
+  StallsIdRoute: typeof StallsIdRoute
   SupportIdRoute: typeof SupportIdRoute
   OrdersIndexRoute: typeof OrdersIndexRoute
   SupportIndexRoute: typeof SupportIndexRoute
@@ -371,11 +371,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrdersIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/stalls/': {
-      id: '/stalls/'
-      path: '/stalls'
-      fullPath: '/stalls/'
-      preLoaderRoute: typeof StallsRouteImport
+    '/stalls/$id': {
+      id: '/stalls/$id'
+      path: '/stalls/$id'
+      fullPath: '/stalls/$id'
+      preLoaderRoute: typeof StallsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/support/': {
@@ -433,8 +433,8 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   TermsRoute: TermsRoute,
   WalletRoute: WalletRoute,
-  StallsRoute: StallsRoute,
   OrdersIdRoute: OrdersIdRoute,
+  StallsIdRoute: StallsIdRoute,
   SupportIdRoute: SupportIdRoute,
   OrdersIndexRoute: OrdersIndexRoute,
   SupportIndexRoute: SupportIndexRoute,
