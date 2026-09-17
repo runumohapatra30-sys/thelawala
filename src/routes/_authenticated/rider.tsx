@@ -485,14 +485,17 @@ function RiderPortal() {
 
   async function acceptOffer() {
     if (!offer || !me) return;
-    const { error: acceptErr } = await supabase.from("orders").update({ partner_id: me.id, status: "RIDER_ASSIGNED", offered_to: null, offer_expires_at: null, updated_at: new Date().toISOString() }).eq("id", offer.id);
+    const { data: won, error: acceptErr } = await supabase.rpc("accept_order_offer", { _order_id: offer.id });
     if (acceptErr) {
-      console.error("Order status update error:", acceptErr);
+      console.error("Order accept error:", acceptErr);
       toast.error(`Could not accept this order: ${acceptErr.message}`);
       return;
     }
-    await supabase.from("delivery_partners").update({ is_busy: true }).eq("id", me.id);
-    console.log(`[Rider Response: ACCEPTED] order ${offer.id} rider ${me.id}`);
+    if (!won) {
+      toast.error("Another partner took this order.");
+      setOffer(null);
+      return;
+    }
     setActive({ ...offer, partner_id: me.id, status: "RIDER_ASSIGNED" });
     setOffer(null);
   }
