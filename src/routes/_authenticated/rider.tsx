@@ -670,6 +670,32 @@ function RiderPortal() {
   const stallPoint = vendor ? { lat: Number(vendor.lat), lng: Number(vendor.lng) } : null;
   const dropPoint = trip ? { lat: Number(trip.drop_lat), lng: Number(trip.drop_lng) } : null;
 
+  if (me.status === "PENDING" || me.status === "REJECTED") {
+    const rejected = me.status === "REJECTED";
+    return (
+      <Shell>
+        <RiderHeader subtitle={rejected ? "Application rejected" : "Verification pending"} name={me.name} />
+        <div className="space-y-3 p-4">
+          <div className={`card-soft border-2 p-4 ${rejected ? "border-destructive" : "border-primary"}`}>
+            <p className="text-2xl">{rejected ? "🚫" : "⏳"}</p>
+            <p className="mt-2 text-base font-black">
+              {rejected ? "Your partner application was rejected" : "Verification pending"}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {rejected
+                ? (me as unknown as { rejection_reason?: string }).rejection_reason ||
+                  "The admin team could not approve your documents. Please contact support to re-apply."
+                : "Our team is checking your documents. You can go on duty and take deliveries once your account is approved."}
+            </p>
+          </div>
+          <div className="card-soft p-4 text-xs text-muted-foreground">
+            Need help? Call ThelaWala care on 9078492360.
+          </div>
+        </div>
+      </Shell>
+    );
+  }
+
   return (
     <Shell>
       <RiderHeader
