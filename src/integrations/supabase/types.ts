@@ -965,6 +965,7 @@ export type Database = {
           accepted_at: string | null
           address_line: string
           base_food_total: number
+          broadcast_at: string | null
           cancel_otp: string | null
           cancel_reason: string | null
           cancel_requested_at: string | null
@@ -1019,6 +1020,7 @@ export type Database = {
           accepted_at?: string | null
           address_line: string
           base_food_total?: number
+          broadcast_at?: string | null
           cancel_otp?: string | null
           cancel_reason?: string | null
           cancel_requested_at?: string | null
@@ -1073,6 +1075,7 @@ export type Database = {
           accepted_at?: string | null
           address_line?: string
           base_food_total?: number
+          broadcast_at?: string | null
           cancel_otp?: string | null
           cancel_reason?: string | null
           cancel_requested_at?: string | null
@@ -1922,6 +1925,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_order_offer: { Args: { _order_id: string }; Returns: boolean }
       admin_assign_partner: {
         Args: { _order_id: string; _partner_id: string }
         Returns: undefined
@@ -1962,6 +1966,7 @@ export type Database = {
       }
       apply_referral: { Args: { _code: string }; Returns: string }
       auto_cancel_stale_orders: { Args: never; Returns: number }
+      cancel_orders_no_rider: { Args: never; Returns: number }
       complete_delivery: {
         Args: { _order_id: string; _otp: string; _proof_path: string }
         Returns: undefined
