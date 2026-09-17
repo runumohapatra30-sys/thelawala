@@ -184,11 +184,21 @@ function RiderPortal() {
       if (!mine) {
         // On duty and free: pick up any order still waiting for a rider in my zones.
         if (me.is_online && !me.is_busy) await sweepSearchingOrders(me.id, me.assigned_zones ?? []);
-        const { data: off } = await supabase.from("orders").select("*")
+        let { data: off } = await supabase.from("orders").select("*")
           .eq("offered_to", me.id).is("partner_id", null).limit(1).maybeSingle();
+        if (!off && me.status === "APPROVED" && me.is_online) {
+          // Broadcast phase: an order nobody accepted in 5 minutes is open to every free rider.
+          const { data: open } = await supabase.from("orders").select("*")
+            .is("partner_id", null).not("broadcast_at", "is", null)
+            .in("status", ["SEARCHING_RIDER", "READY_FOR_PICKUP"])
+            .order("created_at", { ascending: true }).limit(1).maybeSingle();
+          off = open ?? null;
+        }
         setOffer((off ?? null) as Order | null);
         if (off?.offer_expires_at) {
           setSecs(Math.max(0, Math.round((new Date(off.offer_expires_at).getTime() - Date.now()) / 1000)));
+        } else if (off) {
+          setSecs(45);
         }
       } else {
         setOffer(null);
@@ -475,14 +485,17 @@ function RiderPortal() {
 
   async function acceptOffer() {
     if (!offer || !me) return;
-    const { error: acceptErr } = await supabase.from("orders").update({ partner_id: me.id, status: "RIDER_ASSIGNED", offered_to: null, offer_expires_at: null, updated_at: new Date().toISOString() }).eq("id", offer.id);
+    const { data: won, error: acceptErr } = await supabase.rpc("accept_order_offer", { _order_id: offer.id });
     if (acceptErr) {
-      console.error("Order status update error:", acceptErr);
+      console.error("Order accept error:", acceptErr);
       toast.error(`Could not accept this order: ${acceptErr.message}`);
       return;
     }
-    await supabase.from("delivery_partners").update({ is_busy: true }).eq("id", me.id);
-    console.log(`[Rider Response: ACCEPTED] order ${offer.id} rider ${me.id}`);
+    if (!won) {
+      toast.error("Another partner took this order.");
+      setOffer(null);
+      return;
+    }
     setActive({ ...offer, partner_id: me.id, status: "RIDER_ASSIGNED" });
     setOffer(null);
   }
@@ -656,6 +669,32 @@ function RiderPortal() {
   const pos = posRef.current;
   const stallPoint = vendor ? { lat: Number(vendor.lat), lng: Number(vendor.lng) } : null;
   const dropPoint = trip ? { lat: Number(trip.drop_lat), lng: Number(trip.drop_lng) } : null;
+
+  if (me.status === "PENDING" || me.status === "REJECTED") {
+    const rejected = me.status === "REJECTED";
+    return (
+      <Shell>
+        <RiderHeader subtitle={rejected ? "Application rejected" : "Verification pending"} name={me.name} />
+        <div className="space-y-3 p-4">
+          <div className={`card-soft border-2 p-4 ${rejected ? "border-destructive" : "border-primary"}`}>
+            <p className="text-2xl">{rejected ? "🚫" : "⏳"}</p>
+            <p className="mt-2 text-base font-black">
+              {rejected ? "Your partner application was rejected" : "Verification pending"}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {rejected
+                ? (me as unknown as { rejection_reason?: string }).rejection_reason ||
+                  "The admin team could not approve your documents. Please contact support to re-apply."
+                : "Our team is checking your documents. You can go on duty and take deliveries once your account is approved."}
+            </p>
+          </div>
+          <div className="card-soft p-4 text-xs text-muted-foreground">
+            Need help? Call ThelaWala care on 9078492360.
+          </div>
+        </div>
+      </Shell>
+    );
+  }
 
   return (
     <Shell>
