@@ -184,11 +184,21 @@ function RiderPortal() {
       if (!mine) {
         // On duty and free: pick up any order still waiting for a rider in my zones.
         if (me.is_online && !me.is_busy) await sweepSearchingOrders(me.id, me.assigned_zones ?? []);
-        const { data: off } = await supabase.from("orders").select("*")
+        let { data: off } = await supabase.from("orders").select("*")
           .eq("offered_to", me.id).is("partner_id", null).limit(1).maybeSingle();
+        if (!off && me.status === "APPROVED" && me.is_online) {
+          // Broadcast phase: an order nobody accepted in 5 minutes is open to every free rider.
+          const { data: open } = await supabase.from("orders").select("*")
+            .is("partner_id", null).not("broadcast_at", "is", null)
+            .in("status", ["SEARCHING_RIDER", "READY_FOR_PICKUP"])
+            .order("created_at", { ascending: true }).limit(1).maybeSingle();
+          off = open ?? null;
+        }
         setOffer((off ?? null) as Order | null);
         if (off?.offer_expires_at) {
           setSecs(Math.max(0, Math.round((new Date(off.offer_expires_at).getTime() - Date.now()) / 1000)));
+        } else if (off) {
+          setSecs(45);
         }
       } else {
         setOffer(null);
