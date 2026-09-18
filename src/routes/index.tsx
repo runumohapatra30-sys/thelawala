@@ -506,7 +506,7 @@ function Home() {
             />
           </section>
         ) : null}
-        <ActiveOrderTracker userId={user?.id} />
+        {user?.id ? <ActiveOrderTracker userId={user.id} /> : null}
         {vendors.length > 0 ? (
           <section className="px-5 pt-2">
             <h2 className="text-[17px] font-extrabold">Your stalls</h2>

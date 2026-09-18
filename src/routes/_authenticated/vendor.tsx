@@ -59,7 +59,7 @@ const EMPTY_DISH = {
 
 function VendorPortal() {
   const { user, loading } = useSession();
-  const [vendor, setVendor] = useState<{ id: string; stall_name: string; status: string; is_open: boolean; fssai_number: string | null } | null>(null);
+  const [vendor, setVendor] = useState<{ id: string; stall_name: string; status: string; is_open: boolean; fssai_number: string | null; rejection_reason: string | null } | null>(null);
   const vLayout = usePageLayout("vendor", "dashboard");
   const [orders, setOrders] = useState<Order[]>([]);
   const [orderItems, setOrderItems] = useState<OrderItemName[]>([]);
@@ -98,7 +98,7 @@ function VendorPortal() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("vendors").select("id,stall_name,status,is_open,fssai_number").eq("owner_id", user.id).maybeSingle()
+    supabase.from("vendors").select("id,stall_name,status,is_open,fssai_number,rejection_reason").eq("owner_id", user.id).maybeSingle()
       .then(({ data }) => setVendor(data));
     supabase.from("categories").select("id,name,emoji").order("sort_order").then(({ data }) => setCats(data ?? []));
   }, [user?.id]);
@@ -359,7 +359,7 @@ function VendorPortal() {
           bank_proof_url: bankUrl,
           terms_accepted_at: new Date().toISOString(),
           status: "PENDING",
-        }).select("id,stall_name,status,is_open,fssai_number").single();
+        }).select("id,stall_name,status,is_open,fssai_number,rejection_reason").single();
         if (error) throw error;
         setVendor(data);
         toast.success("Stall application submitted! The admin team will review it within a day.");
@@ -454,6 +454,15 @@ function VendorPortal() {
           {field("upi_id", "UPI ID (optional)", null, "name@bank")}
           {fileRow("Bank proof (passbook / cancelled cheque)", docs.bankProof, (f) => setDocs({ ...docs, bankProof: f }))}
 
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
+            <p className="text-sm font-black">One-time joining fee {inr(form.fssai_number.trim() ? 99 : 199)}</p>
+            <ul className="mt-1 space-y-0.5 text-[11px] font-semibold text-muted-foreground">
+              <li>• Stall joining charge — ₹99</li>
+              <li>• FSSAI registration help — ₹100 {form.fssai_number.trim() ? "(not needed, you already have FSSAI)" : "(added, we register it for you)"}</li>
+            </ul>
+            <p className="mt-1 text-[11px] text-muted-foreground">Payable after approval. Full pack for a new stall is ₹199; with your own FSSAI it is only ₹99.</p>
+          </div>
+
           <label className="flex items-start gap-2 rounded-xl border border-border p-3">
             <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} className="mt-0.5" />
             <span className="text-xs text-muted-foreground">
@@ -474,9 +483,41 @@ function VendorPortal() {
     );
   }
 
+  if (vendor.status !== "APPROVED") {
+    const rejected = vendor.status === "REJECTED";
+    return (
+      <Shell>
+        <PortalHeader title={vendor.stall_name} subtitle={rejected ? "Application rejected" : "Waiting for approval"} />
+        <div className="space-y-3 p-4">
+          <div className={`card-soft border p-4 text-center ${rejected ? "border-destructive/40 bg-destructive/5" : "border-border"}`}>
+            <p className="text-3xl">{rejected ? "🚫" : "⏳"}</p>
+            <p className="mt-2 text-base font-black">{rejected ? "Your stall was not approved" : "Verification in progress"}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {rejected
+                ? "Please correct the details below and contact our team to apply again."
+                : "Our team is checking your papers. You can start taking orders as soon as your stall is approved."}
+            </p>
+            {rejected && vendor.rejection_reason ? (
+              <p className="mt-3 rounded-xl bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive">{vendor.rejection_reason}</p>
+            ) : null}
+            <a href="tel:9078492360" className="press mt-4 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-black text-primary-foreground">
+              Call support 9078492360
+            </a>
+          </div>
+          <div className="card-soft border border-border p-3">
+            <p className="text-sm font-bold">Joining fee</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {vendor.fssai_number ? "₹99 stall joining charge (you already have FSSAI)." : "₹199 pack — ₹99 stall joining charge + ₹100 FSSAI registration help."}
+            </p>
+          </div>
+        </div>
+      </Shell>
+    );
+  }
+
   return (
     <Shell>
-      <PortalHeader title={vendor.stall_name} subtitle={vendor.status === "APPROVED" ? "Live on ThelaWala" : "Waiting for approval"} />
+      <PortalHeader title={vendor.stall_name} subtitle="Live on ThelaWala" />
       <div className="space-y-3 p-4">
         {pending > 0 ? (
           <div className="animate-pulse rounded-2xl bg-destructive px-3 py-2.5 text-center text-sm font-black text-destructive-foreground">
@@ -559,7 +600,7 @@ function VendorPortal() {
                 .from("vendors")
                 .update({ fssai_number: fssaiDraft.trim() })
                 .eq("id", vendor.id)
-                .select("id,stall_name,status,is_open,fssai_number")
+                .select("id,stall_name,status,is_open,fssai_number,rejection_reason")
                 .single();
               setFssaiSaving(false);
               if (error || !data) {
