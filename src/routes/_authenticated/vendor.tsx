@@ -59,7 +59,7 @@ const EMPTY_DISH = {
 
 function VendorPortal() {
   const { user, loading } = useSession();
-  const [vendor, setVendor] = useState<{ id: string; stall_name: string; status: string; is_open: boolean; fssai_number: string | null } | null>(null);
+  const [vendor, setVendor] = useState<{ id: string; stall_name: string; status: string; is_open: boolean; fssai_number: string | null; rejection_reason: string | null } | null>(null);
   const vLayout = usePageLayout("vendor", "dashboard");
   const [orders, setOrders] = useState<Order[]>([]);
   const [orderItems, setOrderItems] = useState<OrderItemName[]>([]);
@@ -98,7 +98,7 @@ function VendorPortal() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("vendors").select("id,stall_name,status,is_open,fssai_number").eq("owner_id", user.id).maybeSingle()
+    supabase.from("vendors").select("id,stall_name,status,is_open,fssai_number,rejection_reason").eq("owner_id", user.id).maybeSingle()
       .then(({ data }) => setVendor(data));
     supabase.from("categories").select("id,name,emoji").order("sort_order").then(({ data }) => setCats(data ?? []));
   }, [user?.id]);
@@ -453,6 +453,15 @@ function VendorPortal() {
           </label>
           {field("upi_id", "UPI ID (optional)", null, "name@bank")}
           {fileRow("Bank proof (passbook / cancelled cheque)", docs.bankProof, (f) => setDocs({ ...docs, bankProof: f }))}
+
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
+            <p className="text-sm font-black">One-time joining fee {inr(form.fssai_number.trim() ? 99 : 199)}</p>
+            <ul className="mt-1 space-y-0.5 text-[11px] font-semibold text-muted-foreground">
+              <li>• Stall joining charge — ₹99</li>
+              <li>• FSSAI registration help — ₹100 {form.fssai_number.trim() ? "(not needed, you already have FSSAI)" : "(added, we register it for you)"}</li>
+            </ul>
+            <p className="mt-1 text-[11px] text-muted-foreground">Payable after approval. Full pack for a new stall is ₹199; with your own FSSAI it is only ₹99.</p>
+          </div>
 
           <label className="flex items-start gap-2 rounded-xl border border-border p-3">
             <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} className="mt-0.5" />
