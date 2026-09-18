@@ -359,7 +359,7 @@ function VendorPortal() {
           bank_proof_url: bankUrl,
           terms_accepted_at: new Date().toISOString(),
           status: "PENDING",
-        }).select("id,stall_name,status,is_open,fssai_number").single();
+        }).select("id,stall_name,status,is_open,fssai_number,rejection_reason").single();
         if (error) throw error;
         setVendor(data);
         toast.success("Stall application submitted! The admin team will review it within a day.");
@@ -600,7 +600,7 @@ function VendorPortal() {
                 .from("vendors")
                 .update({ fssai_number: fssaiDraft.trim() })
                 .eq("id", vendor.id)
-                .select("id,stall_name,status,is_open,fssai_number")
+                .select("id,stall_name,status,is_open,fssai_number,rejection_reason")
                 .single();
               setFssaiSaving(false);
               if (error || !data) {

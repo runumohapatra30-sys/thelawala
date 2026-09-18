@@ -54,7 +54,7 @@ function StallDetail() {
         supabase.from("menu_items").select("*").eq("vendor_id", id).order("created_at"),
         supabase.from("categories").select("id,name").order("sort_order"),
       ]);
-      setVendor(vRes.data as Vendor);
+      setVendor(vRes.data as unknown as Vendor);
       setItems((iRes.data ?? []) as Item[]);
       setCats((cRes.data ?? []) as Category[]);
       setLoading(false);
