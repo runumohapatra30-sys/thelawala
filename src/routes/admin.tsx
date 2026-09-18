@@ -44,7 +44,7 @@ const TABS: { key: Tab; label: string; Icon: typeof ReceiptText }[] = [
   { key: "settle", label: "Settlement", Icon: HandCoins },
   { key: "refunds", label: "Refunds", Icon: RotateCcw },
   { key: "money", label: "Money", Icon: IndianRupee },
-  { key: "people", label: "Partners", Icon: Users },
+  { key: "people", label: "Verification Requests", Icon: Users },
   { key: "market", label: "Marketing", Icon: Megaphone },
   { key: "settings", label: "Settings", Icon: SlidersHorizontal },
 ];

@@ -483,9 +483,41 @@ function VendorPortal() {
     );
   }
 
+  if (vendor.status !== "APPROVED") {
+    const rejected = vendor.status === "REJECTED";
+    return (
+      <Shell>
+        <PortalHeader title={vendor.stall_name} subtitle={rejected ? "Application rejected" : "Waiting for approval"} />
+        <div className="space-y-3 p-4">
+          <div className={`card-soft border p-4 text-center ${rejected ? "border-destructive/40 bg-destructive/5" : "border-border"}`}>
+            <p className="text-3xl">{rejected ? "🚫" : "⏳"}</p>
+            <p className="mt-2 text-base font-black">{rejected ? "Your stall was not approved" : "Verification in progress"}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {rejected
+                ? "Please correct the details below and contact our team to apply again."
+                : "Our team is checking your papers. You can start taking orders as soon as your stall is approved."}
+            </p>
+            {rejected && vendor.rejection_reason ? (
+              <p className="mt-3 rounded-xl bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive">{vendor.rejection_reason}</p>
+            ) : null}
+            <a href="tel:9078492360" className="press mt-4 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-black text-primary-foreground">
+              Call support 9078492360
+            </a>
+          </div>
+          <div className="card-soft border border-border p-3">
+            <p className="text-sm font-bold">Joining fee</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {vendor.fssai_number ? "₹99 stall joining charge (you already have FSSAI)." : "₹199 pack — ₹99 stall joining charge + ₹100 FSSAI registration help."}
+            </p>
+          </div>
+        </div>
+      </Shell>
+    );
+  }
+
   return (
     <Shell>
-      <PortalHeader title={vendor.stall_name} subtitle={vendor.status === "APPROVED" ? "Live on ThelaWala" : "Waiting for approval"} />
+      <PortalHeader title={vendor.stall_name} subtitle="Live on ThelaWala" />
       <div className="space-y-3 p-4">
         {pending > 0 ? (
           <div className="animate-pulse rounded-2xl bg-destructive px-3 py-2.5 text-center text-sm font-black text-destructive-foreground">
