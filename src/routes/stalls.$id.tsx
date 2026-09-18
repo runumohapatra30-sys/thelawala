@@ -50,7 +50,11 @@ function StallDetail() {
   useEffect(() => {
     async function load() {
       const [vRes, iRes, cRes] = await Promise.all([
-        supabase.from("vendors").select("*").eq("id", id).maybeSingle(),
+        supabase
+          .from("vendors")
+          .select("id,stall_name,is_open,photo_url,stall_photos,offer_percent,offer_label,address,zone,open_time,close_time,default_prep_minutes,cuisine_types,status")
+          .eq("id", id)
+          .maybeSingle(),
         supabase.from("menu_items").select("*").eq("vendor_id", id).order("created_at"),
         supabase.from("categories").select("id,name").order("sort_order"),
       ]);
