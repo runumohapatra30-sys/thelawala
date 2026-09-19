@@ -1966,10 +1966,6 @@ export type Database = {
       }
       apply_referral: { Args: { _code: string }; Returns: string }
       auto_cancel_stale_orders: { Args: never; Returns: number }
-      can_view_delivery_partner: {
-        Args: { _partner_id: string; _viewer_id: string }
-        Returns: boolean
-      }
       cancel_orders_no_rider: { Args: never; Returns: number }
       complete_delivery: {
         Args: { _order_id: string; _otp: string; _proof_path: string }
