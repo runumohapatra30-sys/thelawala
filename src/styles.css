@@ -67,37 +67,38 @@
   --color-success-foreground: var(--success-foreground);
   --color-festive-header-foreground: var(--festive-header-foreground);
   --shadow-card: var(--shadow-soft);
+  --font-display: "DM Serif Display", Georgia, serif;
 }
 
 
 :root {
-  --radius: 0.875rem;
-  --background: oklch(0.98 0.002 250);
-  --foreground: oklch(0.21 0 0);
+  --radius: 0.5rem;
+  --background: oklch(0.98 0.012 140);
+  --foreground: oklch(0.23 0.045 157);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.21 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.21 0 0);
-  --primary: oklch(0.512 0.164 146.5);
+  --primary: oklch(0.34 0.085 157);
   --primary-foreground: oklch(1 0 0);
-  --brand: oklch(0.886 0.176 96.5);
-  --brand-foreground: oklch(0.19 0.02 90);
-  --brand-soft: oklch(0.965 0.06 96.5);
-  --success: oklch(0.512 0.164 146.5);
+  --brand: oklch(0.86 0.18 92);
+  --brand-foreground: oklch(0.23 0.045 157);
+  --brand-soft: oklch(0.96 0.045 98);
+  --success: oklch(0.34 0.085 157);
   --success-foreground: oklch(1 0 0);
   --festive-header-foreground: oklch(0.99 0.005 90);
   --secondary: oklch(0.985 0.002 250);
   --secondary-foreground: oklch(0.21 0 0);
   --muted: oklch(0.97 0.002 250);
   --muted-foreground: oklch(0.55 0.01 250);
-  --accent: oklch(0.86 0.13 90);
-  --accent-foreground: oklch(0.21 0 0);
+  --accent: oklch(0.86 0.18 92);
+  --accent-foreground: oklch(0.23 0.045 157);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.935 0.003 260);
-  --input: oklch(0.935 0.003 260);
-  --ring: oklch(0.52 0.16 145);
-  --tile: oklch(0.965 0.012 210);
+  --border: oklch(0.91 0.018 145);
+  --input: oklch(0.91 0.018 145);
+  --ring: oklch(0.72 0.17 92);
+  --tile: oklch(0.95 0.028 145);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -173,19 +174,19 @@
   body {
     -webkit-font-smoothing: antialiased;
     font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, "Segoe UI", Roboto, Arial, sans-serif;
-    letter-spacing: -0.01em;
+    letter-spacing: 0;
   }
 }
 
 @utility card-soft {
   background: var(--color-card);
-  border-radius: 1.5rem;
+  border-radius: 0.5rem;
   box-shadow: var(--shadow-soft);
 }
 
 @utility card-elevated {
   background: var(--color-card);
-  border-radius: 2rem;
+  border-radius: 0.5rem;
   border: 1px solid color-mix(in oklab, var(--color-border) 60%, white);
   box-shadow: 0 18px 40px -22px rgba(15, 23, 42, 0.35), 0 2px 6px rgba(15, 23, 42, 0.04);
 }

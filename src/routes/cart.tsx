@@ -9,6 +9,7 @@ import { computeBill, haversineKm, inr, type Settings } from "@/lib/fees";
 import { checkoutGate, minimumOrderValue, stallOfferDiscount } from "@/lib/pricing";
 import { payInAppWithCashfree } from "@/lib/checkout";
 import { useSession } from "@/lib/session";
+import { BellOff, DoorOpen, PhoneOff, ShieldCheck, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -223,6 +224,16 @@ function Cart() {
   const netTotal = bill ? Math.max(0, Math.round((bill.grandTotal - stallOff - couponOff + tip) * 100) / 100) : 0;
   const walletUse = bill && useWallet ? Math.min(walletBalance, netTotal) : 0;
   const payable = bill ? Math.round((netTotal - walletUse) * 100) / 100 : 0;
+  const unlockTarget = foodTotal < 199 ? 199 : Math.ceil(foodTotal / 100) * 100;
+  const unlockLeft = Math.max(0, unlockTarget - foodTotal);
+  const unlockProgress = Math.min(100, (foodTotal / unlockTarget) * 100);
+  const savings = Math.round((stallOff + couponOff + (bill?.deliveryFee === 0 ? 20 : 0)) * 100) / 100;
+  const instructionOptions = [
+    { label: "Avoid ringing bell", Icon: BellOff },
+    { label: "Leave at the door", Icon: DoorOpen },
+    { label: "Leave with security", Icon: ShieldCheck },
+    { label: "Avoid calling", Icon: PhoneOff },
+  ];
 
   async function applyCoupon() {
     setCouponMsg(null);
@@ -398,8 +409,16 @@ function Cart() {
 
   return (
     <Shell>
-      <PortalHeader title="Checkout" subtitle={vendor?.stall_name ?? "Your order"} />
+      <div className="bg-primary px-4 pb-5 pt-5 text-primary-foreground">
+        <p className="text-[11px] font-black uppercase opacity-70">Your basket</p>
+        <h1 className="font-display text-3xl">Checkout</h1>
+        <p className="text-xs font-semibold opacity-75">{vendor?.stall_name ?? "Your order"} · {lines.reduce((sum, line) => sum + line.qty, 0)} items</p>
+      </div>
       <div className="space-y-3 p-4 pb-36">
+        <div className="rounded-lg border border-brand bg-brand-soft p-3 shadow-card">
+          <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /><p className="text-sm font-black">{unlockLeft > 0 ? `Add ${inr(unlockLeft)} more to unlock a free sweet` : "Free sweet unlocked!"}</p></div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-card"><div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${unlockProgress}%` }} /></div>
+        </div>
         <div className="card-elevated rise-in grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border border-border p-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-black">{form.full_name || "Delivering to you"}</p>
@@ -544,6 +563,12 @@ function Cart() {
               </button>
             ))}
           </div>
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            {instructionOptions.map(({ label, Icon }) => {
+              const active = instructions === label;
+              return <button key={label} type="button" onClick={() => setInstructions(active ? "" : label)} className={`press flex min-h-14 items-center gap-2 rounded-lg border p-2 text-left text-[11px] font-bold ${active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card"}`}><Icon className="h-4 w-4 shrink-0" />{label}</button>;
+            })}
+          </div>
           <textarea
             rows={2}
             value={instructions}
@@ -615,6 +640,7 @@ function Cart() {
                 <span>To pay</span>
                 <span>{inr(payable)}</span>
               </div>
+              {savings > 0 ? <div className="mt-3 rounded-lg bg-brand-soft px-3 py-2 text-xs font-black text-primary">You are saving {inr(savings)} on this order</div> : null}
             </dl>
           ) : !hasLocation ? (
             <div className="mt-2 space-y-2">
@@ -679,9 +705,9 @@ function Cart() {
           <button
             disabled={busy || !bill || !!blockedReason}
             onClick={place}
-            className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-3.5 text-primary-foreground disabled:opacity-50"
+            className="press flex w-full items-center justify-between rounded-lg bg-brand px-4 py-3.5 text-brand-foreground shadow-card disabled:opacity-50"
           >
-            <span className="text-sm font-black">{bill ? inr(payable) : "—"}</span>
+            <span><span className="block text-[10px] font-bold opacity-65">{lines.reduce((sum, line) => sum + line.qty, 0)} ITEMS</span><span className="text-base font-black">{bill ? inr(payable) : "—"}</span></span>
             <span className="text-sm font-black">
               {busy
                 ? "PLACING…"

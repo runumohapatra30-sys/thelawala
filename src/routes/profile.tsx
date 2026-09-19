@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { inr } from "@/lib/fees";
 import { useSession } from "@/lib/session";
 import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
+import { ChevronRight, Gift, Headphones, Heart, MapPin, MessageSquareText, Pencil, ShoppingBag, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -32,6 +33,7 @@ function Profile() {
   const [referredBy, setReferredBy] = useState<string | null>(null);
   const [friendCode, setFriendCode] = useState("");
   const [refMsg, setRefMsg] = useState<string | null>(null);
+  const [orderCount, setOrderCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -43,6 +45,9 @@ function Profile() {
     });
     supabase.from("wallets").select("balance").eq("user_id", user.id).maybeSingle().then(({ data }) => {
       setBalance(Number(data?.balance ?? 0));
+    });
+    supabase.from("orders").select("id", { count: "exact", head: true }).eq("user_id", user.id).then(({ count }) => {
+      setOrderCount(count ?? 0);
     });
   }, [user?.id]);
 
@@ -66,31 +71,36 @@ function Profile() {
 
   return (
     <Shell>
-      <header className="brand-header rounded-b-[2.75rem] px-5 pb-10 pt-6 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)]">
+      <header className="bg-primary px-5 pb-7 pt-7 text-primary-foreground shadow-card">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="pop-in grid h-14 w-14 shrink-0 place-items-center rounded-3xl glass-chip text-xl font-black">
+          <div className="pop-in grid h-16 w-16 shrink-0 rotate-2 place-items-center rounded-lg border-4 border-card bg-brand text-2xl font-black text-brand-foreground shadow-card">
             {(name || user?.email || "T").slice(0, 1).toUpperCase()}
           </div>
-          <div className="min-w-0">
-            <p className="truncate text-lg font-black">{name || "ThelaWala customer"}</p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-display text-2xl">{name || "ThelaWala customer"}</p>
             <p className="truncate text-xs font-semibold opacity-80">{mobile || user?.email}</p>
+            <span className="mt-2 inline-flex rounded-full border border-primary-foreground/25 bg-primary-foreground/10 px-2 py-1 text-[10px] font-black uppercase">Street food member</span>
           </div>
+          <button aria-label="Edit profile" onClick={() => setEditing(true)} className="press grid h-9 w-9 place-items-center rounded-full border border-primary-foreground/25"><Pencil className="h-4 w-4" /></button>
         </div>
       </header>
 
-      <div className="-mt-5 space-y-3 px-4 pb-6">
+      <div className="space-y-5 px-4 py-5 pb-8">
         <div className="grid grid-cols-3 gap-2">
-          <QuickCard to="/orders" emoji="📦" label="Your Orders" />
-          <QuickCard to="/wallet" emoji="👛" label="ThelaWala Wallet" note={inr(balance)} />
-          <QuickCard to="/terms" emoji="🎧" label="Need Help?" />
+          <Metric to="/orders" value={String(orderCount)} label="Orders" icon={<ShoppingBag className="h-4 w-4" />} />
+          <Metric to="/wallet" value={inr(balance)} label="Wallet" icon={<Wallet className="h-4 w-4" />} />
+          <Metric to="/" value="Saved" label="Wishlist" icon={<Heart className="h-4 w-4" />} />
         </div>
 
-        <div className="card-soft divide-y divide-border border border-border">
+        <div>
+          <p className="mb-2 text-[11px] font-black uppercase text-muted-foreground">Your account</p>
+          <div className="card-soft divide-y divide-border border border-border">
+          <MenuLink icon={<Gift />} label="Cashback rewards" to="/wallet" />
           <button
             onClick={() => setEditing((e) => !e)}
             className="press flex w-full items-center justify-between px-3 py-3.5 text-left text-sm font-bold"
           >
-            Address book &amp; details <Chevron />
+            <span className="flex items-center gap-3"><MenuIcon><MapPin /></MenuIcon>Saved addresses</span><Chevron />
           </button>
           {editing ? (
             <div className="space-y-2 p-3">
@@ -118,24 +128,16 @@ function Profile() {
               </button>
             </div>
           ) : null}
-          <Link to="/wallet" className="flex items-center justify-between px-3 py-3.5 text-sm font-bold">
-            Payment settings <Chevron />
-          </Link>
-          <Link to="/terms" className="flex items-center justify-between px-3 py-3.5 text-sm font-bold">
-            Account privacy, cancellation &amp; refunds <Chevron />
-          </Link>
-          <Link to="/support" search={{ order: undefined }} className="flex items-center justify-between border-b border-border px-3 py-3.5 text-sm font-bold text-primary">
-            Chat with support <Chevron />
-          </Link>
-          <a href="tel:9078492360" className="flex items-center justify-between px-3 py-3.5 text-sm font-bold text-primary">
-            Call support · 9078492360 <Chevron />
-          </a>
+          <MenuLink icon={<Headphones />} label="Help & support" to="/support" />
+          <a href="mailto:founder@thelawala.com" className="flex items-center justify-between px-3 py-3.5 text-sm font-bold"><span className="flex items-center gap-3"><MenuIcon><MessageSquareText /></MenuIcon>Write to Founder</span><Chevron /></a>
+          </div>
         </div>
 
-        <div className="card-soft border border-border p-3">
-          <p className="text-sm font-bold">Refer a friend · earn ₹25</p>
+        <div className="relative overflow-hidden rounded-lg bg-brand p-4 text-brand-foreground shadow-card">
+          <p className="font-display text-xl">Refer &amp; earn ₹25</p>
+          <p className="mt-1 max-w-[250px] text-[11px] font-semibold opacity-75">Bring your food buddy. You both receive wallet credit.</p>
           <div className="mt-2 flex items-center gap-2">
-            <span className="flex-1 rounded-xl border border-dashed border-primary px-3 py-2.5 text-sm font-black tracking-widest text-primary">
+            <span className="flex-1 rounded-lg border border-dashed border-brand-foreground/40 bg-card/60 px-3 py-2.5 text-sm font-black text-primary">
               {refCode || "—"}
             </span>
             <button
@@ -147,7 +149,7 @@ function Profile() {
                   setRefMsg("Invite copied. Share it with your friends!");
                 }
               }}
-              className="press shrink-0 rounded-xl bg-primary px-4 py-2.5 text-xs font-black text-primary-foreground"
+              className="press shrink-0 rounded-lg bg-primary px-4 py-2.5 text-xs font-black text-primary-foreground"
             >
               Share
             </button>
@@ -215,10 +217,18 @@ function QuickCard({ to, emoji, label, note }: { to: string; emoji: string; labe
   );
 }
 
+function Metric({ to, value, label, icon }: { to: string; value: string; label: string; icon: React.ReactNode }) {
+  return <Link to={to} className="press rounded-lg border border-border bg-card p-3 text-center shadow-card"><span className="mx-auto mb-1 grid h-7 w-7 place-items-center rounded-full bg-brand-soft text-primary">{icon}</span><span className="block truncate text-sm font-black">{value}</span><span className="text-[10px] font-bold text-muted-foreground">{label}</span></Link>;
+}
+
+function MenuIcon({ children }: { children: React.ReactNode }) {
+  return <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-soft text-primary [&_svg]:h-4 [&_svg]:w-4">{children}</span>;
+}
+
+function MenuLink({ icon, label, to }: { icon: React.ReactNode; label: string; to: string }) {
+  return <Link to={to} className="flex items-center justify-between px-3 py-3.5 text-sm font-bold"><span className="flex items-center gap-3"><MenuIcon>{icon}</MenuIcon>{label}</span><Chevron /></Link>;
+}
+
 function Chevron() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+  return <ChevronRight className="h-4 w-4 text-muted-foreground" />;
 }
