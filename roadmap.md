@@ -4,3 +4,8 @@
 - [x] Render format-specific banners without stretching
 - [x] Separate festive artwork from the home header and fix mobile flow
 - [x] Verify build and mobile/desktop rendering
+- [ ] Apply professional customer UI tokens and shared card/product/coupon/footer patterns
+- [ ] Require verified ₹99/₹199 Cashfree payment during stall onboarding
+- [ ] Add admin-selectable fixed, per-km, and distance-slab delivery pricing
+- [ ] Diagnose and repair mobile OTP login without splitting existing user accounts
+- [ ] Verify database security, build, and mobile/desktop previews
