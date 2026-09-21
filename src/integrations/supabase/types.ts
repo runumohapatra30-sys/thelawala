@@ -1609,6 +1609,8 @@ export type Database = {
           base_delivery_fee: number
           cancel_penalty_fee: number
           cashfree_app_id: string | null
+          delivery_fee_mode: string
+          delivery_fee_slabs: Json
           enable_cod: boolean
           enable_google_login: boolean
           enable_handling_fee: boolean
@@ -1637,6 +1639,8 @@ export type Database = {
           base_delivery_fee?: number
           cancel_penalty_fee?: number
           cashfree_app_id?: string | null
+          delivery_fee_mode?: string
+          delivery_fee_slabs?: Json
           enable_cod?: boolean
           enable_google_login?: boolean
           enable_handling_fee?: boolean
@@ -1665,6 +1669,8 @@ export type Database = {
           base_delivery_fee?: number
           cancel_penalty_fee?: number
           cashfree_app_id?: string | null
+          delivery_fee_mode?: string
+          delivery_fee_slabs?: Json
           enable_cod?: boolean
           enable_google_login?: boolean
           enable_handling_fee?: boolean
@@ -1710,6 +1716,56 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vendor_onboarding_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          gateway_order_id: string
+          gateway_reference: string | null
+          has_fssai: boolean
+          id: string
+          paid_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          vendor_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          gateway_order_id: string
+          gateway_reference?: string | null
+          has_fssai: boolean
+          id?: string
+          paid_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          vendor_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          gateway_order_id?: string
+          gateway_reference?: string | null
+          has_fssai?: boolean
+          id?: string
+          paid_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_onboarding_payments_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vendors: {
         Row: {
