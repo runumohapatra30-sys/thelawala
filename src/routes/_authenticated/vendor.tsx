@@ -396,7 +396,8 @@ function VendorPortal() {
       } catch (e: any) {
         const m = String(e?.message ?? "");
         toast.error(
-          m.includes("fssai_format") ? "FSSAI number must be 14 digits starting with 1 or 2."
+          m.includes("onboarding_fee_required") ? "We could not confirm your joining fee. Please pay again to send your stall for approval."
+          : m.includes("fssai_format") ? "FSSAI number must be 14 digits starting with 1 or 2."
           : m.includes("duplicate") ? "You have already registered a stall."
           : m.includes("_check") ? "Some details are not accepted. Please check and try again."
           : "Could not submit right now. Please try again.",
