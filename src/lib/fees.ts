@@ -41,6 +41,18 @@ export type Bill = {
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
+export type FeeSlab = { upto_km: number; fee: number };
+
+/** Reads the admin's slab table; falls back to the built-in slabs when it is empty. */
+export function slabsOf(s: Settings): FeeSlab[] {
+  const raw = s.delivery_fee_slabs as unknown;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((r) => ({ upto_km: Number((r as FeeSlab)?.upto_km), fee: Number((r as FeeSlab)?.fee) }))
+    .filter((r) => Number.isFinite(r.upto_km) && Number.isFinite(r.fee))
+    .sort((a, b) => a.upto_km - b.upto_km);
+}
+
 export function computeBill({
   settings: s,
   foodTotal,
@@ -48,13 +60,25 @@ export function computeBill({
   distanceKm,
   penaltyFee = 0,
 }: BillInput): Bill {
-  // Admin-controlled per-km pricing: base fee covers the base distance, then
-  // every extra metre is charged at the admin's per-km rate.
-  const baseKm = Number(s.base_delivery_distance_km ?? 0);
-  const perKm = Number(s.extra_fee_per_km ?? 0);
-  const extraKm = Math.max(0, distanceKm - baseKm);
-  let deliveryFee = Number(s.base_delivery_fee ?? 0) + extraKm * perKm;
-  if (!Number.isFinite(deliveryFee) || deliveryFee <= 0) deliveryFee = deliveryFeeForDistance(distanceKm);
+  const mode = String(s.delivery_fee_mode ?? "PER_KM").toUpperCase();
+  const baseFee = Number(s.base_delivery_fee ?? 0);
+  let deliveryFee: number;
+
+  if (mode === "FIXED") {
+    // One flat fee, whatever the distance is.
+    deliveryFee = baseFee;
+  } else if (mode === "SLAB") {
+    const slabs = slabsOf(s);
+    const hit = slabs.find((r) => distanceKm <= r.upto_km);
+    deliveryFee = hit ? hit.fee : slabs.length ? slabs[slabs.length - 1]!.fee : deliveryFeeForDistance(distanceKm);
+  } else {
+    // Base fee covers the base distance, then the per-km rate for every extra kilometre.
+    const baseKm = Number(s.base_delivery_distance_km ?? 0);
+    const perKm = Number(s.extra_fee_per_km ?? 0);
+    deliveryFee = baseFee + Math.max(0, distanceKm - baseKm) * perKm;
+  }
+
+  if (!Number.isFinite(deliveryFee) || deliveryFee < 0) deliveryFee = deliveryFeeForDistance(distanceKm);
   const threshold = s.free_delivery_threshold;
   if (threshold != null && foodTotal >= Number(threshold)) deliveryFee = 0;
   deliveryFee = r2(deliveryFee);

@@ -18,7 +18,7 @@ import { AdminSettlement } from "@/components/admin/AdminSettlement";
 import { AdminRefunds } from "@/components/admin/AdminRefunds";
 import { supabase } from "@/integrations/supabase/client";
 import { listCoupons, type Coupon } from "@/lib/coupons";
-import { inr, type Settings } from "@/lib/fees";
+import { inr, slabsOf, type Settings } from "@/lib/fees";
 import { useIsAdmin, useSession } from "@/lib/session";
 import { toast } from "sonner";
 
@@ -207,13 +207,108 @@ function Admin() {
           <>
             <section className="card-soft space-y-2 border border-border p-3">
               <p className="text-sm font-bold">Delivery fee rule</p>
-              <p className="text-[11px] text-muted-foreground">
-                Customer pays the fixed fee up to the base distance, then the per-kilometre rate for every extra
-                kilometre. Only one delivery fee line is shown on the bill.
-              </p>
-              {num("base_delivery_fee", "Fixed delivery fee (₹)")}
-              {num("base_delivery_distance_km", "Covered by the fixed fee (km)")}
-              {num("extra_fee_per_km", "Extra fee per km beyond that (₹)")}
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  ["FIXED", "Fixed"],
+                  ["PER_KM", "Per km"],
+                  ["SLAB", "Distance slabs"],
+                ] as const).map(([mode, label]) => (
+                  <button
+                    key={mode}
+                    onClick={() => setS({ ...s, delivery_fee_mode: mode })}
+                    className={`rounded-xl border px-2 py-2 text-[11px] font-black ${
+                      (s.delivery_fee_mode ?? "PER_KM") === mode
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {(s.delivery_fee_mode ?? "PER_KM") === "FIXED" ? (
+                <>
+                  <p className="text-[11px] text-muted-foreground">
+                    One flat delivery fee for every order, whatever the distance is.
+                  </p>
+                  {num("base_delivery_fee", "Flat delivery fee (₹)")}
+                </>
+              ) : null}
+
+              {(s.delivery_fee_mode ?? "PER_KM") === "PER_KM" ? (
+                <>
+                  <p className="text-[11px] text-muted-foreground">
+                    The fixed fee covers the base distance, then the per-kilometre rate is added for every extra
+                    kilometre.
+                  </p>
+                  {num("base_delivery_fee", "Fixed delivery fee (₹)")}
+                  {num("base_delivery_distance_km", "Covered by the fixed fee (km)")}
+                  {num("extra_fee_per_km", "Extra fee per km beyond that (₹)")}
+                </>
+              ) : null}
+
+              {(s.delivery_fee_mode ?? "PER_KM") === "SLAB" ? (
+                <div className="space-y-2">
+                  <p className="text-[11px] text-muted-foreground">
+                    Set one fee per distance band. Each row shows exactly how many kilometres it covers.
+                  </p>
+                  {slabsOf(s).map((row, i, all) => {
+                    const from = i === 0 ? 0 : all[i - 1]!.upto_km;
+                    const update = (patch: Partial<typeof row>) => {
+                      const next = all.map((r, j) => (j === i ? { ...r, ...patch } : r));
+                      setS({ ...s, delivery_fee_slabs: next as unknown as Settings["delivery_fee_slabs"] });
+                    };
+                    return (
+                      <div key={i} className="rounded-xl border border-border p-2">
+                        <p className="text-[11px] font-bold text-primary">
+                          {from} – {row.upto_km} km · {inr(row.fee)}
+                        </p>
+                        <div className="mt-1 grid grid-cols-3 gap-2">
+                          <input
+                            type="number"
+                            step="0.5"
+                            value={row.upto_km}
+                            onChange={(e) => update({ upto_km: Number(e.target.value) })}
+                            className="rounded-lg border border-border px-2 py-1.5 text-xs"
+                            placeholder="Up to km"
+                          />
+                          <input
+                            type="number"
+                            value={row.fee}
+                            onChange={(e) => update({ fee: Number(e.target.value) })}
+                            className="rounded-lg border border-border px-2 py-1.5 text-xs"
+                            placeholder="Fee ₹"
+                          />
+                          <button
+                            onClick={() =>
+                              setS({
+                                ...s,
+                                delivery_fee_slabs: all.filter((_, j) => j !== i) as unknown as Settings["delivery_fee_slabs"],
+                              })
+                            }
+                            className="rounded-lg border border-border text-[11px] font-bold text-muted-foreground"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <button
+                    onClick={() => {
+                      const all = slabsOf(s);
+                      const last = all[all.length - 1];
+                      const next = [...all, { upto_km: (last?.upto_km ?? 0) + 2, fee: (last?.fee ?? 15) + 10 }];
+                      setS({ ...s, delivery_fee_slabs: next as unknown as Settings["delivery_fee_slabs"] });
+                    }}
+                    className="w-full rounded-xl border border-primary py-2 text-xs font-black text-primary"
+                  >
+                    + Add a distance band
+                  </button>
+                </div>
+              ) : null}
+
               {num("free_delivery_threshold", "Free delivery above order value (₹, blank = never)")}
             </section>
 

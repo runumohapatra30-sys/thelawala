@@ -19,6 +19,8 @@ import { SectionList } from "@/components/DynamicPageRenderer";
 import { usePageLayout } from "@/lib/pageLayout";
 import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 import { PRICE_MARKUP, VENDOR_PAYOUT_RATE } from "@/lib/pricing";
+import { confirmOnboardingPayment, onboardingFee, startOnboardingPayment } from "@/lib/onboarding.functions";
+import { loadCashfreeSdk } from "@/lib/checkout";
 
 export const Route = createFileRoute("/_authenticated/vendor")({
   head: () => ({
@@ -331,6 +333,34 @@ function VendorPortal() {
           uploadKycDoc(user!.id, docs.bankProof!, "bank-proof"),
           Promise.all(docs.stallPhotos.map((f) => uploadKycDoc(user!.id, f, "stall-photo"))),
         ]);
+
+        // One-time joining fee must be really paid before the stall application is created.
+        setMsg("Opening the payment window…");
+        const session = await startOnboardingPayment({
+          data: {
+            fssai: form.fssai_number.trim(),
+            name: form.owner_name.trim(),
+            email: user!.email ?? "",
+            mobile: form.mobile.trim(),
+            origin: window.location.origin,
+          },
+        });
+        if (!session.alreadyPaid) {
+          const factory = await loadCashfreeSdk();
+          const cashfree = factory({ mode: session.live ? "production" : "sandbox" });
+          await cashfree.checkout({ paymentSessionId: session.paymentSessionId, redirectTarget: "_modal" });
+          const verdict = await confirmOnboardingPayment({ data: { cfOrderId: session.cfOrderId } });
+          if (verdict.status !== "SUCCESS") {
+            setRegBusy(false);
+            setMsg(
+              verdict.status === "PENDING"
+                ? "Your payment is still pending. Nothing was charged yet and your details are safe — please try again in a minute."
+                : "The joining fee was not paid, so your stall was not sent for approval. Your details and documents are safe — please try again.",
+            );
+            return;
+          }
+        }
+        setMsg(null);
         const pos = await new Promise<GeolocationPosition | null>((res) =>
           navigator.geolocation ? navigator.geolocation.getCurrentPosition((p) => res(p), () => res(null)) : res(null),
         );
@@ -366,7 +396,8 @@ function VendorPortal() {
       } catch (e: any) {
         const m = String(e?.message ?? "");
         toast.error(
-          m.includes("fssai_format") ? "FSSAI number must be 14 digits starting with 1 or 2."
+          m.includes("onboarding_fee_required") ? "We could not confirm your joining fee. Please pay again to send your stall for approval."
+          : m.includes("fssai_format") ? "FSSAI number must be 14 digits starting with 1 or 2."
           : m.includes("duplicate") ? "You have already registered a stall."
           : m.includes("_check") ? "Some details are not accepted. Please check and try again."
           : "Could not submit right now. Please try again.",
@@ -455,12 +486,14 @@ function VendorPortal() {
           {fileRow("Bank proof (passbook / cancelled cheque)", docs.bankProof, (f) => setDocs({ ...docs, bankProof: f }))}
 
           <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
-            <p className="text-sm font-black">One-time joining fee {inr(form.fssai_number.trim() ? 99 : 199)}</p>
+            <p className="text-sm font-black">One-time joining fee {inr(onboardingFee(form.fssai_number).amount)}</p>
             <ul className="mt-1 space-y-0.5 text-[11px] font-semibold text-muted-foreground">
               <li>• Stall joining charge — ₹99</li>
-              <li>• FSSAI registration help — ₹100 {form.fssai_number.trim() ? "(not needed, you already have FSSAI)" : "(added, we register it for you)"}</li>
+              <li>• FSSAI registration help — ₹100 {onboardingFee(form.fssai_number).hasFssai ? "(not needed, you already have FSSAI)" : "(added, we register it for you)"}</li>
             </ul>
-            <p className="mt-1 text-[11px] text-muted-foreground">Payable after approval. Full pack for a new stall is ₹199; with your own FSSAI it is only ₹99.</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Payable now, inside the app. Your stall is sent for approval only after the payment succeeds.
+            </p>
           </div>
 
           <label className="flex items-start gap-2 rounded-xl border border-border p-3">
@@ -475,7 +508,7 @@ function VendorPortal() {
             onClick={submitRegistration}
             className="press w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
           >
-            {regBusy ? "Uploading documents…" : "Send for approval"}
+            {regBusy ? "Please wait…" : `Pay ${inr(onboardingFee(form.fssai_number).amount)} & send for approval`}
           </button>
           {msg ? <p className="text-xs font-semibold text-destructive">{msg}</p> : null}
         </div>
