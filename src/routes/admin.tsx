@@ -18,7 +18,7 @@ import { AdminSettlement } from "@/components/admin/AdminSettlement";
 import { AdminRefunds } from "@/components/admin/AdminRefunds";
 import { supabase } from "@/integrations/supabase/client";
 import { listCoupons, type Coupon } from "@/lib/coupons";
-import { inr, type Settings } from "@/lib/fees";
+import { inr, slabsOf, type Settings } from "@/lib/fees";
 import { useIsAdmin, useSession } from "@/lib/session";
 import { toast } from "sonner";
 
