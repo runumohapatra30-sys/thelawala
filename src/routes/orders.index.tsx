@@ -142,16 +142,17 @@ function Orders() {
 
   return (
     <Shell>
-      <header className="brand-header sticky top-0 z-30 flex items-center gap-3 rounded-b-[2rem] px-4 py-4 shadow-[0_16px_34px_-26px_rgba(15,23,42,0.55)]">
-        <Link to="/" aria-label="Back to home" className="press grid h-10 w-10 shrink-0 place-items-center rounded-2xl glass-chip">
+       <header className="sticky top-0 z-30 flex items-center gap-3 rounded-b-[2rem] bg-primary px-5 pb-6 pt-5 text-primary-foreground shadow-card">
+         <Link to="/" aria-label="Back to home" className="press grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-primary-foreground/25 bg-primary-foreground/10">
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2">
             <path d="M15 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </Link>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-base font-extrabold">Your orders</h1>
+           <h1 className="truncate font-display text-3xl">Your orders</h1>
           <p className="truncate text-xs font-medium opacity-80">Track, re-check bills and get help</p>
         </div>
+         <span className="shrink-0 rounded-full bg-brand px-3 py-1.5 text-xs font-black text-brand-foreground">{rows.length}</span>
       </header>
 
       <div className="space-y-3 p-4">

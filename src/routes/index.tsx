@@ -22,7 +22,7 @@ import { FestiveAmbience, FestiveHero, FestiveSections } from "@/components/Fest
 import { useHomeSections } from "@/lib/homeSections";
 import { FestivePhotoStrip } from "@/components/FestivePhotoStrip";
 import { activeThemeColor, themeStyle, useTopBarTheme } from "@/lib/appTheme";
-import { Bike, Gift, Heart, Utensils, Wallet, X, Zap } from "lucide-react";
+import { Bike, Gift, Heart, Plus, Utensils, Wallet, X, Zap } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -290,12 +290,12 @@ function Home() {
             const off = vendorOffer[i.vendor_id] ?? 0;
             const offerPrice = off > 0 ? Math.round(shownPrice * (100 - off)) / 100 : shownPrice;
             return (
-              <div key={i.id} style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }} className="press rise-in card-elevated p-2.5 hover:-translate-y-0.5">
-                <div className="relative">
+              <div key={i.id} style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }} className="press rise-in overflow-hidden rounded-2xl bg-card p-2.5 shadow-card hover:-translate-y-0.5">
+                <div className="product-tile relative aspect-square">
                   <img
                     src={i.photo_url ?? foodImage(i.name)}
                     alt={i.name}
-                    className="aspect-[4/5] w-full rounded-[1.4rem] object-cover"
+                    className="h-full w-full object-contain p-2"
                   />
                   {off > 0 ? (
                     <span className="absolute left-2 top-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-extrabold text-primary-foreground shadow-md">
@@ -335,11 +335,12 @@ function Home() {
                       <button aria-label="Add one" onClick={() => add(i)} className="press px-1 font-bold">+</button>
                     </div>
                   ) : (
-                    <button
+                     <button
                       onClick={() => add(i)}
-                      className="press shine rounded-full border border-primary bg-[color-mix(in_oklab,var(--color-primary)_8%,white)] px-2.5 py-1 text-[10px] font-extrabold text-primary shadow-[0_8px_18px_-12px_var(--color-primary)]"
+                       aria-label={`Add ${i.name}`}
+                       className="press grid h-9 w-9 place-items-center rounded-full border border-border bg-card text-primary shadow-card"
                     >
-                      ADD
+                       <Plus className="h-5 w-5" strokeWidth={2.4} />
                     </button>
                   )}
                 </div>
@@ -353,11 +354,11 @@ function Home() {
 
   return (
     <Shell>
-      <header
+       <header
         style={isDefaultTheme ? { backgroundColor: topBarColor } : undefined}
-        className={`relative z-20 flex min-w-0 flex-col gap-4 overflow-hidden rounded-b-[2rem] px-5 pb-6 pt-4 shadow-sm transition-colors duration-500 ${theme.wrapper}`}
+         className={`relative z-20 flex min-w-0 flex-col gap-4 overflow-hidden rounded-b-[2rem] px-5 pb-6 pt-4 shadow-sm transition-colors duration-500 ${isDefaultTheme ? "bg-primary text-primary-foreground" : theme.wrapper}`}
       >
-        {isDefaultTheme ? <div className="pointer-events-none absolute inset-0 brand-header" /> : null}
+         {isDefaultTheme ? <div className="pointer-events-none absolute inset-0 bg-primary" /> : null}
         {festiveTheme ? <FestiveAmbience /> : null}
 
         <div className="relative z-10 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2 sm:gap-3">
@@ -554,10 +555,10 @@ function Home() {
         <div className="fixed inset-x-0 bottom-[104px] z-40 mx-auto w-full max-w-[480px] px-3">
           <Link
             to="/cart"
-            className="press pop-in shine flex items-center justify-between rounded-full bg-primary px-5 py-3.5 text-primary-foreground shadow-[0_18px_36px_-14px_var(--color-primary)]"
+             className="press pop-in grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-border bg-card p-2 pl-4 text-foreground shadow-[0_18px_36px_-18px_var(--color-primary)]"
           >
-            <span className="text-sm font-bold">{count} item{count > 1 ? "s" : ""} · {inr(foodTotal)}</span>
-            <span className="text-sm font-bold">View cart ›</span>
+             <span><span className="block text-[10px] font-bold text-muted-foreground">{count} ITEM{count > 1 ? "S" : ""}</span><span className="text-base font-black">{inr(foodTotal)}</span></span>
+             <span className="rounded-xl bg-primary px-5 py-3 text-sm font-black text-primary-foreground">View cart ›</span>
           </Link>
         </div>
       ) : null}

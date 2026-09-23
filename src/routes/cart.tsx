@@ -9,7 +9,7 @@ import { computeBill, haversineKm, inr, type Settings } from "@/lib/fees";
 import { checkoutGate, minimumOrderValue, stallOfferDiscount } from "@/lib/pricing";
 import { payInAppWithCashfree } from "@/lib/checkout";
 import { useSession } from "@/lib/session";
-import { BellOff, DoorOpen, PhoneOff, ShieldCheck, Sparkles } from "lucide-react";
+import { BellOff, DoorOpen, PhoneOff, Plus, ShieldCheck, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -52,6 +52,7 @@ function Cart() {
   const [locating, setLocating] = useState(false);
   const [saved, setSaved] = useState<SavedAddress[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [recommendations, setRecommendations] = useState<Array<{ id: string; vendor_id: string; name: string; photo_url: string | null; unit: string | null; price: number; mrp: number; in_stock: boolean }>>([]);
   const autoTried = useRef(false);
   const coordsRef = useRef(coords);
   const formRef = useRef(form);
@@ -83,6 +84,13 @@ function Cart() {
     const vid = lines[0]?.vendorId;
     if (!vid) return;
     supabase.from("vendors").select("id,stall_name,lat,lng,offer_percent,offer_label").eq("id", vid).maybeSingle().then(({ data }) => setVendor(data));
+    supabase
+      .from("menu_items")
+      .select("id,vendor_id,name,photo_url,unit,price,mrp,in_stock")
+      .eq("vendor_id", vid)
+      .eq("in_stock", true)
+      .limit(12)
+      .then(({ data }) => setRecommendations((data ?? []) as typeof recommendations));
   }, [lines[0]?.vendorId]);
 
   useEffect(() => {
@@ -234,6 +242,7 @@ function Cart() {
     { label: "Leave with security", Icon: ShieldCheck },
     { label: "Avoid calling", Icon: PhoneOff },
   ];
+  const suggested = recommendations.filter((item) => !lines.some((line) => line.itemId === item.id)).slice(0, 6);
 
   async function applyCoupon() {
     setCouponMsg(null);
@@ -409,9 +418,9 @@ function Cart() {
 
   return (
     <Shell>
-      <div className="bg-primary px-4 pb-5 pt-5 text-primary-foreground">
+      <div className="bg-primary px-5 pb-6 pt-5 text-primary-foreground">
         <p className="text-[11px] font-black uppercase opacity-70">Your basket</p>
-        <h1 className="font-display text-3xl">Checkout</h1>
+        <h1 className="font-display text-4xl">Checkout</h1>
         <p className="text-xs font-semibold opacity-75">{vendor?.stall_name ?? "Your order"} · {lines.reduce((sum, line) => sum + line.qty, 0)} items</p>
       </div>
       <div className="space-y-3 p-4 pb-36">
@@ -451,6 +460,36 @@ function Cart() {
             ))}
           </div>
         </div>
+
+        {suggested.length > 0 ? (
+          <section className="py-2">
+            <div className="mb-3 flex items-end justify-between">
+              <div>
+                <h2 className="font-display text-2xl text-primary">You may also like</h2>
+                <p className="text-[11px] font-semibold text-muted-foreground">Popular add-ons from {vendor?.stall_name}</p>
+              </div>
+            </div>
+            <div className="flex snap-x gap-3 overflow-x-auto pb-2 no-scrollbar">
+              {suggested.map((item) => (
+                <article key={item.id} className="w-36 shrink-0 snap-start rounded-2xl bg-card p-2 shadow-card">
+                  <div className="product-tile relative aspect-square">
+                    <img src={item.photo_url ?? "/food/food-tiffin.jpg"} alt={item.name} className="h-full w-full object-contain p-2" />
+                    <button
+                      type="button"
+                      aria-label={`Add ${item.name}`}
+                      onClick={() => cart.add({ itemId: item.id, vendorId: item.vendor_id, name: item.name, photo: item.photo_url, unit: item.unit, base: Number(item.price), price: Number(item.price), mrp: Number(item.mrp) })}
+                      className="press absolute bottom-2 right-2 grid h-9 w-9 place-items-center rounded-full border border-border bg-card text-primary shadow-card"
+                    >
+                      <Plus className="h-5 w-5" strokeWidth={2.4} />
+                    </button>
+                  </div>
+                  <p className="mt-2 line-clamp-2 min-h-9 text-xs font-extrabold leading-tight">{item.name}</p>
+                  <p className="mt-1 text-sm font-black text-primary">{inr(Number(item.price))}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <div className="card-elevated rise-in flex items-center gap-3 p-3">
           <div className="min-w-0 flex-1">
@@ -578,7 +617,7 @@ function Cart() {
           />
         </div>
 
-        <div className="card-elevated rise-in p-3">
+        <div className="coupon-card rise-in p-4">
           <p className="text-sm font-bold">Coupons &amp; offers</p>
           <div className="mt-2 flex gap-2">
             <input
@@ -689,8 +728,8 @@ function Cart() {
         {err ? <p className="text-xs font-semibold text-destructive">{err}</p> : null}
       </div>
 
-      <div className="fixed inset-x-0 bottom-[104px] z-40 mx-auto w-full max-w-[480px] px-3">
-        <div className="rounded-2xl bg-card p-2 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+       <div className="fixed inset-x-0 bottom-[104px] z-40 mx-auto w-full max-w-[480px] px-3">
+         <div className="sticky-checkout rounded-2xl p-2">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-1 pb-2">
             <p className="truncate text-[11px] font-semibold text-muted-foreground">
               📍 {form.line || "Set your delivery address"}
@@ -705,7 +744,7 @@ function Cart() {
           <button
             disabled={busy || !bill || !!blockedReason}
             onClick={place}
-            className="press flex w-full items-center justify-between rounded-lg bg-brand px-4 py-3.5 text-brand-foreground shadow-card disabled:opacity-50"
+             className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-3.5 text-primary-foreground shadow-card disabled:opacity-50"
           >
             <span><span className="block text-[10px] font-bold opacity-65">{lines.reduce((sum, line) => sum + line.qty, 0)} ITEMS</span><span className="text-base font-black">{bill ? inr(payable) : "—"}</span></span>
             <span className="text-sm font-black">

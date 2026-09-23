@@ -1,4 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { CircleUserRound, Grid2X2, House, RotateCcw } from "lucide-react";
 import type { ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -6,22 +7,22 @@ const NAV = [
   {
     to: "/",
     label: "Home",
-    icon: "M4 11l8-7 8 7v8a1 1 0 01-1 1h-5v-6H10v6H5a1 1 0 01-1-1z",
+    Icon: House,
   },
   {
     to: "/orders",
     label: "Order Again",
-    icon: "M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4",
+    Icon: RotateCcw,
   },
   {
     to: "/categories",
     label: "Categories",
-    icon: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
+    Icon: Grid2X2,
   },
   {
     to: "/profile",
     label: "Account",
-    icon: "M12 12a4 4 0 100-8 4 4 0 000 8zM4.5 20a7.5 7.5 0 0115 0",
+    Icon: CircleUserRound,
   },
 ];
 
@@ -29,31 +30,29 @@ export function Shell({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto min-h-screen w-full max-w-[480px] bg-background pb-36 shadow-[0_0_40px_rgba(0,0,0,0.05)]">
+      <div className="mx-auto min-h-screen w-full max-w-[480px] bg-background pb-36 shadow-[0_0_48px_color-mix(in_oklab,var(--color-primary)_10%,transparent)]">
         {children}
       </div>
-      <nav className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-full max-w-[440px] items-center justify-around rounded-[2rem] px-3 py-2.5 glass-panel">
+      <nav className="fixed inset-x-0 bottom-3 z-40 mx-auto grid w-[calc(100%-24px)] max-w-[440px] grid-cols-4 items-center rounded-[1.5rem] border border-border bg-card px-2 py-2 shadow-[0_18px_45px_-20px_color-mix(in_oklab,var(--color-primary)_45%,transparent)]">
         {NAV.map((n) => {
           const active = n.to === "/" ? path === "/" : path.startsWith(n.to);
           return (
             <Link
               key={n.to}
               to={n.to}
-              className="press flex flex-1 flex-col items-center gap-1"
+              className="press flex min-w-0 flex-col items-center gap-1"
             >
               <span
-                className={`grid h-11 w-11 place-items-center rounded-2xl transition-all ${
+                className={`grid h-10 w-12 place-items-center rounded-xl transition-all ${
                   active
-                    ? "bg-brand text-brand-foreground shadow-[0_10px_22px_-8px_color-mix(in_oklab,var(--color-brand)_85%,transparent)]"
+                    ? "bg-primary text-primary-foreground shadow-[0_10px_22px_-10px_color-mix(in_oklab,var(--color-primary)_85%,transparent)]"
                     : "text-muted-foreground"
                 }`}
               >
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d={n.icon} strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <n.Icon className="h-5 w-5" strokeWidth={2} />
               </span>
               <span
-                className={`text-[9px] font-extrabold uppercase tracking-wider ${
+                className={`truncate text-[9px] font-extrabold uppercase ${
                   active ? "text-foreground" : "text-muted-foreground"
                 }`}
               >

@@ -60,6 +60,8 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-tile: var(--tile);
+  --color-coupon: var(--coupon);
+  --color-coupon-strong: var(--coupon-strong);
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-brand-soft: var(--brand-soft);
@@ -99,6 +101,8 @@
   --input: oklch(0.925 0.008 120);
   --ring: oklch(0.325 0.077 156);
   --tile: oklch(0.941 0.029 143);
+  --coupon: oklch(0.974 0.025 72);
+  --coupon-strong: oklch(0.936 0.061 69);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -180,15 +184,34 @@
 
 @utility card-soft {
   background: var(--color-card);
-  border-radius: 0.5rem;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in oklab, var(--color-border) 72%, white);
   box-shadow: var(--shadow-soft);
 }
 
 @utility card-elevated {
   background: var(--color-card);
-  border-radius: 0.5rem;
+  border-radius: 1rem;
   border: 1px solid color-mix(in oklab, var(--color-border) 60%, white);
-  box-shadow: 0 18px 40px -22px rgba(15, 23, 42, 0.35), 0 2px 6px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 18px 40px -26px color-mix(in oklab, var(--color-primary) 26%, transparent), 0 2px 6px color-mix(in oklab, var(--color-foreground) 5%, transparent);
+}
+
+@utility product-tile {
+  background: var(--color-tile);
+  border-radius: 0.85rem;
+  overflow: hidden;
+}
+
+@utility coupon-card {
+  background: linear-gradient(135deg, var(--color-coupon), var(--color-coupon-strong));
+  border: 1px dashed color-mix(in oklab, var(--color-primary) 34%, var(--color-border));
+  border-radius: 1rem;
+}
+
+@utility sticky-checkout {
+  background: var(--color-card);
+  border: 1px solid color-mix(in oklab, var(--color-border) 75%, white);
+  box-shadow: 0 -12px 32px -20px color-mix(in oklab, var(--color-primary) 35%, transparent);
 }
 
 @utility glass-panel {
