@@ -93,10 +93,10 @@ function Wallet() {
   return (
     <Shell>
       <PortalHeader title="Wallet" subtitle="Money for faster checkout" />
-      <div className="space-y-3 p-4">
-        <div className="rise-in card-elevated shine p-5">
-          <p className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground"><span className="live-dot" /> Available balance</p>
-          <p className="mt-1 text-4xl font-extrabold tracking-tight text-primary">{inr(balance)}</p>
+       <div className="space-y-3 p-4">
+         <div className="rise-in shine rounded-2xl bg-primary p-5 text-primary-foreground shadow-card">
+           <p className="flex items-center gap-1.5 text-xs font-bold opacity-75"><span className="h-2 w-2 rounded-full bg-brand" /> Available balance</p>
+           <p className="mt-1 font-display text-5xl">{inr(balance)}</p>
           {status !== "ACTIVE" ? (
             <p className="mt-1 text-[11px] font-semibold text-destructive">Wallet {status.toLowerCase().replace("_", " ")}</p>
           ) : null}

@@ -71,13 +71,13 @@ function Profile() {
 
   return (
     <Shell>
-      <header className="bg-primary px-5 pb-7 pt-7 text-primary-foreground shadow-card">
+       <header className="relative overflow-hidden rounded-b-[2rem] bg-primary px-5 pb-8 pt-7 text-primary-foreground shadow-card">
         <div className="flex min-w-0 items-center gap-3">
           <div className="pop-in grid h-16 w-16 shrink-0 rotate-2 place-items-center rounded-lg border-4 border-card bg-brand text-2xl font-black text-brand-foreground shadow-card">
             {(name || user?.email || "T").slice(0, 1).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-display text-2xl">{name || "ThelaWala customer"}</p>
+             <p className="truncate font-display text-3xl">{name || "ThelaWala customer"}</p>
             <p className="truncate text-xs font-semibold opacity-80">{mobile || user?.email}</p>
             <span className="mt-2 inline-flex rounded-full border border-primary-foreground/25 bg-primary-foreground/10 px-2 py-1 text-[10px] font-black uppercase">Street food member</span>
           </div>
@@ -133,7 +133,7 @@ function Profile() {
           </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-lg bg-brand p-4 text-brand-foreground shadow-card">
+         <div className="coupon-card relative overflow-hidden p-4 text-foreground shadow-card">
           <p className="font-display text-xl">Refer &amp; earn ₹25</p>
           <p className="mt-1 max-w-[250px] text-[11px] font-semibold opacity-75">Bring your food buddy. You both receive wallet credit.</p>
           <div className="mt-2 flex items-center gap-2">

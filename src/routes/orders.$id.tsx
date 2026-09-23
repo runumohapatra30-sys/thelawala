@@ -198,7 +198,7 @@ function Track() {
         </div>
       ) : null}
 
-      <div className="bg-primary px-4 pb-6 pt-4 text-primary-foreground">
+      <div className="bg-primary px-5 pb-6 pt-4 text-primary-foreground">
         <div className="flex items-center gap-3">
           <Link to="/orders" aria-label="Back to orders" className="press grid h-9 w-9 place-items-center rounded-full bg-white/20">
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4">
@@ -207,22 +207,31 @@ function Track() {
           </Link>
           <p className="text-sm font-semibold opacity-90">{STATUS_LABEL[order.status] ?? order.status} · #{order.code}</p>
         </div>
-        <p className="mt-3 text-2xl font-black leading-tight">
+        <p className="mt-3 font-display text-3xl leading-tight">
           {live
             ? `Arriving in ${eta ? Math.max(5, Math.round(eta)) : 10}-${eta ? Math.max(10, Math.round(eta) + 5) : 15} minutes`
             : STATUS_LABEL[order.status] ?? order.status}
         </p>
       </div>
 
-      <div className="space-y-3 p-4">
+       <div className="space-y-3 p-4">
         {live && vendor ? (
-          <LiveMap
-            from={{ lat: Number(vendor.lat), lng: Number(vendor.lng) }}
-            to={{ lat: Number(order.drop_lat), lng: Number(order.drop_lng) }}
-            rider={rider?.lat && rider?.lng ? { lat: Number(rider.lat), lng: Number(rider.lng) } : null}
-            onEta={(min) => setEta(min)}
-            className="h-56 w-full overflow-hidden rounded-2xl border border-border"
-          />
+           <section>
+             <div className="mb-2 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+               <div className="min-w-0">
+                 <h2 className="font-display text-2xl text-primary">Live delivery</h2>
+                 <p className="truncate text-[11px] font-semibold text-muted-foreground">Tracking the route to {order.address_line}</p>
+               </div>
+               <span className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-[11px] font-black text-primary-foreground">{order.distance_km} km</span>
+             </div>
+             <LiveMap
+               from={{ lat: Number(vendor.lat), lng: Number(vendor.lng) }}
+               to={{ lat: Number(order.drop_lat), lng: Number(order.drop_lng) }}
+               rider={rider?.lat && rider?.lng ? { lat: Number(rider.lat), lng: Number(rider.lng) } : null}
+               onEta={(min) => setEta(min)}
+               className="h-[46vh] min-h-80 max-h-[460px] w-full overflow-hidden rounded-2xl border border-border shadow-card"
+             />
+           </section>
         ) : null}
 
         {live && order.cancel_otp ? (

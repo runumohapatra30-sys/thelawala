@@ -6,9 +6,19 @@ import { cart, useCart } from "@/lib/cart";
 import { inr } from "@/lib/fees";
 import { customerPrice } from "@/lib/pricing";
 import { foodImage } from "@/lib/foodImage";
-import { Heart, Search, Share2, Info, Timer, Bike } from "lucide-react";
+import { Heart, Search, Share2, Timer, Bike } from "lucide-react";
 
 export const Route = createFileRoute("/stalls/$id")({
+  head: () => ({
+    meta: [
+      { title: "Stall menu — ThelaWala" },
+      { name: "description", content: "Browse a local ThelaWala stall, see delivery time, offers and order fresh street food." },
+      { property: "og:title", content: "Stall menu — ThelaWala" },
+      { property: "og:description", content: "Fresh street food from one local stall, delivered fast." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: StallDetail,
 });
 
@@ -86,8 +96,8 @@ function StallDetail() {
           </div>
         </header>
 
-        <div className="px-4 pt-2">
-          <h1 className="text-3xl font-black leading-tight">{vendor.stall_name}</h1>
+        <div className="px-5 pt-2">
+          <h1 className="font-display text-4xl leading-tight text-primary">{vendor.stall_name}</h1>
           <p className="mt-1 text-sm font-medium text-muted-foreground">{vendor.address || "Local Favourite"}</p>
           
           <div className="mt-4 flex items-center gap-4 border-y border-border/50 py-4">
@@ -110,7 +120,7 @@ function StallDetail() {
           </div>
         )}
 
-        <div className="px-4 pt-8 pb-40">
+        <div className="px-5 pt-8 pb-40">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-black">Menu</h2>
             <button className="press grid h-9 w-9 place-items-center rounded-full bg-muted text-muted-foreground"><Search className="h-4 w-4" /></button>
@@ -153,7 +163,7 @@ function ItemRow({ item: i, vendorId }: { item: Item; vendorId: string }) {
   const offerPrice = price;
 
   return (
-    <div className="grid grid-cols-[1fr_120px] gap-4">
+    <div className="grid grid-cols-[minmax(0,1fr)_120px] gap-4 rounded-2xl bg-card p-3 shadow-card">
       <div className="min-w-0">
         <div className="flex items-center gap-1.5">
           <span className={`h-3.5 w-3.5 rounded-sm border-2 ${i.food_type === "VEG" ? "border-green-600" : "border-red-600"} flex items-center justify-center`}>
@@ -164,8 +174,8 @@ function ItemRow({ item: i, vendorId }: { item: Item; vendorId: string }) {
         <p className="mt-0.5 text-[15px] font-black text-foreground">{inr(offerPrice)}</p>
         {i.details && <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{i.details}</p>}
       </div>
-      <div className="relative h-[120px] w-[120px]">
-        <img src={i.photo_url || foodImage(i.name)} className="h-full w-full rounded-2xl object-cover shadow-sm" alt={i.name} />
+       <div className="product-tile relative h-[120px] w-[120px]">
+         <img src={i.photo_url || foodImage(i.name)} className="h-full w-full object-contain p-2" alt={i.name} />
         {!i.in_stock ? (
           <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/40 text-[10px] font-black text-white">SOLD OUT</div>
         ) : (
@@ -180,10 +190,10 @@ function ItemRow({ item: i, vendorId }: { item: Item; vendorId: string }) {
                 })} className="press px-1 text-lg font-black">+</button>
               </div>
             ) : (
-              <button onClick={() => cart.add({
+               <button onClick={() => cart.add({
                 itemId: i.id, vendorId, name: i.name, photo: i.photo_url, unit: i.unit,
                 base: Number(i.price), price: customerPrice(i.price), mrp: customerPrice(i.mrp)
-              })} className="press h-9 min-w-[84px] rounded-xl bg-card text-[13px] font-black text-primary shadow-lg ring-1 ring-primary/30 uppercase">Add</button>
+               })} className="press h-9 min-w-[84px] rounded-full bg-card text-[13px] font-black text-primary shadow-lg ring-1 ring-primary/30 uppercase">Add</button>
             )}
           </div>
         )}
