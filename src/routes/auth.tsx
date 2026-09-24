@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ThelaLogo } from "@/components/Shell";
-import { isGoogleIdentityConfigured, waitForGoogleIdentity } from "@/lib/googleIdentity";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -69,18 +68,6 @@ export function AuthPage() {
     });
   }, [navigate]);
 
-  function signInWithGoogle() {
-    setBusy(true);
-    const stopWaiting = waitForGoogleIdentity(true);
-    if (!isGoogleIdentityConfigured()) {
-      stopWaiting();
-      setBusy(false);
-      setMsg("Google sign-in is not configured yet.");
-      return;
-    }
-    setMsg("Choose your Google account to continue.");
-  }
-
   async function continueAsGuest() {
     setBusy(true);
     setMsg(null);
@@ -130,20 +117,6 @@ export function AuthPage() {
 
           <div className="mt-6 w-full rounded-3xl bg-card p-4 shadow-lg">
             <p className="text-sm font-black">Log in or sign up</p>
-            <button
-              type="button"
-              onClick={signInWithGoogle}
-              className="press mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-black text-primary-foreground"
-            >
-              <span className="grid h-5 w-5 place-items-center rounded-full bg-white text-xs font-black text-[#4285F4]">
-                G
-              </span>
-              Sign in with Google
-            </button>
-            <div className="my-4 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-              <span className="h-px flex-1 bg-border" /> Or continue as guest{" "}
-              <span className="h-px flex-1 bg-border" />
-            </div>
             <>
               <label className="mt-3 block text-[11px] font-semibold text-muted-foreground">
                 Your name

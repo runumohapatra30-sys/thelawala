@@ -1,10 +1,9 @@
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { isGoogleIdentityConfigured, waitForGoogleIdentity } from "@/lib/googleIdentity";
 
 export const OPEN_LOGIN_EVENT = "thelawala:open-login";
+export const GUEST_PROFILE_EVENT = "thelawala:guest-profile";
 
 export function openLoginModal() {
   window.dispatchEvent(new Event(OPEN_LOGIN_EVENT));
@@ -18,64 +17,17 @@ type LoginModalProps = {
 export function LoginModal({ open, onClose }: LoginModalProps) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setBusy(false);
-        onClose();
-      }
-    });
-    return () => subscription.subscription.unsubscribe();
-  }, [open, onClose]);
 
   if (!open) return null;
 
   const fullPhone = `+91${phone.replace(/\D/g, "").slice(-10)}`;
-  function signInWithGoogle() {
-    setBusy(true);
-    const stopWaiting = waitForGoogleIdentity(true);
-    if (!isGoogleIdentityConfigured()) {
-      stopWaiting();
-      setBusy(false);
-      setMessage("Google sign-in is not configured yet.");
-      return;
-    }
-    setMessage("Choose your Google account to continue.");
-  }
-
-  async function continueAsGuest() {
-    setBusy(true);
-    setMessage(null);
-    const { data, error } = await supabase.auth.signInAnonymously({
-      options: { data: { full_name: name.trim(), mobile: fullPhone } },
-    });
-    if (error || !data.user) {
-      localStorage.setItem("thelawala.guest_name", name.trim());
-      localStorage.setItem("thelawala.guest_mobile", fullPhone);
-      setBusy(false);
-      onClose();
-      toast.success(`Welcome, ${name.trim() || "Guest"}`);
-      return;
-    }
-    const { error: profileError } = await supabase.from("profiles").upsert({
-      id: data.user.id,
-      full_name: name.trim(),
-      mobile: fullPhone,
-      email: data.user.email ?? null,
-    });
-    setBusy(false);
-    if (profileError)
-      return setMessage(
-        "Your session started, but we could not save your profile. Please try again.",
-      );
+  function continueAsGuest() {
+    const profile = { name: name.trim() || "Guest", mobile: fullPhone };
     localStorage.setItem("thelawala.guest_name", name.trim());
     localStorage.setItem("thelawala.guest_mobile", fullPhone);
+    window.dispatchEvent(new CustomEvent(GUEST_PROFILE_EVENT, { detail: profile }));
     onClose();
-    toast.success(`Welcome, ${name.trim()}`);
+    toast.success(`Welcome, ${profile.name}`);
   }
 
   return (
@@ -112,20 +64,6 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={signInWithGoogle}
-          className="press mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-sm font-black text-primary-foreground"
-        >
-          <span className="grid h-5 w-5 place-items-center rounded-full bg-white text-xs font-black text-[#4285F4]">
-            G
-          </span>
-          Sign in with Google
-        </button>
-        <div className="my-4 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-          <span className="h-px flex-1 bg-border" /> Or continue as guest{" "}
-          <span className="h-px flex-1 bg-border" />
-        </div>
         <div className="space-y-2">
           <input
             value={name}
@@ -145,16 +83,12 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
           </div>
           <button
             type="button"
-            disabled={busy}
             onClick={continueAsGuest}
-            className="press w-full rounded-full border border-primary py-3 text-sm font-black text-primary disabled:opacity-50"
+            className="press w-full rounded-full bg-primary py-3 text-sm font-black text-primary-foreground"
           >
-            {busy ? "Please wait..." : "Continue as guest"}
+            Continue
           </button>
         </div>
-        {message ? (
-          <p className="mt-3 text-center text-xs font-semibold text-muted-foreground">{message}</p>
-        ) : null}
       </section>
     </div>
   );

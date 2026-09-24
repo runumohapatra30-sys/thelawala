@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
-import { openLoginModal } from "@/components/LoginModal";
+import { GUEST_PROFILE_EVENT, openLoginModal } from "@/components/LoginModal";
 import type { SavedAddress } from "@/components/AddressBook";
 import { supabase } from "@/integrations/supabase/client";
 import { cart, cartTotals, useCart } from "@/lib/cart";
@@ -11,12 +11,17 @@ import { checkoutGate, minimumOrderValue, stallOfferDiscount } from "@/lib/prici
 import { payInAppWithCashfree } from "@/lib/checkout";
 import { useSession } from "@/lib/session";
 import { BellOff, DoorOpen, PhoneOff, Plus, ShieldCheck, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
     meta: [
       { title: "Checkout — ThelaWala" },
-      { name: "description", content: "Add your name, mobile, pincode and address, choose cash or online payment and place your ThelaWala order." },
+      {
+        name: "description",
+        content:
+          "Add your name, mobile, pincode and address, choose cash or online payment and place your ThelaWala order.",
+      },
       { property: "og:title", content: "Checkout — ThelaWala" },
       { property: "og:description", content: "Transparent bill with distance-based delivery fee." },
       { property: "og:type", content: "website" },
@@ -36,8 +41,21 @@ function Cart() {
   const { foodTotal, baseTotal } = cartTotals(lines);
 
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [vendor, setVendor] = useState<{ id: string; stall_name: string; lat: number; lng: number; offer_percent: number | null; offer_label: string | null } | null>(null);
-  const [form, setForm] = useState({ full_name: "", mobile: "", pincode: "", line: "", landmark: "" });
+  const [vendor, setVendor] = useState<{
+    id: string;
+    stall_name: string;
+    lat: number;
+    lng: number;
+    offer_percent: number | null;
+    offer_label: string | null;
+  } | null>(null);
+  const [form, setForm] = useState({
+    full_name: "",
+    mobile: "",
+    pincode: "",
+    line: "",
+    landmark: "",
+  });
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [payment, setPayment] = useState<"COD" | "ONLINE">("COD");
   const [busy, setBusy] = useState(false);
@@ -53,7 +71,23 @@ function Cart() {
   const [locating, setLocating] = useState(false);
   const [saved, setSaved] = useState<SavedAddress[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [recommendations, setRecommendations] = useState<Array<{ id: string; vendor_id: string; name: string; photo_url: string | null; unit: string | null; price: number; mrp: number; in_stock: boolean }>>([]);
+  const [recommendations, setRecommendations] = useState<
+    Array<{
+      id: string;
+      vendor_id: string;
+      name: string;
+      photo_url: string | null;
+      unit: string | null;
+      price: number;
+      mrp: number;
+      in_stock: boolean;
+    }>
+  >([]);
+  const [guestProfile, setGuestProfile] = useState(() => ({
+    name: typeof window === "undefined" ? "" : localStorage.getItem("thelawala.guest_name") || "",
+    mobile:
+      typeof window === "undefined" ? "" : localStorage.getItem("thelawala.guest_mobile") || "",
+  }));
   const autoTried = useRef(false);
   const coordsRef = useRef(coords);
   const formRef = useRef(form);
@@ -66,14 +100,31 @@ function Cart() {
 
   useEffect(() => {
     const guestName = localStorage.getItem("thelawala.guest_name");
-    if (guestName) setForm((current) => current.full_name ? current : { ...current, full_name: guestName });
+    const guestMobile = localStorage.getItem("thelawala.guest_mobile");
+    if (guestName || guestMobile)
+      setForm((current) => ({
+        ...current,
+        full_name: current.full_name || guestName || "",
+        mobile: current.mobile || guestMobile || "",
+      }));
+    const updateGuest = (event: Event) => {
+      const profile = (event as CustomEvent<{ name: string; mobile: string }>).detail;
+      setGuestProfile(profile);
+      setForm((current) => ({ ...current, full_name: profile.name, mobile: profile.mobile }));
+    };
+    window.addEventListener(GUEST_PROFILE_EVENT, updateGuest);
+    return () => window.removeEventListener(GUEST_PROFILE_EVENT, updateGuest);
   }, []);
 
   useEffect(() => {
-    supabase.from("system_settings").select("*").maybeSingle().then(({ data }) => {
-      setSettings(data as Settings | null);
-      if (data && !data.enable_cod) setPayment("ONLINE");
-    });
+    supabase
+      .from("system_settings")
+      .select("*")
+      .maybeSingle()
+      .then(({ data }) => {
+        setSettings(data as Settings | null);
+        if (data && !data.enable_cod) setPayment("ONLINE");
+      });
   }, []);
 
   useEffect(() => {
@@ -89,7 +140,12 @@ function Cart() {
   useEffect(() => {
     const vid = lines[0]?.vendorId;
     if (!vid) return;
-    supabase.from("vendors").select("id,stall_name,lat,lng,offer_percent,offer_label").eq("id", vid).maybeSingle().then(({ data }) => setVendor(data));
+    supabase
+      .from("vendors")
+      .select("id,stall_name,lat,lng,offer_percent,offer_label")
+      .eq("id", vid)
+      .maybeSingle()
+      .then(({ data }) => setVendor(data));
     supabase
       .from("menu_items")
       .select("id,vendor_id,name,photo_url,unit,price,mrp,in_stock")
@@ -133,7 +189,13 @@ function Cart() {
     try {
       const raw = localStorage.getItem("tw_last_location");
       if (!raw) return;
-      const saved = JSON.parse(raw) as { lat: number; lng: number; line?: string; pincode?: string; landmark?: string };
+      const saved = JSON.parse(raw) as {
+        lat: number;
+        lng: number;
+        line?: string;
+        pincode?: string;
+        landmark?: string;
+      };
       if (!Number(saved.lat) || !Number(saved.lng)) return;
       setCoords({ lat: Number(saved.lat), lng: Number(saved.lng) });
       setForm((f) => ({
@@ -149,12 +211,24 @@ function Cart() {
   }, []);
 
   function pickSaved(a: SavedAddress) {
-    setForm({ full_name: a.full_name, mobile: a.mobile, pincode: a.pincode, line: a.line, landmark: a.landmark ?? "" });
+    setForm({
+      full_name: a.full_name,
+      mobile: a.mobile,
+      pincode: a.pincode,
+      line: a.line,
+      landmark: a.landmark ?? "",
+    });
     setCoords({ lat: Number(a.lat), lng: Number(a.lng) });
     try {
       localStorage.setItem(
         "tw_last_location",
-        JSON.stringify({ lat: Number(a.lat), lng: Number(a.lng), line: a.line, pincode: a.pincode, landmark: a.landmark ?? "" }),
+        JSON.stringify({
+          lat: Number(a.lat),
+          lng: Number(a.lng),
+          line: a.line,
+          pincode: a.pincode,
+          landmark: a.landmark ?? "",
+        }),
       );
     } catch {
       /* remembering the location is optional */
@@ -174,7 +248,14 @@ function Cart() {
         address?: Record<string, string>;
       };
       const a = json.address ?? {};
-      const line = [a["house_number"], a["road"], a["neighbourhood"], a["suburb"], a["city_district"], a["city"] ?? a["town"] ?? a["village"]]
+      const line = [
+        a["house_number"],
+        a["road"],
+        a["neighbourhood"],
+        a["suburb"],
+        a["city_district"],
+        a["city"] ?? a["town"] ?? a["village"],
+      ]
         .filter(Boolean)
         .join(", ");
       const pin = a["postcode"] ?? "";
@@ -199,7 +280,13 @@ function Cart() {
           try {
             localStorage.setItem(
               "tw_last_location",
-              JSON.stringify({ lat: p.coords.latitude, lng: p.coords.longitude, line: f.line, pincode: f.pincode, landmark: f.landmark }),
+              JSON.stringify({
+                lat: p.coords.latitude,
+                lng: p.coords.longitude,
+                line: f.line,
+                pincode: f.pincode,
+                landmark: f.landmark,
+              }),
             );
           } catch {
             /* remembering the location is optional */
@@ -227,15 +314,22 @@ function Cart() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const distanceKm = vendor && coords ? haversineKm(coords, { lat: Number(vendor.lat), lng: Number(vendor.lng) }) : 0;
+  const distanceKm =
+    vendor && coords
+      ? haversineKm(coords, { lat: Number(vendor.lat), lng: Number(vendor.lng) })
+      : 0;
   const gate = vendor && coords ? checkoutGate(distanceKm, baseTotal) : ({ ok: true } as const);
   const blockedReason = gate.ok ? null : gate.reason;
   // No automatic MRP discount any more: a discount exists only when the stall runs its own offer.
   const hasLocation = Boolean(vendor && coords);
-  const bill = hasLocation ? computeBill({ settings, foodTotal, mrpTotal: foodTotal, distanceKm }) : null;
+  const bill = hasLocation
+    ? computeBill({ settings, foodTotal, mrpTotal: foodTotal, distanceKm })
+    : null;
   const stallOff = stallOfferDiscount(foodTotal, vendor?.offer_percent);
   const couponOff = coupon ? couponDiscount(coupon, foodTotal) : 0;
-  const netTotal = bill ? Math.max(0, Math.round((bill.grandTotal - stallOff - couponOff + tip) * 100) / 100) : 0;
+  const netTotal = bill
+    ? Math.max(0, Math.round((bill.grandTotal - stallOff - couponOff + tip) * 100) / 100)
+    : 0;
   const walletUse = bill && useWallet ? Math.min(walletBalance, netTotal) : 0;
   const payable = bill ? Math.round((netTotal - walletUse) * 100) / 100 : 0;
   const unlockTarget = foodTotal < 200 ? 200 : Math.ceil(foodTotal / 100) * 100;
@@ -258,7 +352,9 @@ function Cart() {
     { label: "Leave with security", Icon: ShieldCheck },
     { label: "Avoid calling", Icon: PhoneOff },
   ];
-  const suggested = recommendations.filter((item) => !lines.some((line) => line.itemId === item.id)).slice(0, 6);
+  const suggested = recommendations
+    .filter((item) => !lines.some((line) => line.itemId === item.id))
+    .slice(0, 6);
 
   async function applyCoupon() {
     setCouponMsg(null);
@@ -268,14 +364,18 @@ function Cart() {
       return setCouponMsg(res.error ?? "This coupon code is not valid.");
     }
     setCoupon(res.coupon);
-    setCouponMsg(`${res.coupon.code} applied · you save ${inr(couponDiscount(res.coupon, foodTotal))}`);
+    setCouponMsg(
+      `${res.coupon.code} applied · you save ${inr(couponDiscount(res.coupon, foodTotal))}`,
+    );
   }
 
   if (lines.length === 0) {
     return (
       <Shell>
         <PortalHeader title="Your cart" />
-        <p className="px-4 py-20 text-center text-sm text-muted-foreground">Your cart is empty. Add something hot.</p>
+        <p className="px-4 py-20 text-center text-sm text-muted-foreground">
+          Your cart is empty. Add something hot.
+        </p>
       </Shell>
     );
   }
@@ -283,12 +383,47 @@ function Cart() {
   async function place() {
     setErr(null);
     if (!user) {
-      openLoginModal();
+      if (!guestProfile.name) {
+        openLoginModal();
+        return;
+      }
+      if (!form.full_name || form.mobile.length < 10 || form.pincode.length < 6 || !form.line)
+        return setErr("Please fill name, 10-digit mobile, 6-digit pincode and full address.");
+      if (!coords)
+        return setErr("Tap “Use my current location” — every order needs your live location.");
+      if (blockedReason) return setErr(blockedReason);
+      if (!bill || !vendor) return;
+
+      const localOrder = {
+        id: `local-${Date.now()}`,
+        code: `TW${Date.now().toString().slice(-7)}`,
+        status: "ORDER_PLACED",
+        created_at: new Date().toISOString(),
+        customer_name: form.full_name,
+        customer_mobile: form.mobile,
+        address_line: form.landmark ? `${form.line}, ${form.landmark}` : form.line,
+        pincode: form.pincode,
+        vendor_id: vendor.id,
+        vendor_name: vendor.stall_name,
+        grand_total: netTotal,
+        food_total: bill.foodTotal,
+        delivery_fee: bill.deliveryFee,
+        payment_mode: "COD",
+        items: lines,
+      };
+      const existing = JSON.parse(
+        localStorage.getItem("thelawala.local_orders") || "[]",
+      ) as unknown[];
+      localStorage.setItem("thelawala.local_orders", JSON.stringify([localOrder, ...existing]));
+      cart.clear();
+      toast.success("Order placed successfully");
+      await navigate({ to: "/" });
       return;
     }
     if (!form.full_name || form.mobile.length < 10 || form.pincode.length < 6 || !form.line)
       return setErr("Please fill name, 10-digit mobile, 6-digit pincode and full address.");
-    if (!coords) return setErr("Tap “Use my current location” — every order needs your live location.");
+    if (!coords)
+      return setErr("Tap “Use my current location” — every order needs your live location.");
     if (blockedReason) return setErr(blockedReason);
     if (!bill || !vendor) return;
 
@@ -430,7 +565,6 @@ function Cart() {
 
     cart.clear();
 
-
     setBusy(false);
     navigate({ to: "/orders/$id", params: { id: order.id }, search: { placed: 1 } });
   }
@@ -440,19 +574,35 @@ function Cart() {
       <div className="rounded-b-[2.25rem] bg-primary px-5 pb-7 pt-5 text-primary-foreground">
         <p className="text-[11px] font-black uppercase tracking-[0.18em] opacity-70">Your basket</p>
         <h1 className="font-display text-4xl">Your Cart</h1>
-        <p className="text-xs font-semibold opacity-75">{vendor?.stall_name ?? "Your order"} · {lines.reduce((sum, line) => sum + line.qty, 0)} items</p>
+        <p className="text-xs font-semibold opacity-75">
+          {vendor?.stall_name ?? "Your order"} · {lines.reduce((sum, line) => sum + line.qty, 0)}{" "}
+          items
+        </p>
       </div>
       <div className="space-y-3 p-4 pb-36">
         <div className="rounded-2xl border border-brand bg-brand-soft p-3 shadow-card">
-          <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /><p className="text-sm font-black">{deliveryPromo}</p></div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-card"><div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${unlockProgress}%` }} /></div>
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <p className="text-sm font-black">{deliveryPromo}</p>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-card">
+            <div
+              className="h-full rounded-full bg-primary transition-[width] duration-500"
+              style={{ width: `${unlockProgress}%` }}
+            />
+          </div>
         </div>
         <div className="card-elevated rise-in grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border border-border p-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-black">{form.full_name || "Delivering to you"}</p>
-            <p className="truncate text-[11px] text-muted-foreground">{form.line || "Add your full address below"}</p>
+            <p className="truncate text-[11px] text-muted-foreground">
+              {form.line || "Add your full address below"}
+            </p>
           </div>
-          <a href="#delivery-details" className="press shrink-0 rounded-full border border-primary px-3 py-1.5 text-[11px] font-black text-primary">
+          <a
+            href="#delivery-details"
+            className="press shrink-0 rounded-full border border-primary px-3 py-1.5 text-[11px] font-black text-primary"
+          >
             Change
           </a>
         </div>
@@ -464,15 +614,31 @@ function Cart() {
           <div className="mt-3 space-y-3">
             {lines.map((l) => (
               <div key={l.itemId} className="flex items-center gap-3">
-                <img src={l.photo ?? "/food/food-tiffin.jpg"} alt={l.name} className="h-14 w-14 rounded-xl object-cover" />
+                <img
+                  src={l.photo ?? "/food/food-tiffin.jpg"}
+                  alt={l.name}
+                  className="h-14 w-14 rounded-xl object-cover"
+                />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{l.name}</p>
                   <p className="text-xs text-muted-foreground">{l.unit}</p>
                 </div>
                 <div className="flex items-center gap-2 rounded-full bg-primary px-2.5 py-1 text-primary-foreground">
-                  <button aria-label="Remove one" onClick={() => cart.remove(l.itemId)} className="px-1 font-bold">−</button>
+                  <button
+                    aria-label="Remove one"
+                    onClick={() => cart.remove(l.itemId)}
+                    className="px-1 font-bold"
+                  >
+                    −
+                  </button>
                   <span className="text-xs font-bold">{l.qty}</span>
-                  <button aria-label="Add one" onClick={() => cart.add(l)} className="px-1 font-bold">+</button>
+                  <button
+                    aria-label="Add one"
+                    onClick={() => cart.add(l)}
+                    className="px-1 font-bold"
+                  >
+                    +
+                  </button>
                 </div>
                 <p className="w-14 text-right text-sm font-bold">{inr(l.price * l.qty)}</p>
               </div>
@@ -485,24 +651,46 @@ function Cart() {
             <div className="mb-3 flex items-end justify-between">
               <div>
                 <h2 className="font-display text-2xl text-primary">You may also like</h2>
-                <p className="text-[11px] font-semibold text-muted-foreground">Popular add-ons from {vendor?.stall_name}</p>
+                <p className="text-[11px] font-semibold text-muted-foreground">
+                  Popular add-ons from {vendor?.stall_name}
+                </p>
               </div>
             </div>
             <div className="flex snap-x gap-3 overflow-x-auto pb-2 no-scrollbar">
               {suggested.map((item) => (
-                <article key={item.id} className="w-36 shrink-0 snap-start rounded-2xl bg-card p-2 shadow-card">
+                <article
+                  key={item.id}
+                  className="w-36 shrink-0 snap-start rounded-2xl bg-card p-2 shadow-card"
+                >
                   <div className="product-tile relative aspect-square">
-                    <img src={item.photo_url ?? "/food/food-tiffin.jpg"} alt={item.name} className="h-full w-full object-contain p-2" />
+                    <img
+                      src={item.photo_url ?? "/food/food-tiffin.jpg"}
+                      alt={item.name}
+                      className="h-full w-full object-contain p-2"
+                    />
                     <button
                       type="button"
                       aria-label={`Add ${item.name}`}
-                      onClick={() => cart.add({ itemId: item.id, vendorId: item.vendor_id, name: item.name, photo: item.photo_url, unit: item.unit, base: Number(item.price), price: Number(item.price), mrp: Number(item.mrp) })}
+                      onClick={() =>
+                        cart.add({
+                          itemId: item.id,
+                          vendorId: item.vendor_id,
+                          name: item.name,
+                          photo: item.photo_url,
+                          unit: item.unit,
+                          base: Number(item.price),
+                          price: Number(item.price),
+                          mrp: Number(item.mrp),
+                        })
+                      }
                       className="press absolute bottom-2 right-2 grid h-9 w-9 place-items-center rounded-full border border-border bg-card text-primary shadow-card"
                     >
                       <Plus className="h-5 w-5" strokeWidth={2.4} />
                     </button>
                   </div>
-                  <p className="mt-2 line-clamp-2 min-h-9 text-xs font-extrabold leading-tight">{item.name}</p>
+                  <p className="mt-2 line-clamp-2 min-h-9 text-xs font-extrabold leading-tight">
+                    {item.name}
+                  </p>
                   <p className="mt-1 text-sm font-black text-primary">{inr(Number(item.price))}</p>
                 </article>
               ))}
@@ -526,33 +714,50 @@ function Cart() {
         </div>
 
         {pickerOpen ? (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setPickerOpen(false)}>
+          <div
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+            onClick={() => setPickerOpen(false)}
+          >
             <div
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-[480px] space-y-2 rounded-t-3xl bg-card p-4 pb-6"
             >
               <p className="text-sm font-black">Choose delivery location</p>
-              <p className="text-[11px] text-muted-foreground">Pick a saved location or use your current one.</p>
+              <p className="text-[11px] text-muted-foreground">
+                Pick a saved location or use your current one.
+              </p>
               {saved.map((a) => (
                 <button
                   key={a.id}
                   onClick={() => pickSaved(a)}
                   className="press block w-full rounded-2xl border border-border p-3 text-left"
                 >
-                  <p className="truncate text-[13px] font-black">{a.full_name} · {a.mobile}</p>
+                  <p className="truncate text-[13px] font-black">
+                    {a.full_name} · {a.mobile}
+                  </p>
                   <p className="truncate text-[11px] text-muted-foreground">
-                    {a.line}{a.landmark ? `, ${a.landmark}` : ""} — {a.pincode}
+                    {a.line}
+                    {a.landmark ? `, ${a.landmark}` : ""} — {a.pincode}
                   </p>
                 </button>
               ))}
               <button
-                onClick={() => { setPickerOpen(false); locate(true); }}
+                onClick={() => {
+                  setPickerOpen(false);
+                  locate(true);
+                }}
                 className="press w-full rounded-2xl bg-primary py-3 text-sm font-black text-primary-foreground"
               >
                 Use my current location
               </button>
               <button
-                onClick={() => { setPickerOpen(false); setCoords(null); document.getElementById("delivery-details")?.scrollIntoView({ behavior: "smooth" }); }}
+                onClick={() => {
+                  setPickerOpen(false);
+                  setCoords(null);
+                  document
+                    .getElementById("delivery-details")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }}
                 className="press w-full rounded-2xl border border-border py-3 text-sm font-black"
               >
                 Add a new address
@@ -561,17 +766,23 @@ function Cart() {
           </div>
         ) : null}
 
-        <div id="delivery-details" className="card-elevated rise-in space-y-2 border border-border p-3">
-
+        <div
+          id="delivery-details"
+          className="card-elevated rise-in space-y-2 border border-border p-3"
+        >
           <p className="text-sm font-bold">Delivery details</p>
-          {([
-            ["full_name", "Full name", "text"],
-            ["mobile", "Mobile number", "tel"],
-            ["pincode", "Pincode", "tel"],
-            ["landmark", "Landmark (optional)", "text"],
-          ] as const).map(([k, label, type]) => (
+          {(
+            [
+              ["full_name", "Full name", "text"],
+              ["mobile", "Mobile number", "tel"],
+              ["pincode", "Pincode", "tel"],
+              ["landmark", "Landmark (optional)", "text"],
+            ] as const
+          ).map(([k, label, type]) => (
             <label key={k} className="block">
-              <span className="mb-1 block text-xs font-semibold text-muted-foreground">{label}</span>
+              <span className="mb-1 block text-xs font-semibold text-muted-foreground">
+                {label}
+              </span>
               <input
                 type={type}
                 value={form[k]}
@@ -581,7 +792,9 @@ function Cart() {
             </label>
           ))}
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-muted-foreground">Full address</span>
+            <span className="mb-1 block text-xs font-semibold text-muted-foreground">
+              Full address
+            </span>
             <textarea
               rows={2}
               value={form.line}
@@ -602,14 +815,17 @@ function Cart() {
           </button>
           {coords && vendor ? (
             <p className="text-xs text-muted-foreground">
-              {distanceKm} km from {vendor.stall_name} · minimum order {inr(minimumOrderValue(distanceKm))} · we deliver up to 15 km
+              {distanceKm} km from {vendor.stall_name} · minimum order{" "}
+              {inr(minimumOrderValue(distanceKm))} · we deliver up to 15 km
             </p>
           ) : null}
         </div>
 
         <div className="card-elevated rise-in space-y-2 p-3">
           <p className="text-sm font-bold">Tip &amp; delivery note</p>
-          <p className="text-[11px] text-muted-foreground">A tip goes fully to your delivery partner.</p>
+          <p className="text-[11px] text-muted-foreground">
+            A tip goes fully to your delivery partner.
+          </p>
           <div className="flex flex-wrap gap-2">
             {[0, 10, 20, 30, 50].map((t) => (
               <button
@@ -624,7 +840,17 @@ function Cart() {
           <div className="grid grid-cols-2 gap-2 pt-1">
             {instructionOptions.map(({ label, Icon }) => {
               const active = instructions === label;
-              return <button key={label} type="button" onClick={() => setInstructions(active ? "" : label)} className={`press flex min-h-14 items-center gap-2 rounded-lg border p-2 text-left text-[11px] font-bold ${active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card"}`}><Icon className="h-4 w-4 shrink-0" />{label}</button>;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setInstructions(active ? "" : label)}
+                  className={`press flex min-h-14 items-center gap-2 rounded-lg border p-2 text-left text-[11px] font-bold ${active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card"}`}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {label}
+                </button>
+              );
             })}
           </div>
           <textarea
@@ -647,25 +873,40 @@ function Cart() {
             />
             {coupon ? (
               <button
-                onClick={() => { setCoupon(null); setCodeInput(""); setCouponMsg(null); }}
+                onClick={() => {
+                  setCoupon(null);
+                  setCodeInput("");
+                  setCouponMsg(null);
+                }}
                 className="press shrink-0 rounded-xl border border-border px-3 text-xs font-black"
               >
                 Remove
               </button>
             ) : (
-              <button onClick={applyCoupon} className="press shrink-0 rounded-xl bg-primary px-4 text-xs font-black text-primary-foreground">
+              <button
+                onClick={applyCoupon}
+                className="press shrink-0 rounded-xl bg-primary px-4 text-xs font-black text-primary-foreground"
+              >
                 Apply
               </button>
             )}
           </div>
           {couponMsg ? (
-            <p className={`mt-1.5 text-[11px] font-semibold ${coupon ? "text-primary" : "text-destructive"}`}>{couponMsg}</p>
+            <p
+              className={`mt-1.5 text-[11px] font-semibold ${coupon ? "text-primary" : "text-destructive"}`}
+            >
+              {couponMsg}
+            </p>
           ) : null}
           <div className="mt-2 flex flex-wrap gap-2">
             {offers.map((c) => (
               <button
                 key={c.id}
-                onClick={() => { setCodeInput(c.code); setCoupon(null); setCouponMsg(null); }}
+                onClick={() => {
+                  setCodeInput(c.code);
+                  setCoupon(null);
+                  setCouponMsg(null);
+                }}
                 className="press rounded-full border border-dashed border-primary px-2.5 py-1 text-[11px] font-black text-primary"
               >
                 {c.code} · {c.description}
@@ -686,25 +927,36 @@ function Cart() {
                   good
                 />
               ) : null}
-              <Row label={`Delivery fee (${bill.distanceKm} km)`} value={bill.deliveryFee ? inr(bill.deliveryFee) : "FREE"} />
+              <Row
+                label={`Delivery fee (${bill.distanceKm} km)`}
+                value={bill.deliveryFee ? inr(bill.deliveryFee) : "FREE"}
+              />
               {bill.platformFee ? <Row label="Platform fee" value={inr(bill.platformFee)} /> : null}
               {bill.handlingFee ? <Row label="Handling fee" value={inr(bill.handlingFee)} /> : null}
               {bill.packingFee ? <Row label="Packing fee" value={inr(bill.packingFee)} /> : null}
               {bill.surgeFee ? <Row label="Surge fee" value={inr(bill.surgeFee)} /> : null}
-              {couponOff > 0 ? <Row label={`Coupon ${coupon?.code}`} value={`− ${inr(couponOff)}`} good /> : null}
+              {couponOff > 0 ? (
+                <Row label={`Coupon ${coupon?.code}`} value={`− ${inr(couponOff)}`} good />
+              ) : null}
               {tip > 0 ? <Row label="Tip for delivery partner" value={inr(tip)} /> : null}
-              {walletUse > 0 ? <Row label="Paid from wallet" value={`− ${inr(walletUse)}`} good /> : null}
+              {walletUse > 0 ? (
+                <Row label="Paid from wallet" value={`− ${inr(walletUse)}`} good />
+              ) : null}
               <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold">
                 <span>To pay</span>
                 <span>{inr(payable)}</span>
               </div>
-              {savings > 0 ? <div className="mt-3 rounded-lg bg-brand-soft px-3 py-2 text-xs font-black text-primary">You are saving {inr(savings)} on this order</div> : null}
+              {savings > 0 ? (
+                <div className="mt-3 rounded-lg bg-brand-soft px-3 py-2 text-xs font-black text-primary">
+                  You are saving {inr(savings)} on this order
+                </div>
+              ) : null}
             </dl>
           ) : !hasLocation ? (
             <div className="mt-2 space-y-2">
               <p className="text-xs font-semibold text-muted-foreground">
-                Choose a saved address or use your current location. Your delivery fee is worked out from the exact
-                distance to the stall.
+                Choose a saved address or use your current location. Your delivery fee is worked out
+                from the exact distance to the stall.
               </p>
               <button
                 onClick={() => locate(true)}
@@ -734,12 +986,24 @@ function Cart() {
           ) : null}
           <div className="mt-2 grid gap-2">
             {settings?.enable_cod !== false ? (
-              <PayBtn active={payment === "COD"} onClick={() => setPayment("COD")} label="Cash on delivery" hint="Pay the delivery partner" />
+              <PayBtn
+                active={payment === "COD"}
+                onClick={() => setPayment("COD")}
+                label="Cash on delivery"
+                hint="Pay the delivery partner"
+              />
             ) : null}
             {settings?.enable_online_payment ? (
-              <PayBtn active={payment === "ONLINE"} onClick={() => setPayment("ONLINE")} label="Pay online (UPI / card)" hint={`Secured by ${settings.payment_gateway}`} />
+              <PayBtn
+                active={payment === "ONLINE"}
+                onClick={() => setPayment("ONLINE")}
+                label="Pay online (UPI / card)"
+                hint={`Secured by ${settings.payment_gateway}`}
+              />
             ) : (
-              <p className="text-xs text-muted-foreground">Online payment is currently switched off.</p>
+              <p className="text-xs text-muted-foreground">
+                Online payment is currently switched off.
+              </p>
             )}
           </div>
         </div>
@@ -747,14 +1011,16 @@ function Cart() {
         {err ? <p className="text-xs font-semibold text-destructive">{err}</p> : null}
       </div>
 
-       <div className="fixed inset-x-0 bottom-[104px] z-40 mx-auto w-full max-w-[480px] px-3">
-         <div className="sticky-checkout rounded-2xl p-2">
+      <div className="fixed inset-x-0 bottom-[104px] z-40 mx-auto w-full max-w-[480px] px-3">
+        <div className="sticky-checkout rounded-2xl p-2">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-1 pb-2">
             <p className="truncate text-[11px] font-semibold text-muted-foreground">
               📍 {form.line || "Set your delivery address"}
             </p>
             {coords && vendor ? (
-              <span className="shrink-0 text-[11px] font-black text-primary">{distanceKm} km away</span>
+              <span className="shrink-0 text-[11px] font-black text-primary">
+                {distanceKm} km away
+              </span>
             ) : null}
           </div>
           {blockedReason ? (
@@ -763,9 +1029,14 @@ function Cart() {
           <button
             disabled={busy || !bill || !!blockedReason}
             onClick={place}
-             className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-3.5 text-primary-foreground shadow-card disabled:opacity-50"
+            className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-3.5 text-primary-foreground shadow-card disabled:opacity-50"
           >
-            <span><span className="block text-[10px] font-bold opacity-65">{lines.reduce((sum, line) => sum + line.qty, 0)} ITEMS</span><span className="text-base font-black">{bill ? inr(payable) : "—"}</span></span>
+            <span>
+              <span className="block text-[10px] font-bold opacity-65">
+                {lines.reduce((sum, line) => sum + line.qty, 0)} ITEMS
+              </span>
+              <span className="text-base font-black">{bill ? inr(payable) : "—"}</span>
+            </span>
             <span className="text-sm font-black">
               {busy
                 ? "PLACING…"
@@ -782,7 +1053,17 @@ function Cart() {
   );
 }
 
-function PayBtn({ active, onClick, label, hint }: { active: boolean; onClick: () => void; label: string; hint: string }) {
+function PayBtn({
+  active,
+  onClick,
+  label,
+  hint,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  hint: string;
+}) {
   return (
     <button
       onClick={onClick}
