@@ -21,7 +21,6 @@ export type BillInput = {
   foodTotal: number;
   mrpTotal: number;
   distanceKm: number;
-  cartItemCount: number;
   penaltyFee?: number;
 };
 
@@ -58,12 +57,11 @@ export function computeBill({
   foodTotal,
   mrpTotal,
   distanceKm,
-  cartItemCount,
   penaltyFee = 0,
 }: BillInput): Bill {
   const standardDeliveryFee = 22 + Math.max(0, distanceKm - 2) * 3.5;
   let deliveryFee = standardDeliveryFee;
-  if (cartItemCount >= 200) {
+  if (foodTotal >= 200) {
     deliveryFee = distanceKm <= 5 ? 0 : Math.max(0, standardDeliveryFee - 30);
   }
   deliveryFee = r2(deliveryFee);

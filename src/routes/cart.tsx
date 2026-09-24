@@ -33,7 +33,6 @@ function Cart() {
   const { user } = useSession();
   const lines = useCart();
   const { foodTotal, baseTotal } = cartTotals(lines);
-  const cartItemCount = lines.reduce((sum, line) => sum + line.qty, 0);
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [vendor, setVendor] = useState<{ id: string; stall_name: string; lat: number; lng: number; offer_percent: number | null; offer_label: string | null } | null>(null);
@@ -227,7 +226,7 @@ function Cart() {
   const blockedReason = gate.ok ? null : gate.reason;
   // No automatic MRP discount any more: a discount exists only when the stall runs its own offer.
   const hasLocation = Boolean(vendor && coords);
-  const bill = hasLocation ? computeBill({ settings, foodTotal, mrpTotal: foodTotal, distanceKm, cartItemCount }) : null;
+  const bill = hasLocation ? computeBill({ settings, foodTotal, mrpTotal: foodTotal, distanceKm }) : null;
   const stallOff = stallOfferDiscount(foodTotal, vendor?.offer_percent);
   const couponOff = coupon ? couponDiscount(coupon, foodTotal) : 0;
   const netTotal = bill ? Math.max(0, Math.round((bill.grandTotal - stallOff - couponOff + tip) * 100) / 100) : 0;
