@@ -47,7 +47,11 @@ export function Shell({ children }: { children: ReactNode }) {
               <span
                 className={`grid h-10 w-12 place-items-center rounded-full transition-all ${n.label === "Finds" ? "-mt-5 h-12 w-12 border-4 border-background bg-[url('/food/food-roll.jpg')] bg-cover bg-center text-primary-foreground shadow-[0_10px_22px_-10px_color-mix(in_oklab,var(--color-primary)_85%,transparent)]" : active ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
               >
-                <n.Icon className="h-5 w-5" strokeWidth={2} />
+                {n.label === "Profile" && user?.user_metadata?.avatar_url ? (
+                  <img src={String(user.user_metadata.avatar_url)} alt="" className="h-full w-full rounded-full object-cover" />
+                ) : (
+                  <n.Icon className="h-5 w-5" strokeWidth={2} />
+                )}
               </span>
               <span
                 className={`truncate text-[9px] font-extrabold uppercase ${

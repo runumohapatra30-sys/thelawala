@@ -1,6 +1,7 @@
 import { PwaUpdater } from "@/components/PwaUpdater";
 import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -15,6 +16,7 @@ import { useEffect, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { GOOGLE_CREDENTIAL_EVENT, waitForGoogleIdentity } from "@/lib/googleIdentity";
 
 function NotFoundComponent() {
   return (
@@ -122,6 +124,7 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <script src="https://accounts.google.com/gsi/client" async defer />
       </head>
       <body>
         {children}
@@ -135,6 +138,26 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    let stopWaiting = () => {};
+    const onCredential = async (event: Event) => {
+      const credential = (event as CustomEvent<string>).detail;
+      if (!credential) return;
+      const { error } = await supabase.auth.signInWithIdToken({ provider: "google", token: credential });
+      if (error) toast.error("Google sign-in could not be completed. Please use guest checkout.");
+      else toast.success("Signed in with Google");
+    };
+
+    window.addEventListener(GOOGLE_CREDENTIAL_EVENT, onCredential);
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) stopWaiting = waitForGoogleIdentity(true);
+    });
+    return () => {
+      stopWaiting();
+      window.removeEventListener(GOOGLE_CREDENTIAL_EVENT, onCredential);
+    };
+  }, []);
 
   // Clear all cached data on logout/account switch so the previous
   // account's orders, wallet, etc. never leak into the next session.

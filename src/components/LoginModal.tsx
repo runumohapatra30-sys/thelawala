@@ -1,7 +1,8 @@
 import { X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { isGoogleIdentityConfigured, waitForGoogleIdentity } from "@/lib/googleIdentity";
 
 export const OPEN_LOGIN_EVENT = "thelawala:open-login";
 
@@ -15,55 +16,59 @@ type LoginModalProps = {
 };
 
 export function LoginModal({ open, onClose }: LoginModalProps) {
-  const [mode, setMode] = useState<"phone" | "email">("phone");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setBusy(false);
+        onClose();
+      }
+    });
+    return () => subscription.subscription.unsubscribe();
+  }, [open, onClose]);
 
   if (!open) return null;
 
   const fullPhone = `+91${phone.replace(/\D/g, "").slice(-10)}`;
-  const canContinue = mode === "phone"
-    ? name.trim().length > 1 && phone.replace(/\D/g, "").length === 10
-    : email.includes("@") && password.length >= 6;
+  const canContinue = name.trim().length > 1 && phone.replace(/\D/g, "").length === 10;
 
-  async function continueLogin() {
+  function signInWithGoogle() {
+    if (!isGoogleIdentityConfigured()) {
+      toast("Google sign-in is not configured yet. Continue with your name and mobile number.");
+      return;
+    }
+    setBusy(true);
+    waitForGoogleIdentity(true);
+    setMessage("Choose your Google account to continue.");
+  }
+
+  async function continueAsGuest() {
     setBusy(true);
     setMessage(null);
-    if (mode === "phone") {
-      const { data, error } = await supabase.auth.signInAnonymously({
-        options: { data: { full_name: name.trim(), mobile: fullPhone } },
-      });
-      if (error || !data.user) {
-        setBusy(false);
-        return setMessage("We could not start guest checkout right now. Please try again.");
-      }
-      const { error: profileError } = await supabase.from("profiles").upsert({
-        id: data.user.id,
-        full_name: name.trim(),
-        mobile: fullPhone,
-        email: data.user.email ?? null,
-      });
+    const { data, error } = await supabase.auth.signInAnonymously({
+      options: { data: { full_name: name.trim(), mobile: fullPhone } },
+    });
+    if (error || !data.user) {
       setBusy(false);
-      if (profileError) return setMessage("Your session started, but we could not save your profile. Please try again.");
-      localStorage.setItem("thelawala.guest_name", name.trim());
-      localStorage.setItem("thelawala.guest_mobile", fullPhone);
-      onClose();
-      toast.success(`Welcome, ${name.trim()}`);
-      return;
+      return setMessage("We could not start guest checkout right now. Please try again.");
     }
-
-    if (mode === "email") {
-      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-      setBusy(false);
-      if (error) return setMessage("Email or password is incorrect. Try Phone OTP instead.");
-      onClose();
-      toast.success("You are signed in");
-      return;
-    }
+    const { error: profileError } = await supabase.from("profiles").upsert({
+      id: data.user.id,
+      full_name: name.trim(),
+      mobile: fullPhone,
+      email: data.user.email ?? null,
+    });
+    setBusy(false);
+    if (profileError) return setMessage("Your session started, but we could not save your profile. Please try again.");
+    localStorage.setItem("thelawala.guest_name", name.trim());
+    localStorage.setItem("thelawala.guest_mobile", fullPhone);
+    onClose();
+    toast.success(`Welcome, ${name.trim()}`);
   }
 
   return (
@@ -79,51 +84,28 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Welcome to ThelaWala</p>
             <h2 id="login-modal-title" className="mt-1 font-display text-3xl text-primary">Log in to continue</h2>
-            <p className="mt-1 text-xs text-muted-foreground">Continue instantly with your name and mobile number.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Fast sign-in for your next street food order.</p>
           </div>
           <button type="button" aria-label="Close login" onClick={onClose} className="press grid h-9 w-9 place-items-center rounded-full border border-border text-muted-foreground">
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
-          {(["phone", "email"] as const).map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => { setMode(option); setMessage(null); }}
-              className={`rounded-full py-2 text-xs font-black ${mode === option ? "bg-card text-primary shadow-sm" : "text-muted-foreground"}`}
-            >
-              {option === "phone" ? "Phone / Guest" : "Email & password"}
-            </button>
-          ))}
-        </div>
-
-        {mode === "phone" ? (
-          <div className="mt-3 space-y-2">
-            <label className="block text-xs font-semibold text-muted-foreground">
-              Your name
-              <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Full name" className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary" />
-            </label>
-            <label className="block text-xs font-semibold text-muted-foreground">
-              Mobile number
-            <div className="mt-1 flex rounded-xl border border-border bg-background focus-within:border-primary">
-              <span className="px-3 py-3 text-sm font-bold text-muted-foreground">+91</span>
-              <input value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" placeholder="10-digit number" className="min-w-0 flex-1 rounded-r-xl bg-transparent py-3 pr-3 text-sm outline-none" />
-            </div>
-            </label>
-          </div>
-        ) : (
-          <label className="mt-3 block text-xs font-semibold text-muted-foreground">
-            Email address
-            <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" placeholder="you@example.com" className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary" />
-            <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" placeholder="Password" className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary" />
-          </label>
-        )}
-
-        <button type="button" disabled={busy || !canContinue} onClick={continueLogin} className="press mt-3 w-full rounded-full bg-primary py-3.5 text-sm font-black text-primary-foreground disabled:opacity-50">
-          {busy ? "Please wait..." : mode === "email" ? "Sign in" : "Continue"}
+        <button type="button" onClick={signInWithGoogle} className="press mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-sm font-black text-primary-foreground">
+          <span className="grid h-5 w-5 place-items-center rounded-full bg-white text-xs font-black text-[#4285F4]">G</span>
+          Sign in with Google
         </button>
+        <div className="my-4 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground"><span className="h-px flex-1 bg-border" /> Or continue as guest <span className="h-px flex-1 bg-border" /></div>
+        <div className="space-y-2">
+          <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Your name" className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary" />
+          <div className="flex rounded-xl border border-border bg-background focus-within:border-primary">
+            <span className="px-3 py-3 text-sm font-bold text-muted-foreground">+91</span>
+            <input value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" placeholder="10-digit mobile number" className="min-w-0 flex-1 rounded-r-xl bg-transparent py-3 pr-3 text-sm outline-none" />
+          </div>
+          <button type="button" disabled={busy || !canContinue} onClick={continueAsGuest} className="press w-full rounded-full border border-primary py-3 text-sm font-black text-primary disabled:opacity-50">
+            {busy ? "Please wait..." : "Continue as guest"}
+          </button>
+        </div>
         {message ? <p className="mt-3 text-center text-xs font-semibold text-muted-foreground">{message}</p> : null}
       </section>
     </div>
