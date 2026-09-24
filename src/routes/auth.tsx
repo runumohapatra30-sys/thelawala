@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ThelaLogo } from "@/components/Shell";
-import { waitForGoogleIdentity } from "@/lib/googleIdentity";
+import { isGoogleIdentityConfigured, waitForGoogleIdentity } from "@/lib/googleIdentity";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -71,7 +71,13 @@ export function AuthPage() {
 
   function signInWithGoogle() {
     setBusy(true);
-    waitForGoogleIdentity(true);
+    const stopWaiting = waitForGoogleIdentity(true);
+    if (!isGoogleIdentityConfigured()) {
+      stopWaiting();
+      setBusy(false);
+      setMsg("Google sign-in is not configured yet.");
+      return;
+    }
     setMsg("Choose your Google account to continue.");
   }
 
@@ -82,8 +88,11 @@ export function AuthPage() {
       options: { data: { full_name: name.trim(), mobile: fullPhone } },
     });
     if (error || !data.user) {
+      localStorage.setItem("thelawala.guest_name", name.trim());
+      localStorage.setItem("thelawala.guest_mobile", fullPhone);
       setBusy(false);
-      return setMsg("We could not start your session right now. Please try again.");
+      await goAfterLogin();
+      return;
     }
     const { error: profileError } = await supabase.from("profiles").upsert({
       id: data.user.id,
@@ -97,8 +106,6 @@ export function AuthPage() {
     localStorage.setItem("thelawala.guest_mobile", fullPhone);
     await goAfterLogin();
   }
-
-  const canContinue = name.trim().length > 1 && phone.replace(/\D/g, "").length === 10;
 
   return (
     <div className="food-grid-bg min-h-screen">
@@ -163,7 +170,7 @@ export function AuthPage() {
             </>
 
             <button
-              disabled={busy || !canContinue}
+              disabled={busy}
               onClick={continueAsGuest}
               className="press mt-3 w-full rounded-xl bg-primary py-3.5 text-sm font-black text-primary-foreground disabled:opacity-50"
             >

@@ -2,7 +2,7 @@ import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { waitForGoogleIdentity } from "@/lib/googleIdentity";
+import { isGoogleIdentityConfigured, waitForGoogleIdentity } from "@/lib/googleIdentity";
 
 export const OPEN_LOGIN_EVENT = "thelawala:open-login";
 
@@ -35,11 +35,15 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
   if (!open) return null;
 
   const fullPhone = `+91${phone.replace(/\D/g, "").slice(-10)}`;
-  const canContinue = name.trim().length > 1 && phone.replace(/\D/g, "").length === 10;
-
   function signInWithGoogle() {
     setBusy(true);
-    waitForGoogleIdentity(true);
+    const stopWaiting = waitForGoogleIdentity(true);
+    if (!isGoogleIdentityConfigured()) {
+      stopWaiting();
+      setBusy(false);
+      setMessage("Google sign-in is not configured yet.");
+      return;
+    }
     setMessage("Choose your Google account to continue.");
   }
 
@@ -50,8 +54,12 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
       options: { data: { full_name: name.trim(), mobile: fullPhone } },
     });
     if (error || !data.user) {
+      localStorage.setItem("thelawala.guest_name", name.trim());
+      localStorage.setItem("thelawala.guest_mobile", fullPhone);
       setBusy(false);
-      return setMessage("We could not start guest checkout right now. Please try again.");
+      onClose();
+      toast.success(`Welcome, ${name.trim() || "Guest"}`);
+      return;
     }
     const { error: profileError } = await supabase.from("profiles").upsert({
       id: data.user.id,
@@ -137,7 +145,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
           </div>
           <button
             type="button"
-            disabled={busy || !canContinue}
+            disabled={busy}
             onClick={continueAsGuest}
             className="press w-full rounded-full border border-primary py-3 text-sm font-black text-primary disabled:opacity-50"
           >
