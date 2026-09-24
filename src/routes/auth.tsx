@@ -7,9 +7,9 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in — ThelaWala" },
-      { name: "description", content: "Sign in to ThelaWala with your mobile number, an email code or Google to order street food in 15 minutes." },
+      { name: "description", content: "Continue to ThelaWala with your name and mobile number or email and password." },
       { property: "og:title", content: "Sign in — ThelaWala" },
-      { property: "og:description", content: "Mobile OTP, email code or Google sign-in for Bhubaneswar street food delivery." },
+      { property: "og:description", content: "Fast guest and customer login for Bhubaneswar street food delivery." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -20,25 +20,14 @@ export const Route = createFileRoute("/auth")({
 export function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"phone" | "email">("phone");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
-  const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   const fullPhone = `+91${phone.replace(/\D/g, "").slice(-10)}`;
-
-  function authRedirectUrl() {
-    let next = "/";
-    try {
-      const saved = sessionStorage.getItem("thelawala.redirect");
-      if (saved?.startsWith("/")) next = saved;
-    } catch {
-      next = "/";
-    }
-    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
-  }
 
   async function goAfterLogin() {
     const { data: u } = await supabase.auth.getUser();
@@ -75,54 +64,40 @@ export function AuthPage() {
 
   function switchMode(next: "phone" | "email") {
     setMode(next);
-    setSent(false);
-    setCode("");
     setMsg(null);
   }
 
   async function sendCode() {
     setBusy(true);
     setMsg(null);
-    const { error } =
-      mode === "email"
-        ? await supabase.auth.signInWithOtp({
-            email: email.trim(),
-            options: { emailRedirectTo: authRedirectUrl() },
-          })
-        : await supabase.auth.signInWithOtp({ phone: fullPhone });
-    setBusy(false);
-    if (error) {
-      return setMsg(
-        mode === "phone"
-          ? "We could not send the SMS code right now. Please use email instead."
-          : error.message,
-      );
+    if (mode === "phone") {
+      const { data, error } = await supabase.auth.signInAnonymously({
+        options: { data: { full_name: name.trim(), mobile: fullPhone } },
+      });
+      if (error || !data.user) {
+        setBusy(false);
+        return setMsg("We could not start your session right now. Please try again.");
+      }
+      const { error: profileError } = await supabase.from("profiles").upsert({
+        id: data.user.id,
+        full_name: name.trim(),
+        mobile: fullPhone,
+        email: data.user.email ?? null,
+      });
+      setBusy(false);
+      if (profileError) return setMsg("We could not save your profile. Please try again.");
+      localStorage.setItem("thelawala.guest_name", name.trim());
+      localStorage.setItem("thelawala.guest_mobile", fullPhone);
+      await goAfterLogin();
+      return;
     }
-    setSent(true);
-    setMsg(
-      mode === "email"
-        ? "We emailed you a 6-digit code. It is valid for a few minutes."
-        : `We sent a 6-digit code to ${fullPhone}.`,
-    );
-  }
-
-  async function verify() {
-    setBusy(true);
-    setMsg(null);
-    const { error } =
-      mode === "email"
-        ? await supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: "email" })
-        : await supabase.auth.verifyOtp({ phone: fullPhone, token: code.trim(), type: "sms" });
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
-    if (error) return setMsg("That code did not work. Please check it and try again.");
+    if (error) return setMsg("Email or password is incorrect. Use name and mobile for instant access.");
     await goAfterLogin();
   }
 
-  async function google() {
-    setMsg("OAuth login is not configured yet, please use OTP / Email.");
-  }
-
-  const canSend = mode === "email" ? email.includes("@") : phone.replace(/\D/g, "").length === 10;
+  const canSend = mode === "email" ? email.includes("@") && password.length >= 6 : name.trim().length > 1 && phone.replace(/\D/g, "").length === 10;
 
   return (
     <div className="food-grid-bg min-h-screen">
@@ -142,7 +117,7 @@ export function AuthPage() {
 
           <div className="mt-6 w-full rounded-3xl bg-card p-4 shadow-lg">
             <p className="text-sm font-black">Log in or sign up</p>
-            <p className="text-[11px] text-muted-foreground">Customers, stall owners and delivery partners</p>
+            <p className="text-[11px] text-muted-foreground">Continue instantly with your name and mobile number</p>
 
             <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
               {(["phone", "email"] as const).map((m) => (
@@ -153,7 +128,7 @@ export function AuthPage() {
                     mode === m ? "bg-card text-primary shadow-sm" : "text-muted-foreground"
                   }`}
                 >
-                  {m === "phone" ? "Mobile OTP" : "Email code"}
+                  {m === "phone" ? "Phone / Guest" : "Email & password"}
                 </button>
               ))}
             </div>
@@ -168,9 +143,23 @@ export function AuthPage() {
                   placeholder="you@example.com"
                   className="mt-1 w-full rounded-xl border border-border px-3 py-3 text-sm outline-none focus:border-primary"
                 />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  className="mt-2 w-full rounded-xl border border-border px-3 py-3 text-sm outline-none focus:border-primary"
+                />
               </>
             ) : (
               <>
+                <label className="mt-3 block text-[11px] font-semibold text-muted-foreground">Your name</label>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Full name"
+                  className="mt-1 w-full rounded-xl border border-border px-3 py-3 text-sm outline-none focus:border-primary"
+                />
                 <label className="mt-3 block text-[11px] font-semibold text-muted-foreground">Mobile number</label>
                 <div className="mt-1 flex items-center rounded-xl border border-border focus-within:border-primary">
                   <span className="px-3 text-sm font-bold text-muted-foreground">+91</span>
@@ -185,44 +174,14 @@ export function AuthPage() {
               </>
             )}
 
-            {sent ? (
-              <>
-                <label className="mt-3 block text-[11px] font-semibold text-muted-foreground">Enter the code</label>
-                <input
-                  inputMode="numeric"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="6-digit code"
-                  className="mt-1 w-full rounded-xl border border-border px-3 py-3 text-center text-lg font-bold tracking-[0.4em] outline-none focus:border-primary"
-                />
-                <button
-                  disabled={busy || code.length < 4}
-                  onClick={verify}
-                  className="press mt-3 w-full rounded-xl bg-primary py-3.5 text-sm font-black text-primary-foreground disabled:opacity-50"
-                >
-                  Continue
-                </button>
-                <button onClick={sendCode} className="mt-2 w-full text-xs font-bold text-primary">
-                  Resend code
-                </button>
-              </>
-            ) : (
-              <button
-                disabled={busy || !canSend}
-                onClick={sendCode}
-                className="press mt-3 w-full rounded-xl bg-primary py-3.5 text-sm font-black text-primary-foreground disabled:opacity-50"
-              >
-                {busy ? "Sending…" : "Continue"}
-              </button>
-            )}
-            {msg ? <p className="mt-2 text-xs text-muted-foreground">{msg}</p> : null}
-
             <button
-              onClick={google}
-              className="press mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-bold"
+              disabled={busy || !canSend}
+              onClick={sendCode}
+              className="press mt-3 w-full rounded-xl bg-primary py-3.5 text-sm font-black text-primary-foreground disabled:opacity-50"
             >
-              Continue with Google
+              {busy ? "Please wait…" : mode === "email" ? "Sign in" : "Continue"}
             </button>
+            {msg ? <p className="mt-2 text-xs text-muted-foreground">{msg}</p> : null}
 
             <div className="mt-3 grid grid-cols-2 gap-2">
               <Link to="/vendor" className="rounded-xl border border-border py-2.5 text-center text-[11px] font-black text-primary">
