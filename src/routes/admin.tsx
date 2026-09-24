@@ -79,7 +79,7 @@ function Admin() {
             {user ? "This account does not have administrator access." : "Sign in with an administrator account."}
           </p>
           {!user ? (
-            <Link to="/auth" className="mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">Sign in</Link>
+            <Link to="/login" className="mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">Sign in</Link>
           ) : null}
         </div>
       </Shell>

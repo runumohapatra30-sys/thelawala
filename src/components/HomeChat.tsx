@@ -23,7 +23,7 @@ export function HomeChat({ userId }: { userId: string | undefined }) {
 
   function openChat() {
     if (!userId) {
-      navigate({ to: "/auth" });
+      navigate({ to: "/login" });
       return;
     }
     setOpen(true);

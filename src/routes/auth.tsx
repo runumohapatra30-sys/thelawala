@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { ThelaLogo } from "@/components/Shell";
 
 export const Route = createFileRoute("/auth")({
@@ -18,7 +17,7 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-function AuthPage() {
+export function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"phone" | "email">("phone");
   const [email, setEmail] = useState("");
@@ -30,6 +29,17 @@ function AuthPage() {
   const [googleOn, setGoogleOn] = useState(true);
 
   const fullPhone = `+91${phone.replace(/\D/g, "").slice(-10)}`;
+
+  function authRedirectUrl() {
+    let next = "/";
+    try {
+      const saved = sessionStorage.getItem("thelawala.redirect");
+      if (saved?.startsWith("/")) next = saved;
+    } catch {
+      next = "/";
+    }
+    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+  }
 
   async function goAfterLogin() {
     const { data: u } = await supabase.auth.getUser();
@@ -83,7 +93,7 @@ function AuthPage() {
       mode === "email"
         ? await supabase.auth.signInWithOtp({
             email: email.trim(),
-            options: { emailRedirectTo: window.location.origin },
+            options: { emailRedirectTo: authRedirectUrl() },
           })
         : await supabase.auth.signInWithOtp({ phone: fullPhone });
     setBusy(false);
@@ -115,12 +125,14 @@ function AuthPage() {
   }
 
   async function google() {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: authRedirectUrl(),
+        queryParams: { access_type: "offline", prompt: "select_account" },
+      },
     });
-    if (result.error) return setMsg("Google sign-in failed. Try the code instead.");
-    if (result.redirected) return;
-    await goAfterLogin();
+    if (error) setMsg("Google sign-in failed. Try the code instead.");
   }
 
   const canSend = mode === "email" ? email.includes("@") : phone.replace(/\D/g, "").length === 10;

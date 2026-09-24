@@ -53,7 +53,7 @@ export function LogoutButton({ className = "" }: { className?: string }) {
     <button
       onClick={async () => {
         await supabase.auth.signOut();
-        navigate({ to: "/auth", replace: true });
+        navigate({ to: "/login", replace: true });
       }}
       className={`press shrink-0 rounded-full bg-card/80 px-3 py-1.5 text-[11px] font-bold text-primary ${className}`}
     >

@@ -276,7 +276,7 @@ function Cart() {
 
   async function place() {
     setErr(null);
-    if (!user) return navigate({ to: "/auth" });
+    if (!user) return navigate({ to: "/login" });
     if (!form.full_name || form.mobile.length < 10 || form.pincode.length < 6 || !form.line)
       return setErr("Please fill name, 10-digit mobile, 6-digit pincode and full address.");
     if (!coords) return setErr("Tap “Use my current location” — every order needs your live location.");

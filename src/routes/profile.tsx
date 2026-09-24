@@ -61,7 +61,7 @@ function Profile() {
         </header>
         <div className="py-20 text-center">
           <p className="text-sm text-muted-foreground">Sign in to see your account.</p>
-          <Link to="/auth" className="press mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
+          <Link to="/login" className="press mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
             Sign in
           </Link>
         </div>

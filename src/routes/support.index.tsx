@@ -91,7 +91,7 @@ function SupportHome() {
         {loading ? <ThaliwalaLoader /> : !user ? (
           <div className="py-16 text-center">
             <p className="text-sm text-muted-foreground">Sign in to chat with ThelaWala Care.</p>
-            <Link to="/auth" className="mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
+            <Link to="/login" className="mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
               Sign in
             </Link>
           </div>

@@ -406,7 +406,7 @@ function Home() {
               ) : null}
             </Link>
             <Link
-              to={user ? "/profile" : "/auth"}
+              to={user ? "/profile" : "/login"}
               aria-label="Your account"
               className="press grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-primary"
             >

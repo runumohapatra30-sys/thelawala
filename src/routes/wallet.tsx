@@ -59,7 +59,7 @@ function Wallet() {
         <PortalHeader title="Wallet" />
         <div className="py-20 text-center">
           <p className="text-sm text-muted-foreground">Sign in to use your wallet.</p>
-          <Link to="/auth" className="mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">Sign in</Link>
+          <Link to="/login" className="mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">Sign in</Link>
         </div>
       </Shell>
     );
