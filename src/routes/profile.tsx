@@ -218,11 +218,11 @@ function QuickCard({ to, emoji, label, note }: { to: string; emoji: string; labe
 }
 
 function Metric({ to, value, label, icon }: { to: string; value: string; label: string; icon: React.ReactNode }) {
-  return <Link to={to} className="press rounded-lg border border-border bg-card p-3 text-center shadow-card"><span className="mx-auto mb-1 grid h-7 w-7 place-items-center rounded-full bg-brand-soft text-primary">{icon}</span><span className="block truncate text-sm font-black">{value}</span><span className="text-[10px] font-bold text-muted-foreground">{label}</span></Link>;
+  return <Link to={to} className="press rounded-2xl border border-border bg-card p-3 text-center shadow-card"><span className="mx-auto mb-1 grid h-7 w-7 place-items-center rounded-full bg-brand-soft text-primary">{icon}</span><span className="block truncate text-sm font-black">{value}</span><span className="text-[10px] font-bold text-muted-foreground">{label}</span></Link>;
 }
 
 function MenuIcon({ children }: { children: React.ReactNode }) {
-  return <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-soft text-primary [&_svg]:h-4 [&_svg]:w-4">{children}</span>;
+  return <span className="grid h-9 w-9 place-items-center rounded-2xl bg-brand-soft text-primary [&_svg]:h-4 [&_svg]:w-4">{children}</span>;
 }
 
 function MenuLink({ icon, label, to }: { icon: React.ReactNode; label: string; to: string }) {

@@ -290,7 +290,7 @@ function Home() {
             const off = vendorOffer[i.vendor_id] ?? 0;
             const offerPrice = off > 0 ? Math.round(shownPrice * (100 - off)) / 100 : shownPrice;
             return (
-              <div key={i.id} style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }} className="press rise-in overflow-hidden rounded-2xl bg-card p-2.5 shadow-card hover:-translate-y-0.5">
+              <div key={i.id} style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }} className="press rise-in overflow-hidden rounded-3xl bg-card p-2.5 shadow-card hover:-translate-y-0.5">
                 <div className="product-tile relative aspect-square">
                   <img
                     src={i.photo_url ?? foodImage(i.name)}
@@ -356,7 +356,7 @@ function Home() {
     <Shell>
        <header
         style={isDefaultTheme ? { backgroundColor: topBarColor } : undefined}
-         className={`relative z-20 flex min-w-0 flex-col gap-4 overflow-hidden rounded-b-[2rem] px-5 pb-6 pt-4 shadow-sm transition-colors duration-500 ${isDefaultTheme ? "bg-primary text-primary-foreground" : theme.wrapper}`}
+         className={`relative z-20 flex min-w-0 flex-col gap-4 overflow-hidden rounded-b-[2.25rem] px-5 pb-7 pt-4 shadow-sm transition-colors duration-500 ${isDefaultTheme ? "bg-primary text-primary-foreground" : theme.wrapper}`}
       >
          {isDefaultTheme ? <div className="pointer-events-none absolute inset-0 bg-primary" /> : null}
         {festiveTheme ? <FestiveAmbience /> : null}
@@ -419,7 +419,7 @@ function Home() {
           </div>
         </div>
 
-        <div className="relative z-10 flex min-w-0 items-center gap-2.5 rounded-2xl bg-card px-4 py-3.5 text-card-foreground shadow-[0_18px_38px_-18px_rgba(15,23,42,0.65)] ring-1 ring-border/70">
+        <div className="relative z-10 flex min-w-0 items-center gap-2.5 rounded-full bg-card px-4 py-3.5 text-card-foreground shadow-[0_18px_38px_-18px_rgba(15,23,42,0.65)] ring-1 ring-border/70">
           <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2.2">
             <circle cx="11" cy="11" r="6.5" /><path d="M16 16l4 4" strokeLinecap="round" />
           </svg>
@@ -510,7 +510,7 @@ function Home() {
         {user?.id ? <ActiveOrderTracker userId={user.id} /> : null}
         {vendors.length > 0 ? (
           <section className="px-5 pt-2">
-            <h2 className="text-[17px] font-extrabold">Your stalls</h2>
+            <h2 className="font-display text-2xl text-primary">Your stalls</h2>
             <p className="mt-0.5 text-xs font-medium text-muted-foreground">Tap a stall to see only their food</p>
             <div className="mt-3 flex snap-x gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {vendors.map((v) => (

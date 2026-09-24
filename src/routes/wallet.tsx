@@ -94,7 +94,7 @@ function Wallet() {
     <Shell>
       <PortalHeader title="Wallet" subtitle="Money for faster checkout" />
        <div className="space-y-3 p-4">
-         <div className="rise-in shine rounded-2xl bg-primary p-5 text-primary-foreground shadow-card">
+         <div className="rise-in shine rounded-3xl bg-primary p-5 text-primary-foreground shadow-card">
            <p className="flex items-center gap-1.5 text-xs font-bold opacity-75"><span className="h-2 w-2 rounded-full bg-brand" /> Available balance</p>
            <p className="mt-1 font-display text-5xl">{inr(balance)}</p>
           {status !== "ACTIVE" ? (
@@ -103,7 +103,7 @@ function Wallet() {
         </div>
 
         <div className="rise-in card-elevated space-y-2 p-4" style={{ animationDelay: "60ms" }}>
-          <p className="text-sm font-bold">Add money</p>
+          <p className="font-display text-2xl text-primary">Add balance</p>
           <div className="flex gap-2">
             {[100, 200, 500].map((v) => (
               <button key={v} onClick={() => setAmount(String(v))} className="flex-1 rounded-xl border border-border py-2 text-sm font-bold">
@@ -121,7 +121,7 @@ function Wallet() {
           <button
             disabled={busy}
             onClick={addMoney}
-            className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+            className="w-full rounded-full bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
           >
             {busy ? "Opening payment…" : "Add money"}
           </button>

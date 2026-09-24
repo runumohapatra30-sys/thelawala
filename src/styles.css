@@ -1,6 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -75,48 +76,48 @@
 
 :root {
   --radius: 0.85rem;
-  --background: oklch(0.977 0.008 88);
-  --foreground: oklch(0.24 0.03 157);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.24 0.03 157);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.24 0.03 157);
-  --primary: oklch(0.325 0.077 156);
-  --primary-foreground: oklch(1 0 0);
-  --brand: oklch(0.86 0.18 92);
-  --brand-foreground: oklch(0.24 0.03 157);
-  --brand-soft: oklch(0.96 0.045 98);
-  --success: oklch(0.325 0.077 156);
-  --success-foreground: oklch(1 0 0);
-  --festive-header-foreground: oklch(0.99 0.005 90);
-  --secondary: oklch(0.985 0.002 250);
-  --secondary-foreground: oklch(0.24 0.03 157);
-  --muted: oklch(0.972 0.004 100);
-  --muted-foreground: oklch(0.552 0.019 258);
-  --accent: oklch(0.86 0.18 92);
-  --accent-foreground: oklch(0.24 0.03 157);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.925 0.008 120);
-  --input: oklch(0.925 0.008 120);
-  --ring: oklch(0.325 0.077 156);
-  --tile: oklch(0.941 0.029 143);
-  --coupon: oklch(0.974 0.025 72);
-  --coupon-strong: oklch(0.936 0.061 69);
+  --background: #fbf9f3;
+  --foreground: #173126;
+  --card: #ffffff;
+  --card-foreground: #173126;
+  --popover: #ffffff;
+  --popover-foreground: #173126;
+  --primary: #00472f;
+  --primary-foreground: #fffdf7;
+  --brand: #d7e9bf;
+  --brand-foreground: #173126;
+  --brand-soft: #f5efe6;
+  --success: #0b3b24;
+  --success-foreground: #fffdf7;
+  --festive-header-foreground: #fffdf7;
+  --secondary: #f5efe6;
+  --secondary-foreground: #173126;
+  --muted: #f5efe6;
+  --muted-foreground: #606863;
+  --accent: #e5b85c;
+  --accent-foreground: #173126;
+  --destructive: #b54a3f;
+  --destructive-foreground: #fffdf7;
+  --border: #e5e6dc;
+  --input: #dfe4da;
+  --ring: #00472f;
+  --tile: #f5efe6;
+  --coupon: #fff6d9;
+  --coupon-strong: #f1dfae;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
-  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --sidebar: #f5efe6;
+  --sidebar-foreground: #173126;
+  --sidebar-primary: #00472f;
+  --sidebar-primary-foreground: #fffdf7;
+  --sidebar-accent: #e8eee3;
+  --sidebar-accent-foreground: #173126;
+  --sidebar-border: #e5e6dc;
+  --sidebar-ring: #00472f;
+  --shadow-soft: 0 10px 30px rgba(0, 71, 47, 0.06);
 }
 
 
@@ -184,14 +185,14 @@
 
 @utility card-soft {
   background: var(--color-card);
-  border-radius: 1rem;
+  border-radius: 1.5rem;
   border: 1px solid color-mix(in oklab, var(--color-border) 72%, white);
   box-shadow: var(--shadow-soft);
 }
 
 @utility card-elevated {
   background: var(--color-card);
-  border-radius: 1rem;
+  border-radius: 1.5rem;
   border: 1px solid color-mix(in oklab, var(--color-border) 60%, white);
   box-shadow: 0 18px 40px -26px color-mix(in oklab, var(--color-primary) 26%, transparent), 0 2px 6px color-mix(in oklab, var(--color-foreground) 5%, transparent);
 }
@@ -306,8 +307,8 @@
 }
 
 @utility brand-header {
-  background: linear-gradient(180deg, var(--color-brand) 0%, color-mix(in oklab, var(--color-brand) 88%, white) 100%);
-  color: var(--color-brand-foreground);
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
 }
 
 @utility press {

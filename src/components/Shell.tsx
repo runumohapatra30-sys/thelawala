@@ -1,41 +1,26 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { CircleUserRound, Grid2X2, House, RotateCcw } from "lucide-react";
+import { CircleUserRound, Grid2X2, House, Play, RotateCcw } from "lucide-react";
 import type { ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const NAV = [
-  {
-    to: "/",
-    label: "Home",
-    Icon: House,
-  },
-  {
-    to: "/orders",
-    label: "Order Again",
-    Icon: RotateCcw,
-  },
-  {
-    to: "/categories",
-    label: "Categories",
-    Icon: Grid2X2,
-  },
-  {
-    to: "/profile",
-    label: "Account",
-    Icon: CircleUserRound,
-  },
+  { to: "/", label: "Today", Icon: House },
+  { to: "/categories", label: "Aisles", Icon: Grid2X2 },
+  { to: "/", label: "Finds", Icon: Play },
+  { to: "/orders", label: "Reorder", Icon: RotateCcw },
+  { to: "/profile", label: "Profile", Icon: CircleUserRound },
 ];
 
 export function Shell({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto min-h-screen w-full max-w-[480px] bg-background pb-36 shadow-[0_0_48px_color-mix(in_oklab,var(--color-primary)_10%,transparent)]">
+      <div className="mx-auto min-h-screen w-full max-w-[520px] bg-background pb-36 shadow-[0_0_48px_color-mix(in_oklab,var(--color-primary)_10%,transparent)]">
         {children}
       </div>
-      <nav className="fixed inset-x-0 bottom-3 z-40 mx-auto grid w-[calc(100%-24px)] max-w-[440px] grid-cols-4 items-center rounded-[1.5rem] border border-border bg-card px-2 py-2 shadow-[0_18px_45px_-20px_color-mix(in_oklab,var(--color-primary)_45%,transparent)]">
+      <nav className="fixed inset-x-0 bottom-3 z-40 mx-auto grid w-[calc(100%-24px)] max-w-[480px] grid-cols-5 items-end rounded-full border border-border bg-card/95 px-2 py-2 shadow-[0_18px_45px_-20px_color-mix(in_oklab,var(--color-primary)_35%,transparent)] backdrop-blur-xl">
         {NAV.map((n) => {
-          const active = n.to === "/" ? path === "/" : path.startsWith(n.to);
+          const active = n.label === "Today" ? path === "/" : n.label === "Finds" ? false : path.startsWith(n.to);
           return (
             <Link
               key={n.to}
@@ -43,17 +28,13 @@ export function Shell({ children }: { children: ReactNode }) {
               className="press flex min-w-0 flex-col items-center gap-1"
             >
               <span
-                className={`grid h-10 w-12 place-items-center rounded-xl transition-all ${
-                  active
-                    ? "bg-primary text-primary-foreground shadow-[0_10px_22px_-10px_color-mix(in_oklab,var(--color-primary)_85%,transparent)]"
-                    : "text-muted-foreground"
-                }`}
+                className={`grid h-10 w-12 place-items-center rounded-full transition-all ${n.label === "Finds" ? "-mt-5 h-12 w-12 border-4 border-background bg-primary text-primary-foreground shadow-[0_10px_22px_-10px_color-mix(in_oklab,var(--color-primary)_85%,transparent)]" : active ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
               >
                 <n.Icon className="h-5 w-5" strokeWidth={2} />
               </span>
               <span
                 className={`truncate text-[9px] font-extrabold uppercase ${
-                  active ? "text-foreground" : "text-muted-foreground"
+                  active || n.label === "Finds" ? "text-foreground" : "text-muted-foreground"
                 }`}
               >
                 {n.label}
@@ -83,7 +64,7 @@ export function LogoutButton({ className = "" }: { className?: string }) {
 
 export function PortalHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <header className="brand-header sticky top-0 z-30 rounded-b-[2rem] px-4 py-4 shadow-[0_16px_34px_-26px_rgba(15,23,42,0.55)]">
+    <header className="brand-header sticky top-0 z-30 rounded-b-[2.25rem] px-4 pb-5 pt-4 shadow-[0_18px_34px_-24px_color-mix(in_oklab,var(--color-primary)_45%,transparent)]">
       <div className="flex items-center gap-3">
         <Link to="/" className="press grid h-10 w-10 shrink-0 place-items-center rounded-2xl glass-chip">
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -91,7 +72,7 @@ export function PortalHeader({ title, subtitle }: { title: string; subtitle?: st
           </svg>
         </Link>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-base font-extrabold">{title}</h1>
+          <h1 className="truncate font-display text-3xl leading-none">{title}</h1>
           {subtitle ? <p className="truncate text-xs font-medium opacity-80">{subtitle}</p> : null}
         </div>
         <LogoutButton />
@@ -122,7 +103,7 @@ export function GreenButton({
   return (
     <button
       {...props}
-      className={`press w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50 ${props.className ?? ""}`}
+      className={`press w-full rounded-full bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50 ${props.className ?? ""}`}
     >
       {children}
     </button>

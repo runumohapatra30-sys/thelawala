@@ -232,11 +232,19 @@ function Cart() {
   const netTotal = bill ? Math.max(0, Math.round((bill.grandTotal - stallOff - couponOff + tip) * 100) / 100) : 0;
   const walletUse = bill && useWallet ? Math.min(walletBalance, netTotal) : 0;
   const payable = bill ? Math.round((netTotal - walletUse) * 100) / 100 : 0;
-  const unlockTarget = foodTotal < 199 ? 199 : Math.ceil(foodTotal / 100) * 100;
+  const unlockTarget = foodTotal < 200 ? 200 : Math.ceil(foodTotal / 100) * 100;
   const unlockLeft = Math.max(0, unlockTarget - foodTotal);
   const unlockProgress = Math.min(100, (foodTotal / unlockTarget) * 100);
   const standardDeliveryFee = bill ? 22 + Math.max(0, bill.distanceKm - 2) * 3.5 : 0;
   const deliverySavings = bill ? Math.max(0, standardDeliveryFee - bill.deliveryFee) : 0;
+  const freeDeliveryUnlocked = Boolean(bill && foodTotal >= 200 && bill.distanceKm <= 5);
+  const deliveryPromo = freeDeliveryUnlocked
+    ? "You've unlocked free delivery"
+    : bill && foodTotal >= 200
+      ? "₹30 delivery discount unlocked"
+      : foodTotal < 200
+        ? `Add ${inr(unlockLeft)} more to unlock free delivery`
+        : "Choose an address to unlock free delivery";
   const savings = Math.round((stallOff + couponOff + deliverySavings) * 100) / 100;
   const instructionOptions = [
     { label: "Avoid ringing bell", Icon: BellOff },
@@ -420,14 +428,14 @@ function Cart() {
 
   return (
     <Shell>
-      <div className="bg-primary px-5 pb-6 pt-5 text-primary-foreground">
-        <p className="text-[11px] font-black uppercase opacity-70">Your basket</p>
-        <h1 className="font-display text-4xl">Checkout</h1>
+      <div className="rounded-b-[2.25rem] bg-primary px-5 pb-7 pt-5 text-primary-foreground">
+        <p className="text-[11px] font-black uppercase tracking-[0.18em] opacity-70">Your basket</p>
+        <h1 className="font-display text-4xl">Your Cart</h1>
         <p className="text-xs font-semibold opacity-75">{vendor?.stall_name ?? "Your order"} · {lines.reduce((sum, line) => sum + line.qty, 0)} items</p>
       </div>
       <div className="space-y-3 p-4 pb-36">
-        <div className="rounded-lg border border-brand bg-brand-soft p-3 shadow-card">
-          <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /><p className="text-sm font-black">{unlockLeft > 0 ? `Add ${inr(unlockLeft)} more to unlock a free sweet` : "Free sweet unlocked!"}</p></div>
+        <div className="rounded-2xl border border-brand bg-brand-soft p-3 shadow-card">
+          <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /><p className="text-sm font-black">{deliveryPromo}</p></div>
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-card"><div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${unlockProgress}%` }} /></div>
         </div>
         <div className="card-elevated rise-in grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border border-border p-3">
@@ -452,7 +460,7 @@ function Cart() {
                   <p className="truncate text-sm font-semibold">{l.name}</p>
                   <p className="text-xs text-muted-foreground">{l.unit}</p>
                 </div>
-                <div className="flex items-center gap-2 rounded-lg bg-primary px-2 py-1 text-primary-foreground">
+                <div className="flex items-center gap-2 rounded-full bg-primary px-2.5 py-1 text-primary-foreground">
                   <button aria-label="Remove one" onClick={() => cart.remove(l.itemId)} className="px-1 font-bold">−</button>
                   <span className="text-xs font-bold">{l.qty}</span>
                   <button aria-label="Add one" onClick={() => cart.add(l)} className="px-1 font-bold">+</button>
