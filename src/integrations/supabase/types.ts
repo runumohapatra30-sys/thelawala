@@ -188,6 +188,54 @@ export type Database = {
         }
         Relationships: []
       }
+      app_promotions: {
+        Row: {
+          badge_text: string
+          cashback_text: string | null
+          created_at: string
+          cta_button_text: string
+          description_1: string | null
+          description_2: string | null
+          id: string
+          is_active: boolean
+          offer_subtitle: string | null
+          offer_title: string | null
+          target_route: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          badge_text?: string
+          cashback_text?: string | null
+          created_at?: string
+          cta_button_text?: string
+          description_1?: string | null
+          description_2?: string | null
+          id?: string
+          is_active?: boolean
+          offer_subtitle?: string | null
+          offer_title?: string | null
+          target_route?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          badge_text?: string
+          cashback_text?: string | null
+          created_at?: string
+          cta_button_text?: string
+          description_1?: string | null
+          description_2?: string | null
+          id?: string
+          is_active?: boolean
+          offer_subtitle?: string | null
+          offer_title?: string | null
+          target_route?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       app_theme_config: {
         Row: {
           current_bg_color: string
@@ -489,6 +537,65 @@ export type Database = {
           used_count?: number
         }
         Relationships: []
+      }
+      curated_bundles: {
+        Row: {
+          bundle_subtitle: string
+          bundle_title: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          item_name: string
+          menu_item_id: string
+          offer_price: number
+          original_price: number
+          sort_order: number
+          tag: string | null
+          updated_at: string
+        }
+        Insert: {
+          bundle_subtitle?: string
+          bundle_title?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          item_name: string
+          menu_item_id: string
+          offer_price: number
+          original_price: number
+          sort_order?: number
+          tag?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bundle_subtitle?: string
+          bundle_title?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          item_name?: string
+          menu_item_id?: string
+          offer_price?: number
+          original_price?: number
+          sort_order?: number
+          tag?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curated_bundles_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: true
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       delivery_partners: {
         Row: {
