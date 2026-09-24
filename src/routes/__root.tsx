@@ -131,7 +131,6 @@ function RootShell({ children }: { children: ReactNode }) {
         <Toaster position="top-center" richColors />
         <Scripts />
       </body>
-
     </html>
   );
 }
@@ -144,9 +143,22 @@ function RootComponent() {
     const onCredential = async (event: Event) => {
       const credential = (event as CustomEvent<string>).detail;
       if (!credential) return;
-      const { error } = await supabase.auth.signInWithIdToken({ provider: "google", token: credential });
-      if (error) toast.error("Google sign-in could not be completed. Please use guest checkout.");
-      else toast.success("Signed in with Google");
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: "google",
+        token: credential,
+      });
+      if (error || !data.user) {
+        toast.error("Google sign-in could not be completed. Please use guest checkout.");
+        return;
+      }
+      const metadata = data.user.user_metadata ?? {};
+      await supabase.from("profiles").upsert({
+        id: data.user.id,
+        full_name: String(metadata.full_name ?? metadata.name ?? ""),
+        email: data.user.email ?? null,
+        avatar_url: metadata.avatar_url ?? metadata.picture ?? null,
+      });
+      toast.success("Signed in with Google");
     };
 
     window.addEventListener(GOOGLE_CREDENTIAL_EVENT, onCredential);

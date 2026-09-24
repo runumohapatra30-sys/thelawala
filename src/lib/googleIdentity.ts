@@ -1,10 +1,15 @@
 export const GOOGLE_CREDENTIAL_EVENT = "thelawala:google-credential";
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID";
+const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID";
 
 type GoogleCredentialResponse = { credential: string };
 type GoogleId = {
-  initialize: (options: { client_id: string; callback: (response: GoogleCredentialResponse) => void; auto_select?: boolean; cancel_on_tap_outside?: boolean }) => void;
+  initialize: (options: {
+    client_id: string;
+    callback: (response: GoogleCredentialResponse) => void;
+    auto_select?: boolean;
+    cancel_on_tap_outside?: boolean;
+  }) => void;
   prompt: () => void;
 };
 
@@ -15,7 +20,7 @@ declare global {
 }
 
 export function isGoogleIdentityConfigured() {
-  return Boolean(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== "YOUR_GOOGLE_CLIENT_ID");
+  return Boolean(GOOGLE_CLIENT_ID);
 }
 
 export function initializeGoogleIdentity(prompt = false) {
@@ -24,7 +29,9 @@ export function initializeGoogleIdentity(prompt = false) {
   googleId.initialize({
     client_id: GOOGLE_CLIENT_ID,
     callback: (response) => {
-      window.dispatchEvent(new CustomEvent(GOOGLE_CREDENTIAL_EVENT, { detail: response.credential }));
+      window.dispatchEvent(
+        new CustomEvent(GOOGLE_CREDENTIAL_EVENT, { detail: response.credential }),
+      );
     },
     cancel_on_tap_outside: true,
   });
