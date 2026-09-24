@@ -23,12 +23,12 @@ export function Shell({ children }: { children: ReactNode }) {
           const active = n.label === "Today" ? path === "/" : n.label === "Finds" ? false : path.startsWith(n.to);
           return (
             <Link
-              key={n.to}
+              key={n.label}
               to={n.to}
               className="press flex min-w-0 flex-col items-center gap-1"
             >
               <span
-                className={`grid h-10 w-12 place-items-center rounded-full transition-all ${n.label === "Finds" ? "-mt-5 h-12 w-12 border-4 border-background bg-primary text-primary-foreground shadow-[0_10px_22px_-10px_color-mix(in_oklab,var(--color-primary)_85%,transparent)]" : active ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                className={`grid h-10 w-12 place-items-center rounded-full transition-all ${n.label === "Finds" ? "-mt-5 h-12 w-12 border-4 border-background bg-[url('/food/food-roll.jpg')] bg-cover bg-center text-primary-foreground shadow-[0_10px_22px_-10px_color-mix(in_oklab,var(--color-primary)_85%,transparent)]" : active ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
               >
                 <n.Icon className="h-5 w-5" strokeWidth={2} />
               </span>

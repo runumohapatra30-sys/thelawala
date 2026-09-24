@@ -76,7 +76,7 @@
 
 :root {
   --radius: 0.85rem;
-  --background: #fbf9f3;
+  --background: #faf8f2;
   --foreground: #173126;
   --card: #ffffff;
   --card-foreground: #173126;
@@ -86,7 +86,7 @@
   --primary-foreground: #fffdf7;
   --brand: #d7e9bf;
   --brand-foreground: #173126;
-  --brand-soft: #f5efe6;
+  --brand-soft: #f7f5ee;
   --success: #0b3b24;
   --success-foreground: #fffdf7;
   --festive-header-foreground: #fffdf7;

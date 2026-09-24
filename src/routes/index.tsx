@@ -21,8 +21,8 @@ import { DynamicPageRenderer, type SectionRegistry } from "@/components/DynamicP
 import { FestiveAmbience, FestiveHero, FestiveSections } from "@/components/FestiveSections";
 import { useHomeSections } from "@/lib/homeSections";
 import { FestivePhotoStrip } from "@/components/FestivePhotoStrip";
-import { activeThemeColor, themeStyle, useTopBarTheme } from "@/lib/appTheme";
-import { Bike, Gift, Heart, Plus, Utensils, Wallet, X, Zap } from "lucide-react";
+import { themeStyle, useTopBarTheme } from "@/lib/appTheme";
+import { ArrowRight, Bike, Coffee, Gift, Heart, MapPin, Plus, Search, ShoppingBag, Utensils, Wallet, X, Zap } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -63,6 +63,16 @@ const TINTS = [
   "bg-[color-mix(in_oklab,var(--color-chart-3)_12%,white)]",
 ];
 
+const RIBBON_CATEGORIES = [
+  { label: "All", icon: "✦" },
+  { label: "Fresh", icon: "🥬" },
+  { label: "New Launch", icon: "✹" },
+  { label: "Milk & Bread", icon: "🥛" },
+  { label: "Groceries", icon: "⌁" },
+];
+
+const PRODUCT_TINTS = ["bg-[#E5F0E6]", "bg-[#F7F0E2]", "bg-[#FFF5C9]", "bg-[#E8EEF2]"];
+
 function Home() {
   const { user } = useSession();
   const navigate = useNavigate();
@@ -84,9 +94,7 @@ function Home() {
   const [vendorFilter, setVendorFilter] = useState<string | null>(null);
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const topBarTheme = useTopBarTheme();
-  const topBarColor = activeThemeColor(topBarTheme);
   const theme = themeStyle(topBarTheme?.theme_token);
-  const isDefaultTheme = theme.token === "DEFAULT_YELLOW";
   const homeSections = useHomeSections();
   const festiveTheme = homeSections.find((s) => s.section_type === "FESTIVE_GRID_4" && s.cards.some((c) => c.title || c.image_url)) ?? null;
   const otherSections = festiveTheme ? homeSections.filter((s) => s.id !== festiveTheme.id) : homeSections;
@@ -290,12 +298,12 @@ function Home() {
             const off = vendorOffer[i.vendor_id] ?? 0;
             const offerPrice = off > 0 ? Math.round(shownPrice * (100 - off)) / 100 : shownPrice;
             return (
-              <div key={i.id} style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }} className="press rise-in overflow-hidden rounded-3xl bg-card p-2.5 shadow-card hover:-translate-y-0.5">
-                <div className="product-tile relative aspect-square">
+              <div key={i.id} style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }} className="press rise-in overflow-visible rounded-2xl bg-white p-2 shadow-card hover:-translate-y-0.5">
+                <div className={`product-tile relative aspect-square overflow-visible ${PRODUCT_TINTS[idx % PRODUCT_TINTS.length]}`}>
                   <img
                     src={i.photo_url ?? foodImage(i.name)}
                     alt={i.name}
-                    className="h-full w-full object-contain p-2"
+                    className="h-full w-full rounded-2xl object-contain p-2"
                   />
                   {off > 0 ? (
                     <span className="absolute left-2 top-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-extrabold text-primary-foreground shadow-md">
@@ -316,10 +324,26 @@ function Home() {
                       <Heart className="h-4 w-4" fill={favs.includes(i.id) ? "currentColor" : "none"} />
                     </button>
                   ) : null}
+                  {!i.in_stock ? null : line ? (
+                    <div className="absolute -bottom-3 right-2 z-20 flex items-center gap-1 rounded-full border border-primary bg-white px-1.5 py-1 text-primary shadow-sm">
+                      <button aria-label="Remove one" onClick={() => cart.remove(i.id)} className="press grid h-6 w-6 place-items-center rounded-full text-sm font-bold">−</button>
+                      <span className="min-w-3 text-center text-[10px] font-extrabold">{line.qty}</span>
+                      <button aria-label="Add one" onClick={() => add(i)} className="press grid h-6 w-6 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground">+</button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => add(i)}
+                      aria-label={`Add ${i.name}`}
+                      className="press absolute -bottom-3 right-2 z-20 grid h-8 w-8 place-items-center rounded-full border border-primary bg-white text-primary shadow-sm"
+                    >
+                      <Plus className="h-4 w-4" strokeWidth={2.4} />
+                    </button>
+                  )}
                 </div>
-                <p className="mt-2.5 truncate px-0.5 text-[13px] font-extrabold">{i.name}</p>
+                <p className="mt-4 truncate px-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-primary">{off > 0 ? "Member's pick" : vendorName[i.vendor_id] ?? "Thela favourite"}</p>
+                <p className="mt-1 truncate px-0.5 text-[13px] font-semibold">{i.name}</p>
                 <p className="truncate px-0.5 text-[11px] font-medium text-muted-foreground">
-                  {vendorName[i.vendor_id] ?? "Stall"} · {i.unit}
+                  {i.unit ?? "Freshly made"}
                 </p>
                 <div className="mt-2.5 flex items-center justify-between px-0.5">
                   <p className="text-[15px] font-extrabold text-primary">
@@ -328,21 +352,6 @@ function Home() {
                       <span className="text-[11px] font-medium text-muted-foreground line-through">{inr(shownPrice)}</span>
                     ) : null}
                   </p>
-                  {!i.in_stock ? null : line ? (
-                    <div className="flex items-center gap-1.5 rounded-full bg-primary px-2 py-1 text-primary-foreground shadow-[0_8px_18px_-10px_var(--color-primary)]">
-                      <button aria-label="Remove one" onClick={() => cart.remove(i.id)} className="press px-1 font-bold">−</button>
-                      <span className="text-xs font-extrabold">{line.qty}</span>
-                      <button aria-label="Add one" onClick={() => add(i)} className="press px-1 font-bold">+</button>
-                    </div>
-                  ) : (
-                     <button
-                      onClick={() => add(i)}
-                       aria-label={`Add ${i.name}`}
-                       className="press grid h-9 w-9 place-items-center rounded-full border border-border bg-card text-primary shadow-card"
-                    >
-                       <Plus className="h-5 w-5" strokeWidth={2.4} />
-                    </button>
-                  )}
                 </div>
               </div>
             );
@@ -354,22 +363,17 @@ function Home() {
 
   return (
     <Shell>
-       <header
-        style={isDefaultTheme ? { backgroundColor: topBarColor } : undefined}
-         className={`relative z-20 flex min-w-0 flex-col gap-4 overflow-hidden rounded-b-[2.25rem] px-5 pb-7 pt-4 shadow-sm transition-colors duration-500 ${isDefaultTheme ? "bg-primary text-primary-foreground" : theme.wrapper}`}
-      >
-         {isDefaultTheme ? <div className="pointer-events-none absolute inset-0 bg-primary" /> : null}
+       <header className="relative z-20 flex min-w-0 flex-col gap-4 overflow-hidden bg-background px-5 pb-5 pt-4 text-foreground">
         {festiveTheme ? <FestiveAmbience /> : null}
 
         <div className="relative z-10 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2 sm:gap-3">
           <Link to="/cart" className="min-w-0 text-left">
-            <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] opacity-80">
-              <span className="live-dot" /> Thaleewala · Delivering in
+            <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5 text-primary" /> Deliver to
             </p>
-            <p className="text-[24px] font-extrabold leading-tight">15–20 minutes</p>
-            <p className="mt-1 flex items-center gap-1 text-xs font-semibold opacity-80">
+            <p className="mt-1 flex items-center gap-1 text-sm font-extrabold text-foreground">
               <span className="truncate">{address ?? "Bhubaneswar · set your address"}</span>
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.6">
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0 text-primary" fill="none" stroke="currentColor" strokeWidth="2.6">
                 <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </p>
@@ -377,17 +381,20 @@ function Home() {
           <div className="flex max-w-[184px] shrink-0 flex-wrap items-center justify-end gap-1.5 sm:max-w-none sm:flex-nowrap">
             <UpdateAppButton />
             <InstallAppButton className="hidden sm:flex" />
+            <Link to="/profile" aria-label="Gifts and rewards" className="press grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-primary">
+              <Gift className="h-4 w-4" />
+            </Link>
             <Link
               to="/wallet"
-              className="press flex items-center gap-1 rounded-full px-2.5 py-2 text-[11px] font-extrabold festive-glass-chip"
+              className="press grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-primary"
+              aria-label="Wallet"
             >
-              <Wallet className="h-4 w-4" aria-hidden="true" />
-              {inr(balance)}
+              <Wallet className="h-4 w-4" />
             </Link>
             <Link
               to="/notifications"
               aria-label="Notifications"
-              className="press relative grid h-10 w-10 place-items-center rounded-2xl festive-glass-chip"
+              className="press relative grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-primary"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path d="M6 9a6 6 0 1112 0c0 4 1.5 5.5 1.5 5.5h-15S6 13 6 9zM10 19a2 2 0 004 0" strokeLinecap="round" strokeLinejoin="round" />
@@ -401,7 +408,7 @@ function Home() {
             <Link
               to={user ? "/profile" : "/auth"}
               aria-label="Your account"
-              className="press grid h-10 w-10 place-items-center rounded-2xl festive-glass-chip"
+              className="press grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-primary"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <circle cx="12" cy="8" r="3.4" /><path d="M4.5 20a7.5 7.5 0 0115 0" strokeLinecap="round" />
@@ -410,7 +417,7 @@ function Home() {
             <button
               aria-label="More options"
               onClick={() => setMenu((m) => !m)}
-              className="press grid h-10 w-10 place-items-center rounded-2xl festive-glass-chip"
+              className="press grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-primary"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
                 <circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" />
@@ -419,10 +426,8 @@ function Home() {
           </div>
         </div>
 
-        <div className="relative z-10 flex min-w-0 items-center gap-2.5 rounded-full bg-card px-4 py-3.5 text-card-foreground shadow-[0_18px_38px_-18px_rgba(15,23,42,0.65)] ring-1 ring-border/70">
-          <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2.2">
-            <circle cx="11" cy="11" r="6.5" /><path d="M16 16l4 4" strokeLinecap="round" />
-          </svg>
+        <div className="relative z-10 flex min-w-0 items-center gap-2.5 rounded-full border border-border bg-card px-4 py-3 text-card-foreground shadow-[0_12px_28px_-18px_rgba(0,71,47,0.38)]">
+          <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -440,7 +445,70 @@ function Home() {
               setVendorFilter(v?.id ?? null);
             }}
           />
+          <Link to="/categories" className="press flex shrink-0 items-center gap-1 rounded-full bg-brand-soft px-2.5 py-1.5 text-[10px] font-black text-primary">
+            <Coffee className="h-3.5 w-3.5" /> Cafe
+          </Link>
         </div>
+
+        <div className="relative z-10 -mx-1 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {RIBBON_CATEGORIES.map((category) => (
+            <button
+              key={category.label}
+              onClick={() => {
+                setVendorFilter(null);
+                if (category.label === "All") {
+                  setActive(null);
+                  setQ("");
+                } else {
+                  setActive(null);
+                  setQ(category.label);
+                }
+              }}
+              className="press flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-transparent px-3 py-2 text-[10px] font-extrabold text-foreground"
+            >
+              <span className="text-sm">{category.icon}</span>{category.label}
+            </button>
+          ))}
+        </div>
+
+        <Link to="/categories" className="relative z-10 flex items-center gap-3 rounded-2xl bg-primary px-4 py-3 text-primary-foreground">
+          <span className="min-w-0 flex-1">
+            <span className="block text-[10px] font-black uppercase tracking-[0.18em] opacity-70">Best of ThelaWala</span>
+            <span className="block text-sm font-extrabold">EXCLUSIVE DEALS</span>
+          </span>
+          <ArrowRight className="h-5 w-5 shrink-0" />
+        </Link>
+
+        <section className="relative z-10 pt-1">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">Curated for your day</p>
+              <h2 className="mt-1 font-display text-3xl leading-none text-primary">What makes us different</h2>
+            </div>
+            <span className="pb-1 text-[10px] font-bold text-muted-foreground">Freshly picked</span>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2.5">
+            {[
+              { label: "Street favourites", tag: "chaat", image: "/food/food-chaat.jpg", tone: "bg-[#7D1D24]" },
+              { label: "Comfort food", tag: "thali", image: "/food/food-thali.jpg", tone: "bg-[#C25B38]" },
+              { label: "Fresh every day", tag: "fresh", image: "/food/food-tiffin.jpg", tone: "bg-[#1F3E2C]" },
+              { label: "Made for sharing", tag: "biryani", image: "/food/food-biryani.jpg", tone: "bg-[#1B3B54]" },
+            ].map((card) => (
+              <button
+                key={card.label}
+                onClick={() => { setQ(card.tag); setActive(null); setVendorFilter(null); }}
+                className={`press relative aspect-square overflow-hidden rounded-3xl ${card.tone} p-3 text-left text-white`}
+              >
+                <img src={card.image} alt="" className="absolute inset-0 h-full w-full object-cover opacity-55 mix-blend-screen" />
+                <span className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+                <span className="relative z-10 flex h-full flex-col justify-end">
+                  <span className="max-w-[120px] text-lg font-extrabold leading-tight">{card.label}</span>
+                  <span className="mt-1 flex items-center gap-1 text-[10px] font-bold opacity-80">Shop now <ArrowRight className="h-3 w-3" /></span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
 
         {festiveTheme ? (
           <div className="relative z-10 min-w-0 pt-1">
@@ -555,10 +623,13 @@ function Home() {
         <div className="fixed inset-x-0 bottom-[104px] z-40 mx-auto w-full max-w-[480px] px-3">
           <Link
             to="/cart"
-             className="press pop-in grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-border bg-card p-2 pl-4 text-foreground shadow-[0_18px_36px_-18px_var(--color-primary)]"
+             className="press pop-in grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-full border border-border bg-white p-2 pl-3 text-foreground shadow-[0_18px_36px_-18px_var(--color-primary)]"
           >
-             <span><span className="block text-[10px] font-bold text-muted-foreground">{count} ITEM{count > 1 ? "S" : ""}</span><span className="text-base font-black">{inr(foodTotal)}</span></span>
-             <span className="rounded-xl bg-primary px-5 py-3 text-sm font-black text-primary-foreground">View cart ›</span>
+             <span className="flex -space-x-2">
+               {lines.slice(0, 3).map((line) => <img key={line.itemId} src={line.photo ?? "/food/food-tiffin.jpg"} alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />)}
+             </span>
+             <span><span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Cart ({count})</span><span className="text-sm font-black">{inr(foodTotal)}</span></span>
+             <span className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground"><ShoppingBag className="h-4 w-4" /></span>
           </Link>
         </div>
       ) : null}
