@@ -1,5 +1,4 @@
 import type { Tables } from "@/integrations/supabase/types";
-import { deliveryFeeForDistance } from "@/lib/pricing";
 
 export type Settings = Tables<"system_settings">;
 
@@ -18,10 +17,11 @@ export function haversineKm(
 }
 
 export type BillInput = {
-  settings: Settings;
+  settings?: Settings | null;
   foodTotal: number;
   mrpTotal: number;
   distanceKm: number;
+  cartItemCount: number;
   penaltyFee?: number;
 };
 
@@ -43,7 +43,7 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 
 export type FeeSlab = { upto_km: number; fee: number };
 
-/** Reads the admin's slab table; falls back to the built-in slabs when it is empty. */
+/** Retained for admin screens that display the configured slab table. */
 export function slabsOf(s: Settings): FeeSlab[] {
   const raw = s.delivery_fee_slabs as unknown;
   if (!Array.isArray(raw)) return [];
@@ -58,35 +58,20 @@ export function computeBill({
   foodTotal,
   mrpTotal,
   distanceKm,
+  cartItemCount,
   penaltyFee = 0,
 }: BillInput): Bill {
-  const mode = String(s.delivery_fee_mode ?? "PER_KM").toUpperCase();
-  const baseFee = Number(s.base_delivery_fee ?? 0);
-  let deliveryFee: number;
-
-  if (mode === "FIXED") {
-    // One flat fee, whatever the distance is.
-    deliveryFee = baseFee;
-  } else if (mode === "SLAB") {
-    const slabs = slabsOf(s);
-    const hit = slabs.find((r) => distanceKm <= r.upto_km);
-    deliveryFee = hit ? hit.fee : slabs.length ? slabs[slabs.length - 1]!.fee : deliveryFeeForDistance(distanceKm);
-  } else {
-    // Base fee covers the base distance, then the per-km rate for every extra kilometre.
-    const baseKm = Number(s.base_delivery_distance_km ?? 0);
-    const perKm = Number(s.extra_fee_per_km ?? 0);
-    deliveryFee = baseFee + Math.max(0, distanceKm - baseKm) * perKm;
+  const standardDeliveryFee = 22 + Math.max(0, distanceKm - 2) * 3.5;
+  let deliveryFee = standardDeliveryFee;
+  if (cartItemCount >= 200) {
+    deliveryFee = distanceKm <= 5 ? 0 : Math.max(0, standardDeliveryFee - 30);
   }
-
-  if (!Number.isFinite(deliveryFee) || deliveryFee < 0) deliveryFee = deliveryFeeForDistance(distanceKm);
-  const threshold = s.free_delivery_threshold;
-  if (threshold != null && foodTotal >= Number(threshold)) deliveryFee = 0;
   deliveryFee = r2(deliveryFee);
 
-  const platformFee = s.enable_platform_fee ? Number(s.platform_fee) : 0;
-  const handlingFee = s.enable_handling_fee ? Number(s.handling_fee) : 0;
-  const packingFee = s.enable_packing_fee ? Number(s.packing_fee) : 0;
-  const surgeFee = s.enable_surge_fee ? Number(s.surge_fee) : 0;
+  const platformFee = s?.enable_platform_fee ? Number(s.platform_fee) : 0;
+  const handlingFee = 0;
+  const packingFee = 5;
+  const surgeFee = s?.enable_surge_fee ? Number(s.surge_fee) : 0;
 
   return {
     mrpTotal: r2(mrpTotal),

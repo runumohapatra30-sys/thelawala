@@ -33,6 +33,7 @@ function Cart() {
   const { user } = useSession();
   const lines = useCart();
   const { foodTotal, baseTotal } = cartTotals(lines);
+  const cartItemCount = lines.reduce((sum, line) => sum + line.qty, 0);
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [vendor, setVendor] = useState<{ id: string; stall_name: string; lat: number; lng: number; offer_percent: number | null; offer_label: string | null } | null>(null);
@@ -226,7 +227,7 @@ function Cart() {
   const blockedReason = gate.ok ? null : gate.reason;
   // No automatic MRP discount any more: a discount exists only when the stall runs its own offer.
   const hasLocation = Boolean(vendor && coords);
-  const bill = settings && hasLocation ? computeBill({ settings, foodTotal, mrpTotal: foodTotal, distanceKm }) : null;
+  const bill = hasLocation ? computeBill({ settings, foodTotal, mrpTotal: foodTotal, distanceKm, cartItemCount }) : null;
   const stallOff = stallOfferDiscount(foodTotal, vendor?.offer_percent);
   const couponOff = coupon ? couponDiscount(coupon, foodTotal) : 0;
   const netTotal = bill ? Math.max(0, Math.round((bill.grandTotal - stallOff - couponOff + tip) * 100) / 100) : 0;
@@ -235,7 +236,9 @@ function Cart() {
   const unlockTarget = foodTotal < 199 ? 199 : Math.ceil(foodTotal / 100) * 100;
   const unlockLeft = Math.max(0, unlockTarget - foodTotal);
   const unlockProgress = Math.min(100, (foodTotal / unlockTarget) * 100);
-  const savings = Math.round((stallOff + couponOff + (bill?.deliveryFee === 0 ? 20 : 0)) * 100) / 100;
+  const standardDeliveryFee = bill ? 22 + Math.max(0, bill.distanceKm - 2) * 3.5 : 0;
+  const deliverySavings = bill ? Math.max(0, standardDeliveryFee - bill.deliveryFee) : 0;
+  const savings = Math.round((stallOff + couponOff + deliverySavings) * 100) / 100;
   const instructionOptions = [
     { label: "Avoid ringing bell", Icon: BellOff },
     { label: "Leave at the door", Icon: DoorOpen },
