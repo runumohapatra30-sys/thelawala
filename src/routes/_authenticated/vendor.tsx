@@ -21,7 +21,6 @@ import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 import { PRICE_MARKUP, VENDOR_PAYOUT_RATE } from "@/lib/pricing";
 import { confirmOnboardingPayment, onboardingFee, startOnboardingPayment } from "@/lib/onboarding.functions";
 import { loadCashfreeSdk } from "@/lib/checkout";
-import { VendorDashboard } from "@/components/VendorDashboard.jsx";
 
 export const Route = createFileRoute("/_authenticated/vendor")({
   head: () => ({
@@ -42,7 +41,7 @@ type Order = {
   pickup_otp: string; qr_hash: string | null; customer_name: string; address_line: string; partner_id: string | null;
   delivery_instructions?: string | null; ready_at?: string | null; created_at: string; payment_mode: string;
 };
-type OrderItemName = { id: string; order_id: string; name: string; price: number; qty: number };
+type OrderItemName = { id: string; order_id: string; name: string };
 type Item = {
   id: string; name: string; price: number; mrp: number; in_stock: boolean;
   photo_url: string | null; food_type: string; category_id: string | null;
@@ -128,7 +127,6 @@ function VendorPortal() {
       const { data: its } = await supabase
         .from("order_items")
         .select("id,order_id,name")
-          .select("id,order_id,name,price,qty")
         .in("order_id", list.map((o) => o.id));
       setOrderItems((its ?? []) as OrderItemName[]);
     };
@@ -554,6 +552,12 @@ function VendorPortal() {
     <Shell>
       <PortalHeader title={vendor.stall_name} subtitle="Live on ThelaWala" />
       <div className="space-y-3 p-4">
+        {pending > 0 ? (
+          <div className="animate-pulse rounded-2xl bg-destructive px-3 py-2.5 text-center text-sm font-black text-destructive-foreground">
+            🔔 {pending} new order{pending > 1 ? "s" : ""} waiting — accept or reject below
+          </div>
+        ) : null}
+
         <SectionList
           sections={vLayout}
           registry={{
@@ -647,7 +651,62 @@ function VendorPortal() {
           {fssaiMsg ? <p className="mt-2 text-xs font-semibold text-primary">{fssaiMsg}</p> : null}
         </div>
 
-        <VendorDashboard orders={newOrders} orderItems={orderItems} onStatus={setStatus} onMute={setMuted} muted={muted} />
+
+        {pending > 0 ? (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between rounded-2xl bg-destructive px-3 py-2 text-destructive-foreground">
+              <p className="flex items-center gap-2 text-sm font-black">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
+                </span>
+                {pending} new order{pending > 1 ? "s" : ""} waiting
+              </p>
+              <button
+                onClick={() => setMuted(!muted)}
+                className="press rounded-full bg-white/20 px-3 py-1 text-[11px] font-black"
+              >
+                {muted ? "Unmute alarm" : "Mute alarm"}
+              </button>
+            </div>
+
+            {newOrders.map((o) => (
+              <div
+                key={o.id}
+                className="animate-scale-in overflow-hidden rounded-3xl border-2 border-primary bg-card shadow-[0_16px_40px_-18px_rgba(12,131,31,0.55)]"
+              >
+                <div className="flex items-center justify-between bg-primary px-4 py-2 text-primary-foreground">
+                  <p className="text-xs font-black tracking-wide">NEW ORDER · #{o.code}</p>
+                  <p className="text-sm font-black">{inr(Number(o.grand_total))}</p>
+                </div>
+                <div className="space-y-2 p-4">
+                  <p className="text-base font-black">{o.customer_name}</p>
+                  <p className="text-xs leading-snug text-muted-foreground">{o.address_line}</p>
+                  {o.delivery_instructions ? (
+                    <p className="text-[11px] font-bold">📝 {o.delivery_instructions}</p>
+                  ) : null}
+                  <div className="flex gap-2 pt-1">
+                    <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold">Pickup OTP {o.pickup_otp}</span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-[1fr_1.6fr] gap-2">
+                    <button
+                      onClick={() => setStatus(o, "CANCELLED")}
+                      className="press rounded-2xl border-2 border-destructive py-3.5 text-sm font-black text-destructive"
+                    >
+                      Reject
+                    </button>
+                    <button
+                      onClick={() => setStatus(o, "PREPARING")}
+                      className="press rounded-2xl bg-primary py-3.5 text-sm font-black text-primary-foreground shadow-lg"
+                    >
+                      Accept order
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </section>
+        ) : null}
 
         <section className={`space-y-2 ${vLayout.find((x) => x.type === "vendor_active_orders")?.is_visible === false ? "hidden" : ""}`}>
           <p className="section-title">Live orders</p>
