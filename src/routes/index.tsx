@@ -8,8 +8,6 @@ import { cart, cartTotals, useCart } from "@/lib/cart";
 import { inr } from "@/lib/fees";
 import { customerPrice } from "@/lib/pricing";
 import { foodImage } from "@/lib/foodImage";
-import { InstallAppButton } from "@/components/InstallApp";
-import { UpdateAppButton } from "@/components/PwaUpdater";
 import { useSession } from "@/lib/session";
 import { BannerCarousel } from "@/components/BannerCarousel";
 import { FestiveWidget } from "@/components/FestiveWidget";
@@ -22,7 +20,7 @@ import { FestiveAmbience, FestiveHero, FestiveSections } from "@/components/Fest
 import { useHomeSections } from "@/lib/homeSections";
 import { FestivePhotoStrip } from "@/components/FestivePhotoStrip";
 import { themeStyle, useTopBarTheme } from "@/lib/appTheme";
-import { ArrowRight, Bike, Coffee, Gift, Heart, MapPin, Plus, Search, ShoppingBag, Utensils, Wallet, X, Zap } from "lucide-react";
+import { ArrowRight, Bike, Gift, Heart, MapPin, Plus, Search, ShoppingBag, Utensils, Wallet, X, Zap } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -65,10 +63,11 @@ const TINTS = [
 
 const RIBBON_CATEGORIES = [
   { label: "All", icon: "✦" },
-  { label: "Fresh", icon: "🥬" },
-  { label: "New Launch", icon: "✹" },
-  { label: "Milk & Bread", icon: "🥛" },
-  { label: "Groceries", icon: "⌁" },
+  { label: "Dahi Bara", icon: "🥣" },
+  { label: "Chaat & Rolls", icon: "🌯" },
+  { label: "Biryani & Thali", icon: "🍛" },
+  { label: "Fast Food", icon: "🍔" },
+  { label: "Sweets & Lassi", icon: "🍨" },
 ];
 
 const PRODUCT_TINTS = ["bg-[#E5F0E6]", "bg-[#F7F0E2]", "bg-[#FFF5C9]", "bg-[#E8EEF2]"];
@@ -83,14 +82,12 @@ function Home() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [active, setActive] = useState<string | null>(null);
   const [q, setQ] = useState("");
-  const [menu, setMenu] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [balance, setBalance] = useState(0);
   const [address, setAddress] = useState<string | null>(null);
   const [favs, setFavs] = useState<string[]>([]);
   const [onlyFav, setOnlyFav] = useState(false);
   const [onlyVeg, setOnlyVeg] = useState(false);
-  const [unread, setUnread] = useState(0);
   const [vendorFilter, setVendorFilter] = useState<string | null>(null);
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const topBarTheme = useTopBarTheme();
@@ -128,12 +125,6 @@ function Home() {
       .select("item_id")
       .eq("user_id", user.id)
       .then(({ data }) => setFavs((data ?? []).map((f) => f.item_id).filter(Boolean) as string[]));
-    supabase
-      .from("notifications")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .eq("is_read", false)
-      .then(({ count }) => setUnread(count ?? 0));
   }, [user?.id]);
 
   async function toggleFav(itemId: string, vendorId: string) {
@@ -369,60 +360,28 @@ function Home() {
         <div className="relative z-10 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2 sm:gap-3">
           <Link to="/cart" className="min-w-0 text-left">
             <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground">
-              <MapPin className="h-3.5 w-3.5 text-primary" /> Deliver to
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Delivery in 15–20 mins
             </p>
             <p className="mt-1 flex items-center gap-1 text-sm font-extrabold text-foreground">
+              <MapPin className="h-3.5 w-3.5 text-primary" />
               <span className="truncate">{address ?? "Bhubaneswar · set your address"}</span>
               <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0 text-primary" fill="none" stroke="currentColor" strokeWidth="2.6">
                 <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </p>
           </Link>
-          <div className="flex max-w-[184px] shrink-0 flex-wrap items-center justify-end gap-1.5 sm:max-w-none sm:flex-nowrap">
-            <UpdateAppButton />
-            <InstallAppButton className="hidden sm:flex" />
+          <div className="flex shrink-0 items-center justify-end gap-1.5">
             <Link to="/profile" aria-label="Gifts and rewards" className="press grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-primary">
               <Gift className="h-4 w-4" />
             </Link>
             <Link
               to="/wallet"
-              className="press grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-primary"
+              className="press flex h-10 items-center gap-1 rounded-full border border-border bg-card px-3 text-[11px] font-extrabold text-primary"
               aria-label="Wallet"
             >
               <Wallet className="h-4 w-4" />
+              {inr(balance)}
             </Link>
-            <Link
-              to="/notifications"
-              aria-label="Notifications"
-              className="press relative grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-primary"
-            >
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d="M6 9a6 6 0 1112 0c0 4 1.5 5.5 1.5 5.5h-15S6 13 6 9zM10 19a2 2 0 004 0" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {unread > 0 ? (
-                <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 text-[9px] font-black text-white">
-                  {unread > 9 ? "9+" : unread}
-                </span>
-              ) : null}
-            </Link>
-            <Link
-              to={user ? "/profile" : "/login"}
-              aria-label="Your account"
-              className="press grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-primary"
-            >
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <circle cx="12" cy="8" r="3.4" /><path d="M4.5 20a7.5 7.5 0 0115 0" strokeLinecap="round" />
-              </svg>
-            </Link>
-            <button
-              aria-label="More options"
-              onClick={() => setMenu((m) => !m)}
-              className="press grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-primary"
-            >
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-                <circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" />
-              </svg>
-            </button>
           </div>
         </div>
 
@@ -431,7 +390,7 @@ function Home() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder='Search "dahi bara" or a stall name'
+            placeholder="Search for Dahi Bara, Rolls, Biryani..."
             className="min-w-0 flex-1 bg-transparent text-sm font-medium text-foreground outline-none"
           />
           <VoiceSearch
@@ -445,8 +404,8 @@ function Home() {
               setVendorFilter(v?.id ?? null);
             }}
           />
-          <Link to="/categories" className="press flex shrink-0 items-center gap-1 rounded-full bg-brand-soft px-2.5 py-1.5 text-[10px] font-black text-primary">
-            <Coffee className="h-3.5 w-3.5" /> Cafe
+          <Link to="/categories" aria-label="Browse food categories" className="press grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-soft text-primary">
+            <Utensils className="h-4 w-4" />
           </Link>
         </div>
 
@@ -543,26 +502,6 @@ function Home() {
           </div>
         </div>
       </header>
-
-      {menu ? (
-        <div className="absolute right-3 z-40 mt-1 w-52 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
-          {[
-            { to: "/orders", label: "Your orders" },
-            { to: "/profile", label: "Profile & wallet" },
-            { to: "/terms", label: "Terms & conditions" },
-            { to: "/vendor", label: "Stall partner portal" },
-            { to: "/rider", label: "Delivery partner portal" },
-            { to: "/admin", label: "Administration" },
-          ].map((m) => (
-            <Link key={m.to} to={m.to} onClick={() => setMenu(false)} className="block px-3 py-2.5 text-sm">
-              {m.label}
-            </Link>
-          ))}
-          <a href="tel:9078492360" className="block border-t border-border px-3 py-2.5 text-sm font-semibold text-primary">
-            Call care · 9078492360
-          </a>
-        </div>
-      ) : null}
 
       <main className="flex min-w-0 flex-col gap-4 overflow-x-hidden">
         {topBarTheme?.header_bg_image_url ? (
