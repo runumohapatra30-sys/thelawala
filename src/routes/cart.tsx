@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
+import { openLoginModal } from "@/components/LoginModal";
 import type { SavedAddress } from "@/components/AddressBook";
 import { supabase } from "@/integrations/supabase/client";
 import { cart, cartTotals, useCart } from "@/lib/cart";
@@ -61,6 +62,11 @@ function Cart() {
 
   useEffect(() => {
     listCoupons().then((cs) => setOffers(cs.filter((c) => c.is_active).slice(0, 3)));
+  }, []);
+
+  useEffect(() => {
+    const guestName = localStorage.getItem("thelawala.guest_name");
+    if (guestName) setForm((current) => current.full_name ? current : { ...current, full_name: guestName });
   }, []);
 
   useEffect(() => {
@@ -276,7 +282,10 @@ function Cart() {
 
   async function place() {
     setErr(null);
-    if (!user) return navigate({ to: "/login" });
+    if (!user) {
+      openLoginModal();
+      return;
+    }
     if (!form.full_name || form.mobile.length < 10 || form.pincode.length < 6 || !form.line)
       return setErr("Please fill name, 10-digit mobile, 6-digit pincode and full address.");
     if (!coords) return setErr("Tap “Use my current location” — every order needs your live location.");

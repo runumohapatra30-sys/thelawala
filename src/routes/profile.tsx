@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Shell } from "@/components/Shell";
+import { LoginButton, Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { inr } from "@/lib/fees";
 import { useSession } from "@/lib/session";
@@ -61,9 +61,9 @@ function Profile() {
         </header>
         <div className="py-20 text-center">
           <p className="text-sm text-muted-foreground">Sign in to see your account.</p>
-          <Link to="/login" className="press mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
+          <LoginButton className="press mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
             Sign in
-          </Link>
+          </LoginButton>
         </div>
       </Shell>
     );

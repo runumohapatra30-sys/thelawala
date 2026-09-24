@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { PortalHeader, Shell } from "@/components/Shell";
+import { LoginButton, PortalHeader, Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/lib/session";
 import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
@@ -91,9 +91,9 @@ function SupportHome() {
         {loading ? <ThaliwalaLoader /> : !user ? (
           <div className="py-16 text-center">
             <p className="text-sm text-muted-foreground">Sign in to chat with ThelaWala Care.</p>
-            <Link to="/login" className="mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
+            <LoginButton className="mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
               Sign in
-            </Link>
+            </LoginButton>
           </div>
         ) : (
           <>

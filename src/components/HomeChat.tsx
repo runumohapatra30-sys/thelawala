@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { openLoginModal } from "@/components/LoginModal";
 import { askHomeBot } from "@/lib/homebot.functions";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
 export function HomeChat({ userId }: { userId: string | undefined }) {
-  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([
     {
@@ -23,7 +22,7 @@ export function HomeChat({ userId }: { userId: string | undefined }) {
 
   function openChat() {
     if (!userId) {
-      navigate({ to: "/login" });
+      openLoginModal();
       return;
     }
     setOpen(true);

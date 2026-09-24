@@ -1,7 +1,9 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { CircleUserRound, Grid2X2, House, Play, RotateCcw } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { LoginModal, OPEN_LOGIN_EVENT } from "@/components/LoginModal";
+import { useSession } from "@/lib/session";
 
 const NAV = [
   { to: "/", label: "Today", Icon: House },
@@ -13,6 +15,15 @@ const NAV = [
 
 export function Shell({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const { user } = useSession();
+  const [loginOpen, setLoginOpen] = useState(false);
+
+  useEffect(() => {
+    const open = () => setLoginOpen(true);
+    window.addEventListener(OPEN_LOGIN_EVENT, open);
+    return () => window.removeEventListener(OPEN_LOGIN_EVENT, open);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto min-h-screen w-full max-w-[520px] bg-background pb-36 shadow-[0_0_48px_color-mix(in_oklab,var(--color-primary)_10%,transparent)]">
@@ -25,6 +36,12 @@ export function Shell({ children }: { children: ReactNode }) {
             <Link
               key={n.label}
               to={n.to}
+              onClick={(event) => {
+                if (n.label === "Profile" && !user) {
+                  event.preventDefault();
+                  setLoginOpen(true);
+                }
+              }}
               className="press flex min-w-0 flex-col items-center gap-1"
             >
               <span
@@ -43,6 +60,7 @@ export function Shell({ children }: { children: ReactNode }) {
           );
         })}
       </nav>
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </div>
   );
 }
@@ -58,6 +76,14 @@ export function LogoutButton({ className = "" }: { className?: string }) {
       className={`press shrink-0 rounded-full bg-card/80 px-3 py-1.5 text-[11px] font-bold text-primary ${className}`}
     >
       Log out
+    </button>
+  );
+}
+
+export function LoginButton({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <button type="button" onClick={() => window.dispatchEvent(new Event(OPEN_LOGIN_EVENT))} className={className}>
+      {children}
     </button>
   );
 }

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Shell } from "@/components/Shell";
+import { LoginButton, Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { cart } from "@/lib/cart";
 import { inr, STATUS_LABEL } from "@/lib/fees";
@@ -159,9 +159,9 @@ function Orders() {
         {loading ? <ThaliwalaLoader /> : !user ? (
           <div className="py-16 text-center">
             <p className="text-sm text-muted-foreground">Sign in to see your orders.</p>
-            <Link to="/login" className="mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
+            <LoginButton className="mt-3 inline-block rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
               Sign in
-            </Link>
+            </LoginButton>
           </div>
         ) : rows.length === 0 ? (
           <p className="py-16 text-center text-sm text-muted-foreground">No orders yet.</p>

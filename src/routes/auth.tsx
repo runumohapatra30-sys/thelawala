@@ -26,7 +26,6 @@ export function AuthPage() {
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [googleOn, setGoogleOn] = useState(true);
 
   const fullPhone = `+91${phone.replace(/\D/g, "").slice(-10)}`;
 
@@ -72,11 +71,6 @@ export function AuthPage() {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) goAfterLogin();
     });
-    supabase
-      .from("system_settings")
-      .select("enable_google_login")
-      .maybeSingle()
-      .then(({ data }) => setGoogleOn(data?.enable_google_login ?? true));
   }, [navigate]);
 
   function switchMode(next: "phone" | "email") {
@@ -100,7 +94,7 @@ export function AuthPage() {
     if (error) {
       return setMsg(
         mode === "phone"
-          ? "We could not send the SMS code right now. Please use email or Google."
+          ? "We could not send the SMS code right now. Please use email instead."
           : error.message,
       );
     }
@@ -125,14 +119,7 @@ export function AuthPage() {
   }
 
   async function google() {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: authRedirectUrl(),
-        queryParams: { access_type: "offline", prompt: "select_account" },
-      },
-    });
-    if (error) setMsg("Google sign-in failed. Try the code instead.");
+    setMsg("OAuth login is not configured yet, please use OTP / Email.");
   }
 
   const canSend = mode === "email" ? email.includes("@") : phone.replace(/\D/g, "").length === 10;
@@ -230,15 +217,12 @@ export function AuthPage() {
             )}
             {msg ? <p className="mt-2 text-xs text-muted-foreground">{msg}</p> : null}
 
-            {googleOn ? (
-              <button
-                onClick={google}
-                className="press mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-bold"
-              >
-                <svg viewBox="0 0 24 24" className="h-4 w-4"><path fill="#EA4335" d="M12 10.2v3.9h5.5a4.7 4.7 0 01-2 3.1l3.2 2.5c1.9-1.7 3-4.3 3-7.4 0-.7-.1-1.4-.2-2z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.7-2.3l-3.2-2.5c-.9.6-2.1 1-3.5 1a6 6 0 01-5.7-4.1l-3.3 2.5A10 10 0 0012 22z"/><path fill="#FBBC05" d="M6.3 14.1a6 6 0 010-3.8L3 7.8a10 10 0 000 8.4z"/><path fill="#4285F4" d="M12 6.1c1.5 0 2.8.5 3.9 1.5l2.9-2.9A10 10 0 003 7.8l3.3 2.5A6 6 0 0112 6.1z"/></svg>
-                Continue with Google
-              </button>
-            ) : null}
+            <button
+              onClick={google}
+              className="press mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-bold"
+            >
+              Continue with Google
+            </button>
 
             <div className="mt-3 grid grid-cols-2 gap-2">
               <Link to="/vendor" className="rounded-xl border border-border py-2.5 text-center text-[11px] font-black text-primary">
