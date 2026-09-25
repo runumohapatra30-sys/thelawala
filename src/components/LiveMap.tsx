@@ -11,8 +11,8 @@ type Props = {
   className?: string;
 };
 
-const stallIcon = `<svg viewBox="0 0 24 24" width="34" height="34" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#fff" stroke="#EBECEF"/><path d="M5 10l1.4-3.2A1 1 0 017.3 6h9.4a1 1 0 01.9.8L19 10v1a2 2 0 01-2 2H7a2 2 0 01-2-2v-1z" fill="#F97316"/><rect x="7" y="13" width="10" height="5" rx="1" fill="#FDBA74"/></svg>`;
-const dropIcon = `<svg viewBox="0 0 24 24" width="34" height="34" xmlns="http://www.w3.org/2000/svg"><path d="M12 22s7-6.3 7-12A7 7 0 105 10c0 5.7 7 12 7 12z" fill="#E11D48"/><circle cx="12" cy="10" r="2.7" fill="#fff"/></svg>`;
+const stallIcon = `<svg viewBox="0 0 40 40" width="40" height="40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="18" r="14" fill="#fff" stroke="#0F5132" stroke-width="2"/><path d="M11 17l2.2-5.2c.2-.5.7-.8 1.2-.8h11.2c.6 0 1.1.3 1.3.9L29 17v1.2c0 1.5-1.2 2.8-2.8 2.8H13.8c-1.5 0-2.8-1.2-2.8-2.8V17z" fill="#0F5132"/><path d="M14 22h12v6H14z" fill="#E6F0EA" stroke="#0F5132" stroke-width="1.5"/><path d="M17 25h6" stroke="#0F5132" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+const dropIcon = `<svg viewBox="0 0 40 40" width="40" height="40" xmlns="http://www.w3.org/2000/svg"><path d="M20 37S7 25.7 7 16.8a13 13 0 1126 0C33 25.7 20 37 20 37z" fill="#2563EB" stroke="#fff" stroke-width="2"/><circle cx="20" cy="16.5" r="4.3" fill="#fff"/></svg>`;
 const riderIcon = (heading: number) => `<div style="width:40px;height:40px;transform:rotate(${heading}deg);filter:drop-shadow(0 3px 4px rgba(15,81,50,.28));transform-origin:20px 20px"><svg viewBox="0 0 40 40" width="40" height="40" xmlns="http://www.w3.org/2000/svg"><path d="M20 2.5c8.3 0 15 6.7 15 15 0 10.8-15 20-15 20S5 28.3 5 17.5c0-8.3 6.7-15 15-15z" fill="#0F5132" stroke="#fff" stroke-width="2"/><circle cx="20" cy="17" r="9.5" fill="#fff"/><circle cx="15.5" cy="25.5" r="2.4" fill="#0F5132"/><circle cx="25.5" cy="25.5" r="2.4" fill="#0F5132"/><path d="M15.5 24.7l3.1-5.8h4l3.1 5.8M20 18.9l2.2-4.2h3.4" fill="none" stroke="#0F5132" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20.2 12.8c1.1-2.1 3.3-3.1 5.7-2.6" fill="none" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round"/></svg></div>`;
 
 function bearing(from: LatLng, to: LatLng) {
@@ -48,9 +48,10 @@ export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className 
           14,
         );
         mapRef.current = map;
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
           maxZoom: 19,
-          attribution: "© OpenStreetMap",
+          subdomains: "abcd",
+          attribution: "© OpenStreetMap © CARTO",
         }).addTo(map);
 
         const icon = (html: string) =>
@@ -67,7 +68,20 @@ export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className 
 
         const route = await fetchRoute(rider ?? from, to);
         if (cancelled) return;
-        const line = L.polyline(route.coords, { color: "#0066FF", weight: 5, opacity: 0.9 }).addTo(map);
+        L.polyline(route.coords, {
+          color: "#BFDBFE",
+          weight: 10,
+          opacity: 0.8,
+          lineCap: "round",
+          lineJoin: "round",
+        }).addTo(map);
+        const line = L.polyline(route.coords, {
+          color: "#2563EB",
+          weight: 5,
+          opacity: 0.98,
+          lineCap: "round",
+          lineJoin: "round",
+        }).addTo(map);
         lineRef.current = line;
         map.fitBounds(line.getBounds(), { padding: [30, 30] });
         etaRef.current?.(route.durationMin, route.distanceKm);
