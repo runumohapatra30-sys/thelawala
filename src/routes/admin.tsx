@@ -112,6 +112,7 @@ function Admin() {
     ) : null;
 
   return (
+    <div className="admin-dark min-h-screen">
     <Shell>
       <PortalHeader title="Administration" subtitle="Orders, settlement, refunds and earnings" />
       <div className="space-y-3 p-4">
@@ -382,6 +383,7 @@ function Admin() {
         ) : null}
       </div>
     </Shell>
+    </div>
   );
 }
 
