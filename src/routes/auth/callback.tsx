@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth/callback")({
   validateSearch: (search: Record<string, unknown>) => ({
-    next: typeof search.next === "string" ? search.next : "/",
+    next: typeof search["next"] === "string" ? search["next"] : "/",
   }),
   component: AuthCallback,
 });

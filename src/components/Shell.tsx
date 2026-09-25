@@ -38,7 +38,7 @@ export function Shell({ children }: { children: ReactNode }) {
   }, []);
 
   const displayName =
-    user?.user_metadata?.full_name || user?.user_metadata?.name || guestProfile.name;
+    user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || guestProfile.name;
 
   return (
     <div className="min-h-screen bg-background">
@@ -68,9 +68,9 @@ export function Shell({ children }: { children: ReactNode }) {
               <span
                 className={`grid h-10 w-12 place-items-center rounded-full transition-all ${n.label === "Finds" ? "-mt-5 h-12 w-12 border-4 border-background bg-[url('/food/food-roll.jpg')] bg-cover bg-center text-primary-foreground shadow-[0_10px_22px_-10px_color-mix(in_oklab,var(--color-primary)_85%,transparent)]" : active ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
               >
-                {n.label === "Profile" && user?.user_metadata?.avatar_url ? (
+                {n.label === "Profile" && user?.user_metadata?.["avatar_url"] ? (
                   <img
-                    src={String(user.user_metadata.avatar_url)}
+                    src={String(user.user_metadata["avatar_url"])}
                     alt=""
                     className="h-full w-full rounded-full object-cover"
                   />
