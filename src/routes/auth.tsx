@@ -186,6 +186,14 @@ export function AuthPage() {
                 Delivery partner portal
               </Link>
             </div>
+            <div className="mt-2 text-center">
+              <Link
+                to="/admin"
+                className="text-[11px] font-bold text-muted-foreground underline-offset-2 hover:underline"
+              >
+                Admin portal
+              </Link>
+            </div>
           </div>
 
           <p className="mt-4 px-4 text-center text-[11px] text-muted-foreground">
