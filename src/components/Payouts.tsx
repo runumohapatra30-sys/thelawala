@@ -22,13 +22,14 @@ export function PayoutPanel({ party, id }: { party: "VENDOR" | "PARTNER"; id: st
   const [form, setForm] = useState({ ...EMPTY });
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [nextDate, setNextDate] = useState<string | null>(null);
 
   const load = async () => {
     const fn = party === "VENDOR" ? "vendor_balance" : "partner_balance";
     const args = party === "VENDOR" ? { _vendor_id: id } : { _partner_id: id };
     const [{ data: bal }, { data: led }, { data: reqs }] = await Promise.all([
       supabase.rpc(fn, args as never),
-      supabase.from("payout_ledgers").select("amount").eq("party_type", party).eq(party === "VENDOR" ? "vendor_id" : "partner_id", id),
+      supabase.from("payout_ledgers").select("amount,eligible_at").eq("party_type", party).eq(party === "VENDOR" ? "vendor_id" : "partner_id", id),
       supabase
         .from("payout_requests")
         .select("id,amount,method,status,admin_note,payment_reference,created_at")
@@ -38,6 +39,8 @@ export function PayoutPanel({ party, id }: { party: "VENDOR" | "PARTNER"; id: st
     ]);
     setBalance(Number(bal ?? 0));
     setEarned((led ?? []).reduce((a, r) => a + Number(r.amount), 0));
+    const upcoming = (led ?? []).map((r) => r.eligible_at).filter((d): d is string => Boolean(d) && new Date(d) > new Date()).sort()[0];
+    setNextDate(upcoming ?? null);
     setRows((reqs ?? []) as Req[]);
   };
 
@@ -74,6 +77,7 @@ export function PayoutPanel({ party, id }: { party: "VENDOR" | "PARTNER"; id: st
           <p className="text-[11px] font-semibold text-muted-foreground">Available to withdraw</p>
           <p className="text-2xl font-black text-primary">{inr(Math.round(balance))}</p>
           <p className="text-[11px] text-muted-foreground">Total earned {inr(Math.round(earned))}</p>
+          <p className="text-[11px] text-muted-foreground">Automated T+3 rolling cycle{nextDate ? ` · next ${new Date(nextDate).toLocaleDateString("en-IN")}` : ""}</p>
         </div>
         <button
           onClick={() => setOpen((v) => !v)}

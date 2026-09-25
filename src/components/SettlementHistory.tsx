@@ -9,15 +9,18 @@ type Row = { id: string; amount: number; reference: string | null; note: string 
 export function SettlementHistory({ party, id }: { party: "VENDOR" | "PARTNER"; id: string }) {
   const [earned, setEarned] = useState(0);
   const [rows, setRows] = useState<Row[]>([]);
+  const [nextDate, setNextDate] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
     const col = party === "VENDOR" ? "vendor_id" : "partner_id";
     void Promise.all([
-      supabase.from("payout_ledgers").select("amount").eq("party_type", party).eq(col, id),
+      supabase.from("payout_ledgers").select("amount,eligible_at").eq("party_type", party).eq(col, id),
       supabase.from("settlements").select("id,amount,reference,note,paid_at").eq("party_type", party).eq(col, id).order("paid_at", { ascending: false }).limit(20),
     ]).then(([led, set]) => {
       setEarned((led.data ?? []).reduce((a, r) => a + Number(r.amount), 0));
+      const upcoming = (led.data ?? []).map((r) => r.eligible_at).filter((d): d is string => Boolean(d) && new Date(d) > new Date()).sort()[0];
+      setNextDate(upcoming ?? null);
       setRows((set.data ?? []) as Row[]);
     });
   }, [party, id]);
@@ -28,12 +31,13 @@ export function SettlementHistory({ party, id }: { party: "VENDOR" | "PARTNER"; 
   return (
     <section className="card-soft space-y-2 border border-border p-3">
       <p className="text-sm font-bold">Settlement</p>
-      <p className="text-[11px] text-muted-foreground">{PAYOUT_CYCLE[party]}. Commission is already deducted.</p>
+      <p className="text-[11px] text-muted-foreground">{PAYOUT_CYCLE[party]}. Available balance is released after 3 days.</p>
       <div className="grid grid-cols-3 gap-2">
         <Tile label="Earned" value={inr(Math.round(earned))} />
         <Tile label="Paid to you" value={inr(Math.round(paid))} />
         <Tile label="Pending" value={inr(Math.round(pending))} good />
       </div>
+      {nextDate ? <p className="rounded-xl bg-primary/10 px-2.5 py-2 text-[11px] font-bold text-primary">Next automated settlement: {new Date(nextDate).toLocaleDateString("en-IN")}</p> : null}
       {rows.length ? (
         <div className="space-y-1 pt-1">
           {rows.map((r) => (

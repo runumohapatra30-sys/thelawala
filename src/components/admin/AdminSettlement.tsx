@@ -114,6 +114,25 @@ export function AdminSettlement() {
     void load();
   }
 
+  async function instantSettle(line: Line) {
+    if (line.pending <= 0) return;
+    setAmount(String(Math.round(line.pending)));
+    setRef("Instant admin settlement");
+    const { data: u } = await supabase.auth.getUser();
+    const { error } = await supabase.from("settlements").insert({
+      party_type: party,
+      vendor_id: party === "VENDOR" ? line.id : null,
+      partner_id: party === "PARTNER" ? line.id : null,
+      amount: line.pending,
+      reference: "Instant admin settlement",
+      note: "Released before the T+3 cycle by admin override",
+      created_by: u.user?.id ?? null,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${inr(Math.round(line.pending))} released to ${line.name}.`);
+    void load();
+  }
+
   const totalPending = rows.reduce((a, r) => a + r.pending, 0);
 
   return (
@@ -133,10 +152,10 @@ export function AdminSettlement() {
       <div className="card-soft border border-border p-3">
         <p className="text-[11px] font-semibold text-muted-foreground">Total still to pay</p>
         <p className="text-xl font-black text-primary">{inr(Math.round(totalPending))}</p>
-        <p className="mt-1 text-[11px] text-muted-foreground">{PAYOUT_CYCLE[party]}. Commission is already deducted.</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">{PAYOUT_CYCLE[party]}. Admin can release any pending amount immediately.</p>
         <p className="mt-1 text-[11px] text-muted-foreground">
           {party === "VENDOR"
-            ? "Earned = 95% of the stall's own price on delivered orders. To pay = earned − already paid."
+            ? "Vendor payout = order total − commission − GST − TDS − discounts."
             : "Earned = delivery fee + tip + bonus. Cash held is the COD money the partner still has, so it is taken off. To pay = earned − already paid − cash held."}
         </p>
       </div>
@@ -160,10 +179,10 @@ export function AdminSettlement() {
               <p className="text-[10px] font-semibold text-muted-foreground">Pay now</p>
               <p className="text-sm font-black text-primary">{inr(Math.round(r.pending))}</p>
               <button
-                onClick={() => { setOpenId(openId === r.id ? null : r.id); setAmount(String(Math.round(r.pending))); setRef(""); }}
+                onClick={() => void instantSettle(r)}
                 className="mt-1 rounded-lg border border-primary px-3 py-1 text-[11px] font-bold text-primary"
               >
-                {openId === r.id ? "Close" : "Settle"}
+                Instant 1-click Settlement
               </button>
             </div>
           </div>

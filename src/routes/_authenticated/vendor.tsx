@@ -18,7 +18,6 @@ import { toast } from "sonner";
 import { SectionList } from "@/components/DynamicPageRenderer";
 import { usePageLayout } from "@/lib/pageLayout";
 import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
-import { PRICE_MARKUP, VENDOR_PAYOUT_RATE } from "@/lib/pricing";
 import { confirmOnboardingPayment, onboardingFee, startOnboardingPayment } from "@/lib/onboarding.functions";
 import { loadCashfreeSdk } from "@/lib/checkout";
 
@@ -88,6 +87,7 @@ function VendorPortal() {
   const [dishOpen, setDishOpen] = useState(false);
   const [slip, setSlip] = useState<Order | null>(null);
   const [today, setToday] = useState({ orders: 0, sales: 0, earning: 0, rating: 0 });
+  const [vendorTab, setVendorTab] = useState<"overview" | "payouts">("overview");
 
   const [statusFilter, setStatusFilter] = useState<StatusValue>("ALL");
   const [dateFilter, setDateFilter] = useState<DateRange>("ALL");
@@ -98,19 +98,22 @@ function VendorPortal() {
   const pending = newOrders.length;
   const { muted, setMuted } = useLoudAlarm(pending > 0);
 
-  // Voice confirmation: speak each newly arrived order once.
+  // Voice confirmation: keep each new order until speech starts successfully.
   const spokenRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (muted || typeof window === "undefined" || !("speechSynthesis" in window)) return;
     for (const o of newOrders) {
       if (spokenRef.current.has(o.id)) continue;
-      spokenRef.current.add(o.id);
-      const amt = Math.round(Number((o as { total_amount?: number }).total_amount ?? 0));
+      const amt = Math.round(Number(o.grand_total ?? 0));
       const u = new SpeechSynthesisUtterance(
         `New order received on ThelaWala${amt ? ` for ${amt} rupees` : ""}. Please accept the order.`,
       );
       u.lang = "en-IN";
-      u.rate = 0.95;
+      u.rate = 1.3;
+      u.onstart = () => spokenRef.current.add(o.id);
+      u.onerror = () => window.setTimeout(() => {
+        if (!spokenRef.current.has(o.id)) window.speechSynthesis.speak(u);
+      }, 250);
       window.speechSynthesis.speak(u);
     }
   }, [newOrders, muted]);
@@ -150,18 +153,15 @@ function VendorPortal() {
     const loadToday = async () => {
       const since = new Date();
       since.setHours(0, 0, 0, 0);
-      const [{ data: done }, { data: rates }] = await Promise.all([
+      const [{ data: done }, { data: rates }, { data: ledger }] = await Promise.all([
         supabase.from("orders").select("food_total,base_food_total").eq("vendor_id", vendor.id).eq("status", "DELIVERED")
           .gte("delivered_at", since.toISOString()),
         supabase.from("order_ratings").select("food_stars").eq("vendor_id", vendor.id),
+        supabase.from("payout_ledgers").select("amount").eq("vendor_id", vendor.id).eq("party_type", "VENDOR")
+          .gte("created_at", since.toISOString()),
       ]);
       const stars = (rates ?? []).map((r) => Number(r.food_stars));
-      // Stall earning = 95% of the base food total (customer price is base + 10% markup).
-      const earning = (done ?? []).reduce((a, d) => {
-        const food = Number(d.food_total ?? 0);
-        const base = Number(d.base_food_total ?? 0) > 0 ? Number(d.base_food_total) : food / PRICE_MARKUP;
-        return a + base * VENDOR_PAYOUT_RATE;
-      }, 0);
+      const earning = (ledger ?? []).reduce((a, row) => a + Number(row.amount ?? 0), 0);
       setToday({
         orders: done?.length ?? 0,
         sales: (done ?? []).reduce((a, d) => a + Number(d.food_total), 0),
@@ -589,7 +589,7 @@ function VendorPortal() {
                   <div className="stat-tile">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Your earning today</p>
                     <p className="mt-0.5 text-lg font-black leading-none text-primary">{inr(Math.round(today.earning))}</p>
-                    <p className="mt-0.5 text-[9px] text-muted-foreground">95% of your price, paid on delivery</p>
+                    <p className="mt-0.5 text-[9px] text-muted-foreground">After commission, GST, TDS and discounts</p>
                   </div>
                   <div className="stat-tile">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Sales today</p>
@@ -604,13 +604,22 @@ function VendorPortal() {
             ),
             vendor_settings: () => (
               <div className="mt-3">
-                <SettlementHistory party="VENDOR" id={vendor.id} />
-                <div className="mt-3">
-                  <PayoutPanel party="VENDOR" id={vendor.id} />
+                <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+                  <button onClick={() => setVendorTab("overview")} className={`rounded-lg py-2 text-xs font-black ${vendorTab === "overview" ? "bg-card text-primary shadow-sm" : "text-muted-foreground"}`}>Stall overview</button>
+                  <button onClick={() => setVendorTab("payouts")} className={`rounded-lg py-2 text-xs font-black ${vendorTab === "payouts" ? "bg-card text-primary shadow-sm" : "text-muted-foreground"}`}>Payouts / Settlements</button>
                 </div>
-                <p className="section-title pt-1">Stall settings</p>
-                <VendorHours vendorId={vendor.id} />
-                <VendorOffer vendorId={vendor.id} />
+                {vendorTab === "payouts" ? (
+                  <div className="mt-3 space-y-3">
+                    <SettlementHistory party="VENDOR" id={vendor.id} />
+                    <PayoutPanel party="VENDOR" id={vendor.id} />
+                  </div>
+                ) : (
+                  <>
+                    <p className="section-title pt-1">Stall settings</p>
+                    <VendorHours vendorId={vendor.id} />
+                    <VendorOffer vendorId={vendor.id} />
+                  </>
+                )}
               </div>
             ),
           }}
@@ -764,7 +773,7 @@ function VendorPortal() {
               </div>
               {o.status === "DELIVERED" ? (
                 <p className="mt-2 rounded-xl bg-primary/10 px-2.5 py-1.5 text-[11px] font-black text-primary">
-                  ✅ Order delivered — you earned {inr(Math.round((Number(o.base_food_total ?? 0) > 0 ? Number(o.base_food_total) : Number(o.food_total) / PRICE_MARKUP) * VENDOR_PAYOUT_RATE))}
+                  ✅ Order delivered — payout is released on the automated T+3 cycle
                 </p>
               ) : null}
 

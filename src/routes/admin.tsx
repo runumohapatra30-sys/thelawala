@@ -326,6 +326,8 @@ function Admin() {
                 {num("surge_fee", "Surge fee amount (₹)")}
                 {num("cancel_penalty_fee", "Cancellation fee (₹)")}
                 {num("vendor_commission_pct", "Commission from stalls (%)")}
+                {num("gst_pct", "GST deduction (%)")}
+                {num("tds_pct", "TDS deduction (%)")}
               </div>
             </section>
 

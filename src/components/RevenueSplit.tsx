@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { inr } from "@/lib/fees";
-import { VENDOR_PAYOUT_RATE, PRICE_MARKUP, platformRetainedProfit } from "@/lib/pricing";
+import { PRICE_MARKUP, platformRetainedProfit } from "@/lib/pricing";
 
 type Row = {
   grand_total: number; food_total: number; base_food_total: number | null;
@@ -25,18 +25,18 @@ export function RevenueSplit() {
   const [range, setRange] = useState<Range>("today");
   const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(true);
+  const [deductions, setDeductions] = useState({ commission: 10, gst: 0, tds: 0 });
 
   useEffect(() => {
     setBusy(true);
-    supabase
-      .from("orders")
-      .select("grand_total,food_total,base_food_total,delivery_fee,tip_amount,discount_amount,platform_fee,handling_fee,packing_fee,surge_fee,distance_km")
-      .eq("status", "DELIVERED")
-      .gte("delivered_at", since(range))
-      .then(({ data }) => {
-        setRows((data ?? []) as Row[]);
-        setBusy(false);
-      });
+    Promise.all([
+      supabase.from("orders").select("grand_total,food_total,base_food_total,delivery_fee,tip_amount,discount_amount,platform_fee,handling_fee,packing_fee,surge_fee,distance_km").eq("status", "DELIVERED").gte("delivered_at", since(range)),
+      supabase.from("system_settings").select("vendor_commission_pct,gst_pct,tds_pct").maybeSingle(),
+    ]).then(([orders, settings]) => {
+      setRows((orders.data ?? []) as Row[]);
+      if (settings.data) setDeductions({ commission: Number(settings.data.vendor_commission_pct ?? 10), gst: Number(settings.data.gst_pct ?? 0), tds: Number(settings.data.tds_pct ?? 0) });
+      setBusy(false);
+    });
   }, [range]);
 
   let gmv = 0, vendorPayout = 0, riderPayout = 0, charges = 0, discounts = 0;
@@ -44,7 +44,8 @@ export function RevenueSplit() {
     const tip = Number(o.tip_amount ?? 0);
     const food = Number(o.food_total ?? 0);
     const base = Number(o.base_food_total ?? 0) > 0 ? Number(o.base_food_total) : food / PRICE_MARKUP;
-    const vendor = base * VENDOR_PAYOUT_RATE;
+    const total = Number(o.grand_total ?? 0);
+    const vendor = Math.max(0, total - total * deductions.commission / 100 - total * deductions.gst / 100 - total * deductions.tds / 100 - Number(o.discount_amount ?? 0));
     const pool = food - vendor;
     const retained = platformRetainedProfit(Number(o.distance_km ?? 0));
     const gift = Math.max(0, pool - retained);

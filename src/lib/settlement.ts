@@ -1,4 +1,4 @@
-import { PRICE_MARKUP, VENDOR_PAYOUT_RATE, platformRetainedProfit } from "@/lib/pricing";
+import { platformRetainedProfit } from "@/lib/pricing";
 
 export type Period = "day" | "week" | "month" | "year" | "life";
 
@@ -38,6 +38,8 @@ export type MoneyOrder = {
   distance_km?: number | string | null;
 };
 
+export type PayoutSettings = { commissionPct?: number; gstPct?: number; tdsPct?: number };
+
 export type OrderSplit = {
   sale: number;
   vendorEarning: number;
@@ -53,10 +55,13 @@ export type OrderSplit = {
 const n = (v: unknown) => Number(v ?? 0) || 0;
 
 /** Money split for one order, using the same rules as `complete_delivery`. */
-export function splitOrder(o: MoneyOrder): OrderSplit {
+export function splitOrder(o: MoneyOrder, settings: PayoutSettings = {}): OrderSplit {
   const food = n(o.food_total);
-  const base = n(o.base_food_total) > 0 ? n(o.base_food_total) : food / PRICE_MARKUP;
-  const vendor = Math.round(base * VENDOR_PAYOUT_RATE * 100) / 100;
+  const total = n(o.grand_total);
+  const commission = Math.max(0, n(settings.commissionPct ?? 10));
+  const gst = Math.max(0, n(settings.gstPct));
+  const tds = Math.max(0, n(settings.tdsPct));
+  const vendor = Math.max(0, Math.round((total - total * commission / 100 - total * gst / 100 - total * tds / 100 - n(o.discount_amount)) * 100) / 100);
   const pool = food - vendor;
   const retained = platformRetainedProfit(n(o.distance_km));
   // Leftover margin is shared 50/50 between the rider gift and the company.
@@ -99,5 +104,5 @@ export const REFUND_LABEL: Record<string, string> = {
 /** Payout cycle text: riders are paid on Sunday, stalls the next day. */
 export const PAYOUT_CYCLE = {
   PARTNER: "Paid every Sunday",
-  VENDOR: "Paid the next day",
+  VENDOR: "Automated T+3 rolling settlement",
 } as const;
