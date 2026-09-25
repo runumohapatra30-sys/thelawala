@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { ThelaLogo } from "@/components/Shell";
 
 export const Route = createFileRoute("/auth")({
@@ -148,6 +149,26 @@ export function AuthPage() {
               className="press mt-3 w-full rounded-xl bg-primary py-3.5 text-sm font-black text-primary-foreground disabled:opacity-50"
             >
               {busy ? "Please wait…" : "Continue as guest"}
+            </button>
+            <button
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                setMsg(null);
+                const res = await lovable.auth.signInWithOAuth("google", {
+                  redirect_uri: window.location.origin + "/auth",
+                });
+                if (res.error) {
+                  setBusy(false);
+                  return setMsg("Google sign-in failed. Please try again.");
+                }
+                if (res.redirected) return;
+                setBusy(false);
+                await goAfterLogin();
+              }}
+              className="press mt-2 w-full rounded-xl border border-border bg-card py-3.5 text-sm font-black text-foreground disabled:opacity-50"
+            >
+              Continue with Google
             </button>
             {msg ? <p className="mt-2 text-xs text-muted-foreground">{msg}</p> : null}
 
