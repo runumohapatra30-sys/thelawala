@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { inr } from "@/lib/fees";
 import { useSession } from "@/lib/session";
 import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
-import { ChevronRight, Gift, Headphones, Heart, MapPin, MessageSquareText, Pencil, ShoppingBag, Wallet } from "lucide-react";
+import { ChevronRight, Gift, Headphones, Heart, MapPin, MessageSquareText, Pencil, ShieldCheck, ShoppingBag, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -128,6 +128,7 @@ function Profile() {
               </button>
             </div>
           ) : null}
+          <MenuLink icon={<ShieldCheck />} label="Admin Panel" to="/admin" />
           <MenuLink icon={<Headphones />} label="Help & support" to="/support" />
           <a href="mailto:founder@thelawala.com" className="flex items-center justify-between px-3 py-3.5 text-sm font-bold"><span className="flex items-center gap-3"><MenuIcon><MessageSquareText /></MenuIcon>Write to Founder</span><Chevron /></a>
           </div>
