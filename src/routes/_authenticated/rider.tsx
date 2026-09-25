@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { LogoutButton, Shell } from "@/components/Shell";
+import { LogoutButton, PortalTabs, Shell } from "@/components/Shell";
 import { PayoutPanel } from "@/components/Payouts";
 import { CashSettlement } from "@/components/CashSettlement";
 import { RiderEarningsBreakdown } from "@/components/RiderEarningsBreakdown";
@@ -138,6 +138,7 @@ function RiderPortal() {
   const [deliveryBusy, setDeliveryBusy] = useState(false);
   const [earnings, setEarnings] = useState({ trips: 0, total: 0 });
   const [week, setWeek] = useState({ trips: 0, total: 0, rating: 0 });
+  const [portalTab, setPortalTab] = useState<"live" | "accounts">("live");
   const [form, setForm] = useState({
     name: "", mobile: "", emergency_phone: "", address: "", vehicle_no: "", dl_number: "",
     pan: "", identity_proof_type: "Aadhaar", identity_number: "", vehicle_type: "EV_SCOOTER",
@@ -713,13 +714,14 @@ function RiderPortal() {
       />
 
       <div className="space-y-3 p-4">
+        <PortalTabs active={portalTab} onChange={setPortalTab} />
         <DynamicPageRenderer
           app="rider"
           page="dashboard"
           registry={{
             rider_earnings_card: (cfg) => (
               <>
-                <div className="grid grid-cols-3 gap-2">
+                <div className={portalTab === "live" ? "grid grid-cols-3 gap-2" : "hidden"}>
                   <div className="stat-tile">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">This week</p>
                     <p className="mt-0.5 text-lg font-black leading-none text-primary">{inr(Math.round(week.total))}</p>
@@ -734,41 +736,41 @@ function RiderPortal() {
                   </div>
                 </div>
 
-                <div className={`mt-3 flex items-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-black ${me.is_online ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                <div className={`mt-3 flex items-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-black ${portalTab === "live" ? "" : "hidden"} ${me.is_online ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
                   <span className={`h-2.5 w-2.5 rounded-full ${me.is_online ? "animate-pulse bg-primary" : "bg-muted-foreground"}`} />
                   {me.is_online ? "On duty · receiving orders" : "Off duty · turn duty ON from the top bar"}
                 </div>
 
-                <div className="mt-3">
+                <div className={portalTab === "live" ? "mt-3" : "hidden"}>
                   <RiderEarningsBreakdown partnerId={me.id} />
                 </div>
 
-                <div className="mt-3">
+                <div className={portalTab === "accounts" ? "mt-3" : "hidden"}>
                   <SettlementHistory party="PARTNER" id={me.id} />
                 </div>
 
-                <div className="mt-3">
+                <div className={portalTab === "accounts" ? "mt-3" : "hidden"}>
                   <CashSettlement partnerId={me.id} userId={user?.id ?? ""} />
                 </div>
 
-                <div className="mt-3">
+                <div className={portalTab === "accounts" ? "mt-3" : "hidden"}>
                   <PayoutPanel party="PARTNER" id={me.id} />
                 </div>
 
-                {cfg.title ? <p className="section-title pt-1">{cfg.title}</p> : null}
+                {portalTab === "live" && cfg.title ? <p className="section-title pt-1">{cfg.title}</p> : null}
               </>
             ),
             rider_shifts: () => null,
           }}
         />
 
-        {active ? <OrderChat orderId={active.id} role="RIDER" senderId={user?.id} title="Chat with customer" /> : null}
+        {portalTab === "live" && active ? <OrderChat orderId={active.id} role="RIDER" senderId={user?.id} title="Chat with customer" /> : null}
 
 
 
 
 
-        {me.status === "UNDER_REVIEW" ? (
+        {portalTab === "live" && me.status === "UNDER_REVIEW" ? (
           <div className="card-soft border-2 border-destructive p-3">
             <p className="text-sm font-bold text-destructive">Duty locked · licence under review</p>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -778,7 +780,7 @@ function RiderPortal() {
           </div>
         ) : null}
 
-        {trip && vendor && stallPoint && dropPoint ? (
+        {portalTab === "live" && trip && vendor && stallPoint && dropPoint ? (
           <>
             <div className="overflow-hidden rounded-2xl border border-border">
               <LiveMap
@@ -804,7 +806,7 @@ function RiderPortal() {
                     {step === 2 ? trip.address_line : vendor.address ?? "Stall location"}
                   </p>
                 </div>
-                <span className="shrink-0 rounded-full bg-brand-soft px-2.5 py-1 text-[11px] font-bold">
+                  <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground">
                   #{trip.code}
                 </span>
               </div>
@@ -833,7 +835,7 @@ function RiderPortal() {
             <div
               className={`rounded-2xl border-2 p-3 ${
                 trip.payment_mode === "COD" && trip.payment_status !== "PAID"
-                  ? "border-brand bg-brand-soft"
+                  ? "border-border bg-muted"
                   : "border-primary/40 bg-primary/5"
               }`}
             >
@@ -927,7 +929,7 @@ function RiderPortal() {
           </div>
         )}
 
-        <div className="portal-panel">
+        <div className={portalTab === "accounts" ? "portal-panel" : "hidden"}>
           <p className="text-sm font-bold">Driving licence</p>
           <p className="text-[11px] text-muted-foreground">
             Current: {me.dl_number ?? "not added yet"}. Changing it sends your account for review and takes you off duty.
@@ -972,12 +974,12 @@ function RiderPortal() {
           {dlMsg ? <p className="mt-2 text-xs font-semibold text-primary">{dlMsg}</p> : null}
         </div>
 
-        <a href="tel:9078492360" className="press block rounded-xl border-2 border-destructive py-3 text-center text-sm font-bold text-destructive">
+        <a href="tel:9078492360" className={`${portalTab === "live" ? "press block" : "hidden"} rounded-xl border-2 border-destructive py-3 text-center text-sm font-bold text-destructive`}>
           SOS · call support 9078492360
         </a>
       </div>
 
-      {offer && vendor ? (
+      {portalTab === "live" && offer && vendor ? (
         <OfferDrawer
           offer={offer}
           vendor={vendor}

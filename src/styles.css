@@ -75,32 +75,32 @@
 
 :root {
   --radius: 0.85rem;
-  --background: #faf8f2;
+  --background: #f4f7f5;
   --foreground: #173126;
   --card: #ffffff;
   --card-foreground: #173126;
   --popover: #ffffff;
   --popover-foreground: #173126;
-  --primary: #00472f;
-  --primary-foreground: #fffdf7;
-  --brand: #d7e9bf;
+  --primary: #0f5132;
+  --primary-foreground: #ffffff;
+  --brand: #e6f0ea;
   --brand-foreground: #173126;
-  --brand-soft: #f7f5ee;
-  --success: #0b3b24;
-  --success-foreground: #fffdf7;
-  --festive-header-foreground: #fffdf7;
-  --secondary: #f5efe6;
+  --brand-soft: #eef4f0;
+  --success: #0f5132;
+  --success-foreground: #ffffff;
+  --festive-header-foreground: #ffffff;
+  --secondary: #f1f4f2;
   --secondary-foreground: #173126;
-  --muted: #f5efe6;
-  --muted-foreground: #606863;
-  --accent: #e5b85c;
+  --muted: #eef2f0;
+  --muted-foreground: #64706a;
+  --accent: #e5edf0;
   --accent-foreground: #173126;
   --destructive: #b54a3f;
   --destructive-foreground: #fffdf7;
   --border: #e5e6dc;
   --input: #dfe4da;
   --ring: #00472f;
-  --tile: #f5efe6;
+  --tile: #ffffff;
   --coupon: #fff6d9;
   --coupon-strong: #f1dfae;
   --chart-1: oklch(0.646 0.222 41.116);
@@ -108,7 +108,7 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: #f5efe6;
+  --sidebar: #ffffff;
   --sidebar-foreground: #173126;
   --sidebar-primary: #00472f;
   --sidebar-primary-foreground: #fffdf7;
@@ -116,7 +116,7 @@
   --sidebar-accent-foreground: #173126;
   --sidebar-border: #e5e6dc;
   --sidebar-ring: #00472f;
-  --shadow-soft: 0 10px 30px rgba(0, 71, 47, 0.06);
+  --shadow-soft: 0 8px 24px rgba(15, 81, 50, 0.06);
 }
 
 
@@ -184,7 +184,7 @@
 
 @utility card-soft {
   background: var(--color-card);
-  border-radius: 1.5rem;
+  border-radius: 1rem;
   border: 1px solid color-mix(in oklab, var(--color-border) 72%, white);
   box-shadow: var(--shadow-soft);
 }
@@ -263,10 +263,10 @@
 }
 
 @utility stat-tile {
-  background: linear-gradient(160deg, color-mix(in oklab, var(--color-card) 96%, var(--color-brand)) 0%, var(--color-card) 100%);
+  background: var(--color-card);
   border: 1px solid color-mix(in oklab, var(--color-border) 70%, white);
-  border-radius: 1.25rem;
-  padding: 0.75rem 0.6rem;
+  border-radius: 0.9rem;
+  padding: 0.65rem 0.55rem;
   text-align: center;
   box-shadow: 0 14px 28px -22px rgba(15, 23, 42, 0.45);
 }
@@ -274,8 +274,8 @@
 @utility portal-panel {
   background: var(--color-card);
   border: 1px solid color-mix(in oklab, var(--color-border) 70%, white);
-  border-radius: 1.5rem;
-  padding: 0.9rem;
+  border-radius: 1rem;
+  padding: 0.75rem;
   box-shadow: 0 16px 34px -26px rgba(15, 23, 42, 0.4);
 }
 

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PortalHeader, Shell } from "@/components/Shell";
+import { PortalHeader, PortalTabs, Shell } from "@/components/Shell";
 import { DateRange, OrderFilterBar, PaymentMode, matchesOrderFilters, StatusValue } from "@/components/OrderFilters";
 import { PayoutPanel } from "@/components/Payouts";
 import { SettlementHistory } from "@/components/SettlementHistory";
@@ -87,7 +87,7 @@ function VendorPortal() {
   const [dishOpen, setDishOpen] = useState(false);
   const [slip, setSlip] = useState<Order | null>(null);
   const [today, setToday] = useState({ orders: 0, sales: 0, earning: 0, rating: 0 });
-  const [vendorTab, setVendorTab] = useState<"overview" | "payouts">("overview");
+  const [portalTab, setPortalTab] = useState<"live" | "accounts">("live");
 
   const [statusFilter, setStatusFilter] = useState<StatusValue>("ALL");
   const [dateFilter, setDateFilter] = useState<DateRange>("ALL");
@@ -569,7 +569,8 @@ function VendorPortal() {
     <Shell>
       <PortalHeader title={vendor.stall_name} subtitle="Live on ThelaWala" />
       <div className="space-y-3 p-4">
-        {pending > 0 ? (
+        <PortalTabs active={portalTab} onChange={setPortalTab} />
+        {portalTab === "live" && pending > 0 ? (
           <div className="animate-pulse rounded-2xl bg-destructive px-3 py-2.5 text-center text-sm font-black text-destructive-foreground">
             🔔 {pending} new order{pending > 1 ? "s" : ""} waiting — accept or reject below
           </div>
@@ -579,7 +580,7 @@ function VendorPortal() {
           sections={vLayout}
           registry={{
             vendor_stats: (cfg) => (
-              <>
+              portalTab === "live" ? <>
                 {cfg.title ? <p className="section-title">{cfg.title}</p> : null}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="stat-tile">
@@ -600,26 +601,15 @@ function VendorPortal() {
                     <p className="mt-0.5 text-lg font-black leading-none">{today.rating ? `${today.rating} ★` : "—"}</p>
                   </div>
                 </div>
-              </>
+              </> : null
             ),
             vendor_settings: () => (
-              <div className="mt-3">
-                <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
-                  <button onClick={() => setVendorTab("overview")} className={`rounded-lg py-2 text-xs font-black ${vendorTab === "overview" ? "bg-card text-primary shadow-sm" : "text-muted-foreground"}`}>Stall overview</button>
-                  <button onClick={() => setVendorTab("payouts")} className={`rounded-lg py-2 text-xs font-black ${vendorTab === "payouts" ? "bg-card text-primary shadow-sm" : "text-muted-foreground"}`}>Payouts / Settlements</button>
-                </div>
-                {vendorTab === "payouts" ? (
-                  <div className="mt-3 space-y-3">
-                    <SettlementHistory party="VENDOR" id={vendor.id} shopName={vendor.stall_name} />
-                    <PayoutPanel party="VENDOR" id={vendor.id} />
-                  </div>
-                ) : (
-                  <>
-                    <p className="section-title pt-1">Stall settings</p>
-                    <VendorHours vendorId={vendor.id} />
-                    <VendorOffer vendorId={vendor.id} />
-                  </>
-                )}
+              <div className={portalTab === "accounts" ? "mt-3 space-y-3" : "hidden"}>
+                <SettlementHistory party="VENDOR" id={vendor.id} shopName={vendor.stall_name} />
+                <PayoutPanel party="VENDOR" id={vendor.id} />
+                <p className="section-title pt-1">Stall settings</p>
+                <VendorHours vendorId={vendor.id} />
+                <VendorOffer vendorId={vendor.id} />
               </div>
             ),
           }}
@@ -627,7 +617,7 @@ function VendorPortal() {
 
 
 
-        <div className="portal-panel">
+        <div className={portalTab === "accounts" ? "portal-panel" : "hidden"}>
 
           <p className="text-sm font-bold">FSSAI licence</p>
           <p className="text-[11px] text-muted-foreground">Current: {vendor.fssai_number ?? "not added yet"}</p>
@@ -678,7 +668,7 @@ function VendorPortal() {
         </div>
 
 
-        {pending > 0 ? (
+        {portalTab === "live" && pending > 0 ? (
           <section className="space-y-3">
             <div className="flex items-center justify-between rounded-2xl bg-destructive px-3 py-2 text-destructive-foreground">
               <p className="flex items-center gap-2 text-sm font-black">
@@ -734,7 +724,7 @@ function VendorPortal() {
           </section>
         ) : null}
 
-        <section className={`space-y-2 ${vLayout.find((x) => x.type === "vendor_active_orders")?.is_visible === false ? "hidden" : ""}`}>
+        <section className={`space-y-2 ${portalTab === "live" && vLayout.find((x) => x.type === "vendor_active_orders")?.is_visible !== false ? "" : "hidden"}`}>
           <p className="section-title">Live orders</p>
           <OrderFilterBar
             mode="vendor"
@@ -792,7 +782,7 @@ function VendorPortal() {
         </section>
 
 
-        <section className="portal-panel">
+        <section className={portalTab === "accounts" ? "portal-panel" : "hidden"}>
           <div className="flex items-center justify-between">
             <p className="text-sm font-bold">Your menu</p>
             <button
