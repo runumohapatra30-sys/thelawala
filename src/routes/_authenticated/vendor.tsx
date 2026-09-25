@@ -610,7 +610,7 @@ function VendorPortal() {
                 </div>
                 {vendorTab === "payouts" ? (
                   <div className="mt-3 space-y-3">
-                    <SettlementHistory party="VENDOR" id={vendor.id} />
+                    <SettlementHistory party="VENDOR" id={vendor.id} shopName={vendor.stall_name} />
                     <PayoutPanel party="VENDOR" id={vendor.id} />
                   </div>
                 ) : (
