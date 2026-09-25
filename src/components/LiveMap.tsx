@@ -13,7 +13,13 @@ type Props = {
 
 const stallIcon = `<svg viewBox="0 0 24 24" width="34" height="34" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#fff" stroke="#EBECEF"/><path d="M5 10l1.4-3.2A1 1 0 017.3 6h9.4a1 1 0 01.9.8L19 10v1a2 2 0 01-2 2H7a2 2 0 01-2-2v-1z" fill="#F97316"/><rect x="7" y="13" width="10" height="5" rx="1" fill="#FDBA74"/></svg>`;
 const dropIcon = `<svg viewBox="0 0 24 24" width="34" height="34" xmlns="http://www.w3.org/2000/svg"><path d="M12 22s7-6.3 7-12A7 7 0 105 10c0 5.7 7 12 7 12z" fill="#E11D48"/><circle cx="12" cy="10" r="2.7" fill="#fff"/></svg>`;
-const riderIcon = `<svg viewBox="0 0 24 24" width="34" height="34" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#0C831F"/><circle cx="8" cy="16" r="2.3" fill="#fff"/><circle cx="17" cy="16" r="2.3" fill="#fff"/><path d="M6 15l3-5h4l2 5" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M13 8h3l1 3" stroke="#F8CB46" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>`;
+const riderIcon = (heading: number) => `<div style="width:40px;height:40px;transform:rotate(${heading}deg);filter:drop-shadow(0 3px 4px rgba(15,81,50,.28));transform-origin:20px 20px"><svg viewBox="0 0 40 40" width="40" height="40" xmlns="http://www.w3.org/2000/svg"><path d="M20 2.5c8.3 0 15 6.7 15 15 0 10.8-15 20-15 20S5 28.3 5 17.5c0-8.3 6.7-15 15-15z" fill="#0F5132" stroke="#fff" stroke-width="2"/><circle cx="20" cy="17" r="9.5" fill="#fff"/><circle cx="15.5" cy="25.5" r="2.4" fill="#0F5132"/><circle cx="25.5" cy="25.5" r="2.4" fill="#0F5132"/><path d="M15.5 24.7l3.1-5.8h4l3.1 5.8M20 18.9l2.2-4.2h3.4" fill="none" stroke="#0F5132" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20.2 12.8c1.1-2.1 3.3-3.1 5.7-2.6" fill="none" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round"/></svg></div>`;
+
+function bearing(from: LatLng, to: LatLng) {
+  const lat = (Math.PI / 180) * (to.lat - from.lat);
+  const lng = (Math.PI / 180) * (to.lng - from.lng);
+  return (Math.atan2(lng * Math.cos((to.lat * Math.PI) / 180), lat) * 180) / Math.PI;
+}
 
 export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className }: Props) {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -48,14 +54,15 @@ export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className 
         }).addTo(map);
 
         const icon = (html: string) =>
-          L.divIcon({ html, className: "", iconSize: [34, 34], iconAnchor: [17, 30] });
+          L.divIcon({ html, className: "delivery-map-marker", iconSize: [40, 40], iconAnchor: [20, 35] });
         leafletRef.current = { L, icon };
 
-        L.marker([from.lat, from.lng], { icon: icon(fromKind === "stall" ? stallIcon : riderIcon) }).addTo(map);
+        const initialPoint = rider ?? from;
+        L.marker([from.lat, from.lng], { icon: icon(fromKind === "stall" ? stallIcon : riderIcon(bearing(initialPoint, to))) }).addTo(map);
         L.marker([to.lat, to.lng], { icon: icon(dropIcon) }).addTo(map);
 
         if (rider) {
-          riderMarkerRef.current = L.marker([rider.lat, rider.lng], { icon: icon(riderIcon) }).addTo(map);
+          riderMarkerRef.current = L.marker([rider.lat, rider.lng], { icon: icon(riderIcon(bearing(rider, to))) }).addTo(map);
         }
 
         const route = await fetchRoute(rider ?? from, to);
@@ -94,8 +101,9 @@ export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className 
     if (!map || !kit) return;
 
     if (!riderMarkerRef.current) {
-      riderMarkerRef.current = kit.L.marker([rider.lat, rider.lng], { icon: kit.icon(riderIcon) }).addTo(map);
+      riderMarkerRef.current = kit.L.marker([rider.lat, rider.lng], { icon: kit.icon(riderIcon(bearing(rider, to))) }).addTo(map);
     } else {
+      riderMarkerRef.current.setIcon(kit.icon(riderIcon(bearing(rider, to))));
       const start = riderMarkerRef.current.getLatLng();
       const t0 = performance.now();
       const step = (now: number) => {
