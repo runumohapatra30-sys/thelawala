@@ -98,6 +98,23 @@ function VendorPortal() {
   const pending = newOrders.length;
   const { muted, setMuted } = useLoudAlarm(pending > 0);
 
+  // Voice confirmation: speak each newly arrived order once.
+  const spokenRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (muted || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    for (const o of newOrders) {
+      if (spokenRef.current.has(o.id)) continue;
+      spokenRef.current.add(o.id);
+      const amt = Math.round(Number((o as { total_amount?: number }).total_amount ?? 0));
+      const u = new SpeechSynthesisUtterance(
+        `New order received on ThelaWala${amt ? ` for ${amt} rupees` : ""}. Please accept the order.`,
+      );
+      u.lang = "en-IN";
+      u.rate = 0.95;
+      window.speechSynthesis.speak(u);
+    }
+  }, [newOrders, muted]);
+
   useEffect(() => {
     if (!user) return;
     supabase.from("vendors").select("id,stall_name,status,is_open,fssai_number,rejection_reason").eq("owner_id", user.id).maybeSingle()
