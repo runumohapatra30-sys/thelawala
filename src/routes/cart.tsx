@@ -10,7 +10,7 @@ import { computeBill, haversineKm, inr, type Settings } from "@/lib/fees";
 import { checkoutGate, minimumOrderValue, stallOfferDiscount } from "@/lib/pricing";
 import { payInAppWithCashfree } from "@/lib/checkout";
 import { useSession } from "@/lib/session";
-import { ArrowLeft, BellOff, ChevronRight, CircleIndianRupee, DoorOpen, MapPin, MoreVertical, Phone, PhoneOff, Plus, ShieldCheck, Sparkles, Tag } from "lucide-react";
+import { ArrowLeft, Banknote, Bike, BellOff, Check, ChevronRight, CircleDollarSign, CreditCard, DoorOpen, MapPin, Phone, PhoneOff, Plus, ShieldCheck, Smartphone, Sparkles, Tag } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/cart")({
@@ -39,6 +39,7 @@ function Cart() {
   const { user } = useSession();
   const lines = useCart();
   const { foodTotal, baseTotal } = cartTotals(lines);
+  const [checkoutStep, setCheckoutStep] = useState<"cart" | "payment">("cart");
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [vendor, setVendor] = useState<{
@@ -67,12 +68,14 @@ function Cart() {
   const [couponMsg, setCouponMsg] = useState<string | null>(null);
   const [offers, setOffers] = useState<Coupon[]>([]);
   const [tip, setTip] = useState(0);
+  const [customTip, setCustomTip] = useState("");
+  const [otherTipActive, setOtherTipActive] = useState(false);
+  const [onlineMethod, setOnlineMethod] = useState<"UPI" | "CARD">("UPI");
   const [instructions, setInstructions] = useState("");
   const [locating, setLocating] = useState(false);
   const [saved, setSaved] = useState<SavedAddress[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [addressConfirmOpen, setAddressConfirmOpen] = useState(false);
-  const [codConfirmOpen, setCodConfirmOpen] = useState(false);
   const [recommendations, setRecommendations] = useState<
     Array<{
       id: string;
@@ -85,11 +88,6 @@ function Cart() {
       in_stock: boolean;
     }>
   >([]);
-  const [guestProfile, setGuestProfile] = useState(() => ({
-    name: typeof window === "undefined" ? "" : localStorage.getItem("thelawala.guest_name") || "",
-    mobile:
-      typeof window === "undefined" ? "" : localStorage.getItem("thelawala.guest_mobile") || "",
-  }));
   const autoTried = useRef(false);
   const coordsRef = useRef(coords);
   const formRef = useRef(form);
@@ -111,7 +109,6 @@ function Cart() {
       }));
     const updateGuest = (event: Event) => {
       const profile = (event as CustomEvent<{ name: string; mobile: string }>).detail;
-      setGuestProfile(profile);
       setForm((current) => ({ ...current, full_name: profile.name, mobile: profile.mobile }));
     };
     window.addEventListener(GUEST_PROFILE_EVENT, updateGuest);
@@ -385,52 +382,34 @@ function Cart() {
     );
   }
 
-  async function place(confirmed = false) {
+  function proceedToPayment() {
     setErr(null);
     if (!coords) {
       setPickerOpen(true);
       return;
     }
-    if (payment === "COD" && !confirmed) {
-      setCodConfirmOpen(true);
+    if (!user) {
+      openLoginModal();
+      return;
+    }
+    if (!form.full_name || form.mobile.length < 10 || form.pincode.length < 6 || !form.line) {
+      setErr("Please add your name, 10-digit mobile number, PIN code and full address.");
+      document.getElementById("delivery-details")?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+    if (blockedReason) return setErr(blockedReason);
+    if (!bill || !vendor) return;
+    setCheckoutStep("payment");
+  }
+
+  async function place() {
+    setErr(null);
+    if (!coords) {
+      setPickerOpen(true);
       return;
     }
     if (!user) {
-      if (!guestProfile.name) {
-        openLoginModal();
-        return;
-      }
-      if (!form.full_name || form.mobile.length < 10 || form.pincode.length < 6 || !form.line)
-        return setErr("Please fill name, 10-digit mobile, 6-digit pincode and full address.");
-      if (!coords)
-        return setErr("Tap “Use my current location” — every order needs your live location.");
-      if (blockedReason) return setErr(blockedReason);
-      if (!bill || !vendor) return;
-
-      const localOrder = {
-        id: `local-${Date.now()}`,
-        code: `TW${Date.now().toString().slice(-7)}`,
-        status: "ORDER_PLACED",
-        created_at: new Date().toISOString(),
-        customer_name: form.full_name,
-        customer_mobile: form.mobile,
-        address_line: form.landmark ? `${form.line}, ${form.landmark}` : form.line,
-        pincode: form.pincode,
-        vendor_id: vendor.id,
-        vendor_name: vendor.stall_name,
-        grand_total: netTotal,
-        food_total: bill.foodTotal,
-        delivery_fee: bill.deliveryFee,
-        payment_mode: "COD",
-        items: lines,
-      };
-      const existing = JSON.parse(
-        localStorage.getItem("thelawala.local_orders") || "[]",
-      ) as unknown[];
-      localStorage.setItem("thelawala.local_orders", JSON.stringify([localOrder, ...existing]));
-      cart.clear();
-      toast.success("Order placed successfully");
-      await navigate({ to: "/" });
+      openLoginModal();
       return;
     }
     if (!form.full_name || form.mobile.length < 10 || form.pincode.length < 6 || !form.line)
@@ -584,6 +563,8 @@ function Cart() {
 
   return (
     <Shell>
+      {checkoutStep === "cart" ? (
+        <>
       <header className="sticky top-0 z-30 bg-card px-4 pb-3 pt-4 shadow-card">
         <div className="flex items-center gap-3">
           <Link to="/" aria-label="Back to home" className="press grid h-10 w-10 place-items-center rounded-full border border-border">
@@ -593,12 +574,9 @@ function Cart() {
             <h1 className="truncate text-lg font-black">Your Cart</h1>
             <p className="truncate text-[11px] text-muted-foreground">{vendor?.stall_name ?? "ThelaWala"} · {lines.reduce((sum, line) => sum + line.qty, 0)} items</p>
           </div>
-          <MoreVertical className="h-5 w-5 text-muted-foreground" />
+            <span className="shrink-0 rounded-full bg-primary/10 px-3 py-2 text-xs font-black text-primary">{savings > 0 ? `${inr(savings)} saved!` : "Street food, made local"}</span>
         </div>
       </header>
-      <div className="bg-brand px-4 py-2 text-center text-sm font-black text-primary">
-        {savings > 0 ? `${inr(savings)} saved on this order` : deliveryPromo}
-      </div>
       <div className="space-y-3 bg-muted/45 p-3 pb-48">
         <div className="rounded-lg border border-brand bg-brand-soft p-3">
           <div className="flex items-center gap-2">
@@ -671,7 +649,7 @@ function Cart() {
           <section className="py-2">
             <div className="mb-3 flex items-end justify-between">
               <div>
-                <h2 className="font-display text-2xl text-primary">You may also like</h2>
+                <h2 className="font-display text-2xl text-primary">Did you forget?</h2>
                 <p className="text-[11px] font-semibold text-muted-foreground">
                   Popular add-ons from {vendor?.stall_name}
                 </p>
@@ -836,22 +814,35 @@ function Cart() {
         </div>
 
         <div className="card-soft rise-in space-y-3 p-4">
-          <p className="text-[11px] font-black uppercase text-muted-foreground">Delivery tip</p>
-          <p className="text-sm font-bold">A small tip, a big gesture!</p>
-          <p className="text-[11px] text-muted-foreground">
-            A tip goes fully to your delivery partner.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {[0, 10, 20, 30].map((t) => (
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-brand text-brand-foreground"><Bike className="h-5 w-5" /></span>
+            <div><p className="text-[11px] font-black uppercase text-muted-foreground">Delivery tip</p><p className="text-sm font-bold">100% goes to your delivery partner</p></div>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {[10, 20, 30].map((amount) => (
               <button
-                key={t}
-                onClick={() => setTip(t)}
-                className={`press min-w-16 flex-1 rounded-lg border px-3 py-2.5 text-xs font-black ${tip === t ? "border-primary bg-primary text-primary-foreground" : "border-border text-foreground"}`}
+                key={amount}
+                onClick={() => { setTip(amount); setOtherTipActive(false); }}
+                className={`press relative rounded-lg border px-2 py-2.5 text-xs font-black ${tip === amount && !otherTipActive ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground"}`}
               >
-                {t === 0 ? "No tip" : `₹${t}`}
+                ₹{amount}{amount === 20 ? <span className="absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-brand px-1.5 py-0.5 text-[8px] text-brand-foreground">Most tipped</span> : null}
               </button>
             ))}
+            <button
+              onClick={() => setOtherTipActive((active) => !active)}
+              className={`press rounded-lg border px-2 py-2.5 text-xs font-black ${otherTipActive ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground"}`}
+            >Other</button>
           </div>
+          {otherTipActive ? (
+            <label className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+              <span className="text-sm font-bold">₹</span>
+              <input inputMode="numeric" value={customTip} onChange={(event) => { const value = event.target.value.replace(/\D/g, "").slice(0, 3); setCustomTip(value); setTip(Number(value) || 0); }} placeholder="Enter tip" className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
+            </label>
+          ) : null}
+        </div>
+
+        <div className="card-soft rise-in space-y-3 p-4">
+          <p className="text-sm font-bold">Delivery instructions</p>
           <div className="grid grid-cols-2 gap-2 pt-1">
             {instructionOptions.map(({ label, Icon }) => {
               const active = instructions === label;
@@ -930,11 +921,11 @@ function Cart() {
           </div>
         </div>
 
-        <div className="card-soft rise-in p-4">
-          <p className="text-[11px] font-black uppercase text-muted-foreground">Bill details</p>
+        <div className="rise-in border-y border-border px-1 py-4">
+          <p className="text-[11px] font-black uppercase tracking-wide text-muted-foreground">Bill details</p>
           {bill ? (
             <dl className="mt-2 space-y-1.5 text-sm">
-              <Row label="Item total" value={inr(bill.foodTotal)} />
+              <Row label="Item Total" value={inr(bill.foodTotal)} />
               {stallOff > 0 ? (
                 <Row
                   label={`${vendor?.stall_name ?? "Stall"} offer (${Number(vendor?.offer_percent ?? 0)}% off)`}
@@ -942,14 +933,13 @@ function Cart() {
                   good
                 />
               ) : null}
+              <Row label="Handling Fee" value={inr(bill.handlingFee)} />
               <Row
-                label={`Delivery fee (${bill.distanceKm} km)`}
+                label={`Delivery Partner Fee (${bill.distanceKm} km)`}
                 value={bill.deliveryFee ? inr(bill.deliveryFee) : "FREE"}
               />
-              {bill.platformFee ? <Row label="Platform fee" value={inr(bill.platformFee)} /> : null}
-              {bill.handlingFee ? <Row label="Handling fee" value={inr(bill.handlingFee)} /> : null}
-              {bill.packingFee ? <Row label="Packing fee" value={inr(bill.packingFee)} /> : null}
-              {bill.surgeFee ? <Row label="Surge fee" value={inr(bill.surgeFee)} /> : null}
+              <Row label="Platform Fee" value={inr(bill.platformFee)} />
+              <Row label="GST and Charges" value={inr(bill.packingFee + bill.surgeFee)} />
               {couponOff > 0 ? (
                 <Row label={`Coupon ${coupon?.code}`} value={`− ${inr(couponOff)}`} good />
               ) : null}
@@ -986,45 +976,8 @@ function Cart() {
           )}
         </div>
 
-        <div className="card-soft rise-in p-4">
-          <p className="text-sm font-bold">Payment method</p>
-          {walletBalance > 0 ? (
-            <button
-              onClick={() => setUseWallet(!useWallet)}
-              className={`mt-2 flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm font-semibold ${useWallet ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
-            >
-              Use wallet balance ({inr(walletBalance)})<span>{useWallet ? "ON" : "OFF"}</span>
-            </button>
-          ) : null}
-          {payable === 0 ? (
-            <p className="mt-2 text-xs font-semibold text-primary">Fully paid by your wallet.</p>
-          ) : null}
-          <div className="mt-2 grid gap-2">
-            {settings?.enable_cod !== false ? (
-              <PayBtn
-                active={payment === "COD"}
-                onClick={() => setPayment("COD")}
-                label="Cash on delivery"
-                hint="Pay the delivery partner"
-              />
-            ) : null}
-            {settings?.enable_online_payment ? (
-              <PayBtn
-                active={payment === "ONLINE"}
-                onClick={() => setPayment("ONLINE")}
-                label="Pay online (UPI / card)"
-                hint={`Secured by ${settings.payment_gateway}`}
-              />
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Online payment is currently switched off.
-              </p>
-            )}
-          </div>
-        </div>
-
         <div className="card-soft p-4 text-sm leading-relaxed text-muted-foreground">
-          <span className="font-black text-destructive">NOTE: </span>Orders cannot be cancelled once the stall starts preparing them.
+          <span className="font-black text-destructive">NOTE: </span>Orders cannot be cancelled and are non-refundable once packed for delivery.
           <Link to="/terms" className="mt-1 block font-black text-primary underline">Read cancellation policy</Link>
         </div>
         {err ? <p className="text-xs font-semibold text-destructive">{err}</p> : null}
@@ -1045,7 +998,7 @@ function Cart() {
           {blockedReason ? (
             <p className="px-1 pb-2 text-[11px] font-bold text-destructive">{blockedReason}</p>
           ) : null}
-          <button disabled={busy || !!blockedReason} onClick={() => void place()} className="press grid w-full grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] items-center gap-3 text-left disabled:opacity-50">
+          <button disabled={busy || !!blockedReason} onClick={proceedToPayment} className="press grid w-full grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] items-center gap-3 text-left disabled:opacity-50">
             <span>
               <span className="block text-[10px] font-bold opacity-65">
                 {lines.reduce((sum, line) => sum + line.qty, 0)} ITEMS
@@ -1053,17 +1006,83 @@ function Cart() {
               <span className="text-base font-black">{bill ? inr(payable) : "—"}</span>
             </span>
             <span className="rounded-xl bg-primary px-4 py-4 text-center text-sm font-black text-primary-foreground shadow-card">
-              {busy
-                ? "PLACING…"
-                : !hasLocation
-                  ? "Set your address first"
-                  : blockedReason
-                    ? "Not available"
-                    : payment === "COD" ? "Place cash order" : "Proceed to pay"}
+              {blockedReason ? "Not available" : !hasLocation ? "Select delivery address" : "Proceed to Pay · Select Payment"}
             </span>
           </button>
         </div>
       </div>
+        </>
+      ) : (
+        <>
+          <header className="sticky top-0 z-30 flex items-center gap-3 bg-card px-4 py-4 shadow-card">
+            <button type="button" onClick={() => setCheckoutStep("cart")} aria-label="Back to your cart" className="press grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border">
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-lg font-black">Pay on Delivery &amp; UPI</h1>
+              <p className="text-[11px] text-muted-foreground">Choose how you&apos;d like to pay</p>
+            </div>
+          </header>
+          <main className="space-y-3 bg-muted/45 p-3 pb-44">
+            <section className="card-soft space-y-3 p-4">
+              <div className="flex items-start gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand text-brand-foreground"><MapPin className="h-5 w-5" /></span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-black">{vendor?.stall_name ?? "ThelaWala"}</p>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">{form.line}{form.pincode ? ` · ${form.pincode}` : ""}</p>
+                  {form.landmark ? <p className="truncate text-[11px] text-muted-foreground">{form.landmark}</p> : null}
+                </div>
+                <button type="button" onClick={() => { setCheckoutStep("cart"); setTimeout(() => document.getElementById("delivery-details")?.scrollIntoView({ behavior: "smooth" }), 0); }} className="text-xs font-black text-primary">Edit</button>
+              </div>
+              <div className="flex items-center justify-between border-t border-border pt-3">
+                <span className="text-xs font-semibold text-muted-foreground">Delivery estimate</span>
+                <span className="rounded-full bg-brand px-3 py-1.5 text-xs font-black text-brand-foreground">10–15 mins</span>
+              </div>
+            </section>
+
+            <section className="card-soft space-y-3 p-4">
+              <div>
+                <h2 className="text-base font-black">Pay on Delivery</h2>
+                <p className="text-xs text-muted-foreground">Pay your delivery partner when your food arrives.</p>
+              </div>
+              {settings?.enable_cod !== false ? (
+                <PayBtn active={payment === "COD"} onClick={() => setPayment("COD")} label="Cash/Pay on Delivery" hint="Cash at your doorstep" Icon={Banknote} />
+              ) : null}
+              {settings?.enable_online_payment ? (
+                <>
+                  <PayBtn active={payment === "ONLINE" && onlineMethod === "UPI"} onClick={() => { setPayment("ONLINE"); setOnlineMethod("UPI"); }} label="UPI" hint={`Secure payment via ${settings.payment_gateway}`} Icon={Smartphone} />
+                  {payment === "ONLINE" && onlineMethod === "UPI" ? (
+                    <div className="flex flex-wrap gap-2 pl-1">
+                      {["Google Pay", "Paytm", "PhonePe"].map((app) => <span key={app} className="rounded-full border border-border bg-card px-3 py-1.5 text-[11px] font-bold text-foreground">{app}</span>)}
+                    </div>
+                  ) : null}
+                  <PayBtn active={payment === "ONLINE" && onlineMethod === "CARD"} onClick={() => { setPayment("ONLINE"); setOnlineMethod("CARD"); }} label="Credit or debit card" hint="Visa, Mastercard and more" Icon={CreditCard} />
+                </>
+              ) : (
+                <p className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">UPI and card payments are currently unavailable.</p>
+              )}
+              {walletBalance > 0 ? (
+                <button type="button" onClick={() => setUseWallet((active) => !active)} className={`flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-xs font-bold ${useWallet ? "border-primary text-primary" : "border-border text-muted-foreground"}`}>
+                  Use wallet balance ({inr(walletBalance)})<span>{useWallet ? "Selected" : "Not selected"}</span>
+                </button>
+              ) : null}
+            </section>
+
+            <section className="card-soft p-4">
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Order total</span><span className="font-bold">{inr(netTotal)}</span></div>
+              {walletUse > 0 ? <div className="mt-2 flex justify-between text-sm"><span className="text-muted-foreground">Wallet balance</span><span className="font-bold text-primary">− {inr(walletUse)}</span></div> : null}
+              <div className="mt-3 flex justify-between border-t border-border pt-3 text-base font-black"><span>To pay</span><span>{inr(payable)}</span></div>
+            </section>
+            {err ? <p className="rounded-lg bg-destructive/10 p-3 text-xs font-semibold text-destructive">{err}</p> : null}
+          </main>
+          <div className="fixed inset-x-0 bottom-[92px] z-40 mx-auto w-full max-w-[520px] p-3">
+            <button type="button" disabled={busy || (payment === "ONLINE" && !settings?.enable_online_payment)} onClick={() => void place()} className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-card disabled:opacity-50">
+              <span><span className="block text-[10px] font-bold opacity-75">{busy ? "SECURELY PROCESSING" : "TOTAL TO PAY"}</span><span className="text-lg font-black">{inr(payable)}</span></span>
+              <span className="flex items-center gap-2 text-sm font-black">{busy ? "Please wait…" : payment === "COD" ? `Pay ${inr(payable)} with Cash` : `Pay ${inr(payable)} with ${onlineMethod}`}<ChevronRight className="h-4 w-4" /></span>
+            </button>
+          </div>
+        </>
+      )}
 
       {addressConfirmOpen ? (
         <div className="fixed inset-0 z-[60] grid place-items-center bg-foreground/60 p-5" onClick={() => setAddressConfirmOpen(false)}>
@@ -1076,16 +1095,6 @@ function Cart() {
         </div>
       ) : null}
 
-      {codConfirmOpen ? (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-foreground/60" onClick={() => setCodConfirmOpen(false)}>
-          <div className="rise-in w-full max-w-[520px] rounded-t-[2rem] bg-card p-5 pb-8 text-center" onClick={(e) => e.stopPropagation()}>
-            <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-brand-soft text-primary"><CircleIndianRupee className="h-9 w-9" /></div>
-            <h2 className="mt-4 text-2xl font-black">Place cash order?</h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">Give cash or ask your delivery partner for a UPI QR code when your order is delivered.</p>
-            <div className="mt-6 grid grid-cols-2 gap-2"><button onClick={() => setCodConfirmOpen(false)} className="press rounded-xl bg-muted py-3.5 font-black">Cancel</button><button onClick={() => { setCodConfirmOpen(false); void place(true); }} className="press rounded-xl bg-primary py-3.5 font-black text-primary-foreground">Yes, place order</button></div>
-          </div>
-        </div>
-      ) : null}
     </Shell>
   );
 }

@@ -66,9 +66,9 @@ export function computeBill({
   }
   deliveryFee = r2(deliveryFee);
 
-  const platformFee = s?.enable_platform_fee ? Number(s.platform_fee) : 0;
-  const handlingFee = 0;
-  const packingFee = 5;
+  const platformFee = 3;
+  const handlingFee = 3;
+  const packingFee = 0;
   const surgeFee = s?.enable_surge_fee ? Number(s.surge_fee) : 0;
 
   return {
