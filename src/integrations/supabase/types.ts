@@ -1294,7 +1294,6 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
-          eligible_at: string | null
           id: string
           note: string | null
           order_id: string | null
@@ -1305,7 +1304,6 @@ export type Database = {
         Insert: {
           amount: number
           created_at?: string
-          eligible_at?: string | null
           id?: string
           note?: string | null
           order_id?: string | null
@@ -1316,7 +1314,6 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string
-          eligible_at?: string | null
           id?: string
           note?: string | null
           order_id?: string | null
@@ -1730,7 +1727,6 @@ export type Database = {
           enable_surge_fee: boolean
           extra_fee_per_km: number
           free_delivery_threshold: number | null
-          gst_pct: number
           handling_fee: number
           id: boolean
           packing_fee: number
@@ -1742,7 +1738,6 @@ export type Database = {
           surge_fee: number
           updated_at: string
           vendor_commission_pct: number
-          tds_pct: number
           wallet_max_topup: number
           wallet_min_topup: number
         }
@@ -1762,7 +1757,6 @@ export type Database = {
           enable_surge_fee?: boolean
           extra_fee_per_km?: number
           free_delivery_threshold?: number | null
-          gst_pct?: number
           handling_fee?: number
           id?: boolean
           packing_fee?: number
@@ -1774,7 +1768,6 @@ export type Database = {
           surge_fee?: number
           updated_at?: string
           vendor_commission_pct?: number
-          tds_pct?: number
           wallet_max_topup?: number
           wallet_min_topup?: number
         }
@@ -1794,7 +1787,6 @@ export type Database = {
           enable_surge_fee?: boolean
           extra_fee_per_km?: number
           free_delivery_threshold?: number | null
-          gst_pct?: number
           handling_fee?: number
           id?: boolean
           packing_fee?: number
@@ -1806,7 +1798,6 @@ export type Database = {
           surge_fee?: number
           updated_at?: string
           vendor_commission_pct?: number
-          tds_pct?: number
           wallet_max_topup?: number
           wallet_min_topup?: number
         }
