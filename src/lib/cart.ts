@@ -10,6 +10,8 @@ export type CartLine = {
   mrp: number;
   /** Stall's own base price, before the customer markup. */
   base?: number;
+  options?: string[];
+  promotionalMinimum?: number;
   qty: number;
 };
 
@@ -57,6 +59,9 @@ export const cart = {
   add(line: Omit<CartLine, "qty">) {
     const existing = lines.find((l) => l.itemId === line.itemId);
     if (existing) {
+      if (existing.promotionalMinimum) {
+        return { ok: false as const, error: "Only one eligible ₹1 bundle item may be added per order." };
+      }
       commit(lines.map((l) => (l.itemId === line.itemId ? { ...l, qty: l.qty + 1 } : l)));
       return { ok: true as const };
     }
@@ -72,6 +77,11 @@ export const cart = {
         .map((l) => (l.itemId === itemId ? { ...l, qty: l.qty - 1 } : l))
         .filter((l) => l.qty > 0),
     );
+  },
+  setOptions(itemId: string, options: string[]) {
+    if (!lines.some((line) => line.itemId === itemId)) return;
+    const uniqueOptions = [...new Set(options)];
+    commit(lines.map((line) => line.itemId === itemId ? { ...line, options: uniqueOptions } : line));
   },
   clear() {
     commit([]);

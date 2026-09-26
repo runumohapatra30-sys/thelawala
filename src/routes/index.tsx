@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActiveOrderTracker } from "@/components/ActiveOrderTracker";
 import { HomeChat } from "@/components/HomeChat";
 import { Shell } from "@/components/Shell";
@@ -21,6 +21,7 @@ import { useHomeSections } from "@/lib/homeSections";
 import { FestivePhotoStrip } from "@/components/FestivePhotoStrip";
 import { themeStyle, useTopBarTheme } from "@/lib/appTheme";
 import { ArrowRight, Bike, Gift, Heart, MapPin, Plus, Search, ShoppingBag, Utensils, Wallet, X, Zap } from "lucide-react";
+import { StreetFoodExperience, type CuratedFoodDeal, type StreetFoodCategory, type StreetFoodItem, type StreetFoodVendor } from "@/components/StreetFoodExperience";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -36,21 +37,9 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
-type Item = {
-  id: string;
-  vendor_id: string;
-  category_id: string | null;
-  name: string;
-  details: string | null;
-  photo_url: string | null;
-  unit: string | null;
-  price: number;
-  mrp: number;
-  in_stock: boolean;
-  food_type: string;
-};
-type Category = { id: string; name: string; emoji: string | null };
-type Vendor = { id: string; stall_name: string; is_open: boolean; photo_url: string | null; offer_percent: number | null; offer_label: string | null };
+type Item = StreetFoodItem;
+type Category = StreetFoodCategory;
+type Vendor = StreetFoodVendor;
 
 const TINTS = [
   "bg-[color-mix(in_oklab,var(--color-brand)_28%,white)]",
@@ -72,14 +61,19 @@ const RIBBON_CATEGORIES = [
 
 const PRODUCT_TINTS = ["bg-[#E5F0E6]", "bg-[#F7F0E2]", "bg-[#FFF5C9]", "bg-[#E8EEF2]"];
 
+const routeSlug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
 function Home() {
   const { user } = useSession();
   const navigate = useNavigate();
   const lines = useCart();
   const { count, foodTotal } = cartTotals(lines);
+  const regularCartTotal = lines.filter((line) => !line.promotionalMinimum).reduce((sum, line) => sum + line.price * line.qty, 0);
   const [items, setItems] = useState<Item[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [ratings, setRatings] = useState<Record<string, number>>({});
+  const [deals, setDeals] = useState<CuratedFoodDeal[]>([]);
   const [active, setActive] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [toast, setToast] = useState<string | null>(null);
@@ -90,6 +84,7 @@ function Home() {
   const [onlyVeg, setOnlyVeg] = useState(false);
   const [vendorFilter, setVendorFilter] = useState<string | null>(null);
   const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [promoFocus, setPromoFocus] = useState<string | null>(null);
   const topBarTheme = useTopBarTheme();
   const theme = themeStyle(topBarTheme?.theme_token);
   const homeSections = useHomeSections();
@@ -97,14 +92,47 @@ function Home() {
   const otherSections = festiveTheme ? homeSections.filter((s) => s.id !== festiveTheme.id) : homeSections;
 
   useEffect(() => {
-    activeCampaign().then(setCampaign);
-    supabase.from("categories").select("id,name,emoji").order("sort_order").then(({ data }) => setCats(data ?? []));
-    supabase.from("vendors").select("id,stall_name,is_open,photo_url,offer_percent,offer_label").eq("status", "APPROVED").then(({ data }) => setVendors((data ?? []) as Vendor[]));
-    supabase
-      .from("menu_items")
-      .select("id,vendor_id,category_id,name,details,photo_url,unit,price,mrp,in_stock,food_type")
-      .order("created_at")
-      .then(({ data }) => setItems((data ?? []) as Item[]));
+    let alive = true;
+    activeCampaign().then((value) => { if (alive) setCampaign(value); });
+    const loadCatalog = async () => {
+      const [categoryResult, vendorResult, itemResult, dealResult] = await Promise.all([
+        supabase.from("categories").select("id,name,emoji").order("sort_order"),
+        supabase.from("vendors").select("id,stall_name,is_open,photo_url,offer_percent,offer_label,address,zone,default_prep_minutes").eq("status", "APPROVED"),
+        supabase.from("menu_items").select("id,vendor_id,category_id,name,details,photo_url,unit,price,mrp,in_stock,food_type").order("created_at"),
+        supabase.from("curated_bundles").select("id,menu_item_id,item_name,offer_price,original_price,image_url,tag,bundle_title,bundle_subtitle").eq("is_active", true).order("sort_order"),
+      ]);
+      if (!alive) return;
+      const catalogVendors = (vendorResult.data ?? []) as Vendor[];
+      setCats(categoryResult.data ?? []);
+      setVendors(catalogVendors);
+      setItems((itemResult.data ?? []) as Item[]);
+      setDeals((dealResult.data ?? []) as CuratedFoodDeal[]);
+      const vendorIds = catalogVendors.map((vendor) => vendor.id);
+      if (!vendorIds.length) { setRatings({}); return; }
+      const { data: ratingsData } = await supabase.from("order_ratings").select("vendor_id,food_stars").in("vendor_id", vendorIds);
+      if (!alive) return;
+      const ratingTotals = new Map<string, { total: number; count: number }>();
+      for (const rating of ratingsData ?? []) {
+        if (!rating.vendor_id) continue;
+        const current = ratingTotals.get(rating.vendor_id) ?? { total: 0, count: 0 };
+        current.total += Number(rating.food_stars);
+        current.count += 1;
+        ratingTotals.set(rating.vendor_id, current);
+      }
+      setRatings(Object.fromEntries([...ratingTotals].map(([vendorId, rating]) => [vendorId, rating.total / rating.count])));
+    };
+    void loadCatalog();
+    const refreshCampaign = () => activeCampaign().then((value) => { if (alive) setCampaign(value); });
+    const channel = supabase
+      .channel("street-food-home-feed")
+      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => void loadCatalog())
+      .on("postgres_changes", { event: "*", schema: "public", table: "vendors" }, () => void loadCatalog())
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_items" }, () => void loadCatalog())
+      .on("postgres_changes", { event: "*", schema: "public", table: "curated_bundles" }, () => void loadCatalog())
+      .on("postgres_changes", { event: "*", schema: "public", table: "order_ratings" }, () => void loadCatalog())
+      .on("postgres_changes", { event: "*", schema: "public", table: "campaigns" }, refreshCampaign)
+      .subscribe();
+    return () => { alive = false; supabase.removeChannel(channel); };
   }, []);
 
   useEffect(() => {
@@ -159,7 +187,7 @@ function Home() {
       (!onlyFav || favs.includes(i.id)),
   );
 
-  function add(i: Item) {
+  function add(i: Item, offerPrice?: number, promotionalMinimum?: number) {
     const res = cart.add({
       itemId: i.id,
       vendorId: i.vendor_id,
@@ -167,16 +195,59 @@ function Home() {
       photo: i.photo_url,
       unit: i.unit,
       base: Number(i.price),
-      price: customerPrice(i.price),
+      price: offerPrice ?? customerPrice(i.price),
       mrp: customerPrice(i.mrp),
+      ...(promotionalMinimum ? { promotionalMinimum } : {}),
     });
     if (!res.ok) setToast(res.error);
     else setToast(null);
   }
 
+  const clearPromoFocus = useCallback(() => setPromoFocus(null), []);
+
+  function openBannerRoute(target: string) {
+    const path = target.split(/[?#]/, 1)[0]!.replace(/\/$/, "") || "/";
+    const parts = path.split("/").filter(Boolean).map((part) => {
+      try { return decodeURIComponent(part); } catch { return part; }
+    });
+    if (parts[0] === "category" && parts[1]) {
+      const wanted = routeSlug(parts[1]);
+      const category = cats.find((candidate) => routeSlug(candidate.name) === wanted || routeSlug(candidate.name).includes(wanted));
+      setActive(category?.id ?? null);
+      setQ(category ? "" : parts[1].replace(/-/g, " "));
+      setVendorFilter(null);
+      setPromoFocus(null);
+      document.getElementById("street-food-recommendations")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    if ((parts[0] === "stall" || parts[0] === "stalls") && parts[1]) {
+      const wanted = routeSlug(parts[1]);
+      const vendor = vendors.find((candidate) => candidate.id === parts[1] || routeSlug(candidate.stall_name).includes(wanted));
+      if (vendor) {
+        void navigate({ to: "/stalls/$id", params: { id: vendor.id } });
+        return;
+      }
+      setActive(null);
+      setVendorFilter(null);
+      setQ(parts[1].replace(/-/g, " "));
+      setToast(`Showing matching local food for “${parts[1].replace(/-/g, " ")}”.`);
+      return;
+    }
+    if (parts[0] === "deal" && parts[1]) {
+      setPromoFocus(parts.slice(1).join("-"));
+      return;
+    }
+    const validRoutes = new Set(["/categories", "/cart", "/wallet", "/orders", "/profile", "/support"]);
+    if (validRoutes.has(path)) {
+      void navigate({ to: path as "/categories" | "/cart" | "/wallet" | "/orders" | "/profile" | "/support" });
+      return;
+    }
+    setToast("That banner destination is not available. Browse the live menu below.");
+    document.getElementById("street-food-recommendations")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   const registry: SectionRegistry = {
     smart_asset: () => <DynamicAssetBanner />,
-    dynamic_banner: () => <DynamicBanners />,
     banner_carousel: () => (
       <BannerCarousel
         onCategory={(id) => { setActive(id); setVendorFilter(null); }}
@@ -419,8 +490,10 @@ function Home() {
                   setActive(null);
                   setQ("");
                 } else {
-                  setActive(null);
-                  setQ(category.label);
+                  const tokens = category.label.toLowerCase().split(/[^a-z0-9]+/).filter((token) => token && token !== "and");
+                  const match = cats.find((candidate) => tokens.some((token) => candidate.name.toLowerCase().includes(token)));
+                  setActive(match?.id ?? null);
+                  setQ(match ? "" : category.label);
                 }
               }}
               className="press flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-transparent px-3 py-2 text-[10px] font-extrabold text-foreground"
@@ -504,6 +577,7 @@ function Home() {
       </header>
 
       <main className="flex min-w-0 flex-col gap-4 overflow-x-hidden">
+        <DynamicBanners onInternalRoute={openBannerRoute} />
         {topBarTheme?.header_bg_image_url ? (
           <section className="px-5 py-3">
             <img
@@ -545,6 +619,23 @@ function Home() {
             </div>
           </section>
         ) : null}
+        <StreetFoodExperience
+          items={items}
+          categories={cats}
+          vendors={vendors}
+          lines={lines}
+          ratings={ratings}
+          activeCategoryId={active}
+          regularCartTotal={regularCartTotal}
+          promoFocus={promoFocus}
+          onSelectCategory={(categoryId) => { setActive(categoryId); setQ(""); setVendorFilter(null); }}
+          onAdd={(item, offerPrice, promoMinimum) => add(item, offerPrice, promoMinimum)}
+          onRemove={(itemId) => cart.remove(itemId)}
+          onOptions={(itemId, options) => cart.setOptions(itemId, options)}
+          onVendor={(vendorId) => navigate({ to: "/stalls/$id", params: { id: vendorId } })}
+          onClearPromoFocus={clearPromoFocus}
+          deals={deals}
+        />
         <FestivePhotoStrip />
         <DynamicPageRenderer app="customer" page="home" registry={registry} />
       </main>

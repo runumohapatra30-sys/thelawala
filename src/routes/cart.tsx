@@ -411,6 +411,16 @@ function Cart() {
     if (blockedReason) return setErr(blockedReason);
     if (!bill || !vendor) return;
 
+    const regularSubtotal = lines
+      .filter((line) => !line.promotionalMinimum)
+      .reduce((sum, line) => sum + line.price * line.qty, 0);
+    const lockedOffer = lines.find(
+      (line) => line.promotionalMinimum && regularSubtotal < line.promotionalMinimum,
+    );
+    if (lockedOffer) {
+      return setErr(`Add ${inr(lockedOffer.promotionalMinimum! - regularSubtotal)} more in regular menu items to keep the ₹1 offer.`);
+    }
+
     let placementStartedAt: number | null = null;
     const startPlacement = () => {
       placementStartedAt = performance.now();
@@ -502,7 +512,10 @@ function Cart() {
         discount_amount: Math.round((couponOff + stallOff) * 100) / 100,
         wallet_paid: walletUse,
         tip_amount: tip,
-        delivery_instructions: instructions.trim() || null,
+        delivery_instructions: [
+          `KOT: ${lines.map((line) => `${line.qty}x ${line.name}${line.options?.length ? ` (${line.options.join(", ")})` : ""}`).join(", ")}`,
+          instructions.trim(),
+        ].filter(Boolean).join("\n") || null,
         payment_mode: payable === 0 ? "WALLET" : payment,
         payment_status: payable === 0 || paidRef ? "PAID" : "PENDING",
         gateway_reference_id: paidRef,

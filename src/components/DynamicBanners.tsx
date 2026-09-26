@@ -2,15 +2,26 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import useEmblaCarousel from "embla-carousel-react";
 import { listDynamicBanners, type DynamicBanner } from "@/lib/dynamicBanners";
+import { supabase } from "@/integrations/supabase/client";
 
-export function DynamicBanners() {
+export function DynamicBanners({ onInternalRoute }: { onInternalRoute?: (route: string) => void } = {}) {
   const [rows, setRows] = useState<DynamicBanner[]>([]);
   const [selected, setSelected] = useState(0);
   const navigate = useNavigate();
   const [emblaRef, embla] = useEmblaCarousel({ align: "center", loop: false, containScroll: false });
 
   useEffect(() => {
-    listDynamicBanners(true).then(setRows);
+    let alive = true;
+    const pull = () => listDynamicBanners(true).then((banners) => { if (alive) setRows(banners); });
+    pull();
+    const channel = supabase
+      .channel("customer-dynamic-banners")
+      .on("postgres_changes", { event: "*", schema: "public", table: "app_dynamic_banners" }, pull)
+      .subscribe();
+    return () => {
+      alive = false;
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const onSelect = useCallback(() => {
@@ -42,9 +53,11 @@ export function DynamicBanners() {
       window.open(route, "_blank", "noopener");
       return;
     }
-    navigate({ to: route as string }).catch(() => {
-      window.location.href = route;
-    });
+    if (onInternalRoute) {
+      onInternalRoute(route);
+      return;
+    }
+    void navigate({ to: "/" });
   }
 
   function media(b: DynamicBanner) {
