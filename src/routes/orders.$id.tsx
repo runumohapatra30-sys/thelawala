@@ -10,7 +10,6 @@ import { openInvoice, type InvoiceOrder } from "@/lib/invoice";
 import { OrderDeliveredRating } from "@/components/OrderDeliveredRating";
 import { useSession } from "@/lib/session";
 import { RefundPanel } from "@/components/RefundPanel";
-import { ArrowLeft, Bike, MessageCircle, PhoneCall } from "lucide-react";
 
 export const Route = createFileRoute("/orders/$id")({
   validateSearch: (s: Record<string, unknown>): { placed?: 1 } => (s['placed'] ? { placed: 1 } : {}),
@@ -51,6 +50,7 @@ const TIPS = [20, 30, 50];
 function Track() {
   const { id } = Route.useParams();
   const { user } = useSession();
+  const { placed } = Route.useSearch();
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<{ id: string; name: string; qty: number; price: number; photo_url: string | null }[]>([]);
   const [vendor, setVendor] = useState<{ stall_name: string; lat: number; lng: number; mobile: string | null } | null>(null);
@@ -58,10 +58,16 @@ function Track() {
   const [eta, setEta] = useState<number | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [reason, setReason] = useState(REASONS[0]!);
+  const [splash, setSplash] = useState(Boolean(placed));
   const [tipMsg, setTipMsg] = useState<string | null>(null);
   const [customTip, setCustomTip] = useState("");
   const [rateOpen, setRateOpen] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
+
+  useEffect(() => {
+    if (!splash) return;
+    const t = setTimeout(() => setSplash(false), 1800);
+    return () => clearTimeout(t);
+  }, [splash]);
 
   useEffect(() => {
     let alive = true;
@@ -162,12 +168,9 @@ function Track() {
   const stepIndex = FLOW.indexOf(order.status);
   const cancellable = ["ORDER_PLACED", "PREPARING"].includes(order.status);
   const live = !["DELIVERED", "CANCELLED"].includes(order.status);
-  const statusText = order.status === "PREPARING" ? "Order getting packed" : STATUS_LABEL[order.status] ?? order.status;
-  const etaStart = eta ? Math.max(5, Math.round(eta)) : 10;
-  const etaEnd = eta ? Math.max(10, Math.round(eta) + 5) : 15;
 
   return (
-    <Shell hideNavigation={live}>
+    <Shell>
       {rateOpen && order.status === "DELIVERED" ? (
         <OrderDeliveredRating
           orderId={order.id}
@@ -181,90 +184,34 @@ function Track() {
         />
       ) : null}
 
-      {live ? (
-        <div className="fixed inset-0 z-10 bg-[#EBECEF]">
-          {vendor ? (
-            <LiveMap
-              from={{ lat: Number(vendor.lat), lng: Number(vendor.lng) }}
-              to={{ lat: Number(order.drop_lat), lng: Number(order.drop_lng) }}
-              rider={rider?.lat != null && rider.lng != null ? { lat: Number(rider.lat), lng: Number(rider.lng) } : null}
-              onEta={(min) => setEta(min)}
-              className="absolute inset-0 h-full w-full"
-            />
-          ) : (
-            <div className="absolute inset-0 grid place-items-center text-sm font-semibold text-muted-foreground">Loading delivery map…</div>
-          )}
-          <header className="fixed inset-x-3 top-4 z-30 mx-auto flex max-w-[480px] items-center gap-3 rounded-xl bg-white/95 p-3 shadow-lg backdrop-blur">
-            <Link to="/orders" aria-label="Back to orders" className="press grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-border">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-black">{statusText}</p>
-              <p className="text-[11px] font-medium text-muted-foreground">Order #{order.code}</p>
+      {splash ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-primary text-primary-foreground">
+          <div className="animate-pulse text-center">
+            <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-white/20">
+              <svg viewBox="0 0 24 24" className="h-10 w-10" fill="none" stroke="currentColor" strokeWidth="2.4">
+                <path d="M4 12.5l5 5L20 7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </div>
-            <span className="shrink-0 rounded-lg bg-[#F8CB46] px-3 py-2 text-xs font-black text-[#173126]">{etaStart}–{etaEnd} min</span>
-          </header>
-          <section className="fixed inset-x-3 bottom-3 z-30 mx-auto max-h-[58dvh] max-w-[480px] space-y-3 overflow-y-auto rounded-2xl border border-border bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-black">{statusText}</p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">Order getting packed <span aria-hidden="true">→</span> Out for delivery</p>
-              </div>
-              <Bike className="h-6 w-6 shrink-0 text-primary" />
-            </div>
-            {rider ? (
-              <div className="flex items-center gap-3 border-y border-border py-3">
-                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#0C831F] text-base font-black text-white">{rider.name.slice(0, 1)}</div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-black">{rider.name}</p>
-                  <p className="text-[11px] text-muted-foreground">Your delivery partner</p>
-                </div>
-                {rider.mobile ? (
-                  <a href={`tel:${rider.mobile}`} aria-label={`Call ${rider.name}`} className="press grid h-10 w-10 place-items-center rounded-lg bg-[#0C831F] text-white">
-                    <PhoneCall className="h-4 w-4" />
-                  </a>
-                ) : null}
-                <button type="button" onClick={() => setChatOpen((open) => !open)} aria-label={chatOpen ? "Close chat" : "Chat with delivery partner"} className="press grid h-10 w-10 place-items-center rounded-lg border border-border text-[#0C831F]">
-                  <MessageCircle className="h-4 w-4" />
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3 border-y border-border py-3">
-                <Bike className="h-6 w-6 text-primary" />
-                <p className="text-xs font-semibold text-muted-foreground">Finding a delivery partner for your order</p>
-              </div>
-            )}
-            {order.cancel_otp ? (
-              <div className="rounded-lg border border-destructive p-3 text-center">
-                <p className="text-xs font-bold text-destructive">Partner requested cancellation{order.cancel_reason ? ` · ${order.cancel_reason}` : ""}</p>
-                <div className="mt-2 flex justify-center gap-2">{String(order.cancel_otp).split("").map((digit, index) => <span key={index} className="grid h-9 w-9 place-items-center rounded-md bg-destructive text-lg font-black text-white">{digit}</span>)}</div>
-              </div>
-            ) : (
-              <div className="rounded-lg border border-[#0C831F]/25 bg-[#edf5ee] p-3 text-center">
-                <p className="text-[11px] font-semibold text-muted-foreground">Secure delivery OTP · share when your food arrives</p>
-                <div aria-label={`Delivery OTP ${order.delivery_otp}`} className="mt-2 flex justify-center gap-2">{String(order.delivery_otp ?? "").split("").map((digit, index) => <span key={index} className="grid h-10 w-10 place-items-center rounded-md bg-[#0C831F] text-xl font-black text-white">{digit}</span>)}</div>
-              </div>
-            )}
-            {chatOpen && rider ? <OrderChat orderId={order.id} role="CUSTOMER" senderId={user?.id} /> : null}
-            {live && order.payment_status !== "PAID" ? (
-              <div className="flex items-center justify-between gap-3 border-t border-border pt-2">
-                <p className="text-xs font-bold">Pay {inr(Number(order.grand_total) + Number(order.tip_amount ?? 0))} on delivery</p>
-                <Link to="/wallet" className="text-xs font-black text-primary">Pay online</Link>
-              </div>
-            ) : null}
-            {cancellable ? <button onClick={() => setCancelOpen(true)} className="w-full border-t border-border pt-2 text-left text-xs font-bold text-destructive">Cancel order</button> : null}
-          </section>
+            <p className="mt-4 text-lg font-extrabold">Order placed!</p>
+            <p className="text-xs opacity-90">Your thela is getting it ready</p>
+          </div>
         </div>
-      ) : (
-        <>
+      ) : null}
+
       <div className="bg-primary px-5 pb-6 pt-4 text-primary-foreground">
         <div className="flex items-center gap-3">
           <Link to="/orders" aria-label="Back to orders" className="press grid h-9 w-9 place-items-center rounded-full bg-white/20">
-            <ArrowLeft className="h-4 w-4" />
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4">
+              <path d="M15 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </Link>
           <p className="text-sm font-semibold opacity-90">{STATUS_LABEL[order.status] ?? order.status} · #{order.code}</p>
         </div>
-        <p className="mt-3 font-display text-3xl leading-tight">{STATUS_LABEL[order.status] ?? order.status}</p>
+        <p className="mt-3 font-display text-3xl leading-tight">
+          {live
+            ? `Arriving in ${eta ? Math.max(5, Math.round(eta)) : 10}-${eta ? Math.max(10, Math.round(eta) + 5) : 15} minutes`
+            : STATUS_LABEL[order.status] ?? order.status}
+        </p>
       </div>
 
        <div className="space-y-3 p-4">
@@ -481,8 +428,6 @@ function Track() {
           Cancellation &amp; refund terms
         </Link>
       </div>
-        </>
-      )}
 
       {cancelOpen ? (
         <div className="fixed inset-0 z-50 flex items-end bg-black/40">

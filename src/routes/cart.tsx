@@ -10,7 +10,8 @@ import { computeBill, haversineKm, inr, type Settings } from "@/lib/fees";
 import { checkoutGate, minimumOrderValue, stallOfferDiscount } from "@/lib/pricing";
 import { payInAppWithCashfree } from "@/lib/checkout";
 import { useSession } from "@/lib/session";
-import { ArrowLeft, BellOff, Bike, ChevronRight, ClipboardList, DoorOpen, MapPin, Minus, Phone, PhoneOff, Plus, ShieldCheck, Tag } from "lucide-react";
+import { ArrowLeft, BellOff, ChevronRight, CircleIndianRupee, DoorOpen, MapPin, MoreVertical, Phone, PhoneOff, Plus, ShieldCheck, Sparkles, Tag } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -32,8 +33,6 @@ export const Route = createFileRoute("/cart")({
 
 const otp = () => String(Math.floor(100000 + Math.random() * 900000));
 const pin4 = () => String(Math.floor(Math.random() * 10000)).padStart(4, "0");
-type CheckoutFlow = "checkout" | "placing" | "placed" | "tracking";
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function Cart() {
   const navigate = useNavigate();
@@ -68,15 +67,29 @@ function Cart() {
   const [couponMsg, setCouponMsg] = useState<string | null>(null);
   const [offers, setOffers] = useState<Coupon[]>([]);
   const [tip, setTip] = useState(0);
-  const [customTipActive, setCustomTipActive] = useState(false);
-  const [customTip, setCustomTip] = useState("");
   const [instructions, setInstructions] = useState("");
-  const [cookingNotes, setCookingNotes] = useState("");
-  const [flowState, setFlowState] = useState<CheckoutFlow>("checkout");
   const [locating, setLocating] = useState(false);
   const [saved, setSaved] = useState<SavedAddress[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [addressConfirmOpen, setAddressConfirmOpen] = useState(false);
+  const [codConfirmOpen, setCodConfirmOpen] = useState(false);
+  const [recommendations, setRecommendations] = useState<
+    Array<{
+      id: string;
+      vendor_id: string;
+      name: string;
+      photo_url: string | null;
+      unit: string | null;
+      price: number;
+      mrp: number;
+      in_stock: boolean;
+    }>
+  >([]);
+  const [guestProfile, setGuestProfile] = useState(() => ({
+    name: typeof window === "undefined" ? "" : localStorage.getItem("thelawala.guest_name") || "",
+    mobile:
+      typeof window === "undefined" ? "" : localStorage.getItem("thelawala.guest_mobile") || "",
+  }));
   const autoTried = useRef(false);
   const coordsRef = useRef(coords);
   const formRef = useRef(form);
@@ -98,6 +111,7 @@ function Cart() {
       }));
     const updateGuest = (event: Event) => {
       const profile = (event as CustomEvent<{ name: string; mobile: string }>).detail;
+      setGuestProfile(profile);
       setForm((current) => ({ ...current, full_name: profile.name, mobile: profile.mobile }));
     };
     window.addEventListener(GUEST_PROFILE_EVENT, updateGuest);
@@ -134,6 +148,13 @@ function Cart() {
       .eq("id", vid)
       .maybeSingle()
       .then(({ data }) => setVendor(data));
+    supabase
+      .from("menu_items")
+      .select("id,vendor_id,name,photo_url,unit,price,mrp,in_stock")
+      .eq("vendor_id", vid)
+      .eq("in_stock", true)
+      .limit(12)
+      .then(({ data }) => setRecommendations((data ?? []) as typeof recommendations));
   }, [lines[0]?.vendorId]);
 
   useEffect(() => {
@@ -316,8 +337,19 @@ function Cart() {
     : 0;
   const walletUse = bill && useWallet ? Math.min(walletBalance, netTotal) : 0;
   const payable = bill ? Math.round((netTotal - walletUse) * 100) / 100 : 0;
+  const unlockTarget = foodTotal < 200 ? 200 : Math.ceil(foodTotal / 100) * 100;
+  const unlockLeft = Math.max(0, unlockTarget - foodTotal);
+  const unlockProgress = Math.min(100, (foodTotal / unlockTarget) * 100);
   const standardDeliveryFee = bill ? 22 + Math.max(0, bill.distanceKm - 2) * 3.5 : 0;
   const deliverySavings = bill ? Math.max(0, standardDeliveryFee - bill.deliveryFee) : 0;
+  const freeDeliveryUnlocked = Boolean(bill && foodTotal >= 200 && bill.distanceKm <= 5);
+  const deliveryPromo = freeDeliveryUnlocked
+    ? "You've unlocked free delivery"
+    : bill && foodTotal >= 200
+      ? "₹30 delivery discount unlocked"
+      : foodTotal < 200
+        ? `Add ${inr(unlockLeft)} more to unlock free delivery`
+        : "Choose an address to unlock free delivery";
   const savings = Math.round((stallOff + couponOff + deliverySavings) * 100) / 100;
   const instructionOptions = [
     { label: "Avoid ringing bell", Icon: BellOff },
@@ -325,6 +357,10 @@ function Cart() {
     { label: "Leave with security", Icon: ShieldCheck },
     { label: "Avoid calling", Icon: PhoneOff },
   ];
+  const suggested = recommendations
+    .filter((item) => !lines.some((line) => line.itemId === item.id))
+    .slice(0, 6);
+
   async function applyCoupon() {
     setCouponMsg(null);
     const res = await findCoupon(codeInput, foodTotal);
@@ -349,14 +385,52 @@ function Cart() {
     );
   }
 
-  async function place() {
+  async function place(confirmed = false) {
     setErr(null);
     if (!coords) {
       setPickerOpen(true);
       return;
     }
+    if (payment === "COD" && !confirmed) {
+      setCodConfirmOpen(true);
+      return;
+    }
     if (!user) {
-      openLoginModal();
+      if (!guestProfile.name) {
+        openLoginModal();
+        return;
+      }
+      if (!form.full_name || form.mobile.length < 10 || form.pincode.length < 6 || !form.line)
+        return setErr("Please fill name, 10-digit mobile, 6-digit pincode and full address.");
+      if (!coords)
+        return setErr("Tap “Use my current location” — every order needs your live location.");
+      if (blockedReason) return setErr(blockedReason);
+      if (!bill || !vendor) return;
+
+      const localOrder = {
+        id: `local-${Date.now()}`,
+        code: `TW${Date.now().toString().slice(-7)}`,
+        status: "ORDER_PLACED",
+        created_at: new Date().toISOString(),
+        customer_name: form.full_name,
+        customer_mobile: form.mobile,
+        address_line: form.landmark ? `${form.line}, ${form.landmark}` : form.line,
+        pincode: form.pincode,
+        vendor_id: vendor.id,
+        vendor_name: vendor.stall_name,
+        grand_total: netTotal,
+        food_total: bill.foodTotal,
+        delivery_fee: bill.deliveryFee,
+        payment_mode: "COD",
+        items: lines,
+      };
+      const existing = JSON.parse(
+        localStorage.getItem("thelawala.local_orders") || "[]",
+      ) as unknown[];
+      localStorage.setItem("thelawala.local_orders", JSON.stringify([localOrder, ...existing]));
+      cart.clear();
+      toast.success("Order placed successfully");
+      await navigate({ to: "/" });
       return;
     }
     if (!form.full_name || form.mobile.length < 10 || form.pincode.length < 6 || !form.line)
@@ -366,13 +440,7 @@ function Cart() {
     if (blockedReason) return setErr(blockedReason);
     if (!bill || !vendor) return;
 
-    let placingStartedAt: number | null = null;
-    const startPlacing = () => {
-      placingStartedAt = Date.now();
-      setFlowState("placing");
-    };
     setBusy(true);
-    if (!(payable > 0 && payment === "ONLINE")) startPlacing();
     const { data: sameAddr } = await supabase
       .from("addresses")
       .select("id")
@@ -425,7 +493,6 @@ function Cart() {
           return setErr("Payment Failed! Please try again. Your items are still in the cart.");
         }
         paidRef = res.reference;
-        startPlacing();
       } catch {
         setBusy(false);
         return setErr("Payment Failed! Please try again. Your items are still in the cart.");
@@ -457,10 +524,7 @@ function Cart() {
         discount_amount: Math.round((couponOff + stallOff) * 100) / 100,
         wallet_paid: walletUse,
         tip_amount: tip,
-        delivery_instructions: [
-          cookingNotes.trim() ? `Cooking notes: ${cookingNotes.trim()}` : "",
-          instructions.trim() ? `Delivery instructions: ${instructions.trim()}` : "",
-        ].filter(Boolean).join("\n") || null,
+        delivery_instructions: instructions.trim() || null,
         payment_mode: payable === 0 ? "WALLET" : payment,
         payment_status: payable === 0 || paidRef ? "PAID" : "PENDING",
         gateway_reference_id: paidRef,
@@ -476,7 +540,6 @@ function Cart() {
     if (error || !order) {
       console.error("[Order Create Failed]", error);
       setBusy(false);
-      setFlowState("checkout");
       return setErr(error?.message ?? "Could not place the order.");
     }
 
@@ -516,11 +579,7 @@ function Cart() {
     cart.clear();
 
     setBusy(false);
-    await wait(Math.max(0, 1500 - (Date.now() - (placingStartedAt ?? Date.now()))));
-    setFlowState("placed");
-    await wait(1000);
-    setFlowState("tracking");
-    await navigate({ to: "/orders/$id", params: { id: order.id } });
+    navigate({ to: "/orders/$id", params: { id: order.id }, search: { placed: 1 } });
   }
 
   return (
@@ -531,18 +590,28 @@ function Cart() {
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-lg font-black">Checkout</h1>
+            <h1 className="truncate text-lg font-black">Your Cart</h1>
             <p className="truncate text-[11px] text-muted-foreground">{vendor?.stall_name ?? "ThelaWala"} · {lines.reduce((sum, line) => sum + line.qty, 0)} items</p>
           </div>
-          <Link to="/orders" aria-label="Your orders" className="press grid h-10 w-10 place-items-center rounded-full border border-border">
-            <ClipboardList className="h-5 w-5" />
-          </Link>
-          <button type="button" onClick={() => setPickerOpen(true)} aria-label="Change delivery address" className="press grid h-10 w-10 place-items-center rounded-full border border-border text-primary">
-            <MapPin className="h-5 w-5" />
-          </button>
+          <MoreVertical className="h-5 w-5 text-muted-foreground" />
         </div>
       </header>
+      <div className="bg-brand px-4 py-2 text-center text-sm font-black text-primary">
+        {savings > 0 ? `${inr(savings)} saved on this order` : deliveryPromo}
+      </div>
       <div className="space-y-3 bg-muted/45 p-3 pb-48">
+        <div className="rounded-lg border border-brand bg-brand-soft p-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <p className="text-xs font-black">{deliveryPromo}</p>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-card">
+            <div
+              className="h-full rounded-full bg-primary transition-[width] duration-500"
+              style={{ width: `${unlockProgress}%` }}
+            />
+          </div>
+        </div>
         <div className="card-soft rise-in grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-black">{form.full_name || "Delivering to you"}</p>
@@ -560,7 +629,7 @@ function Cart() {
 
         <div className="card-soft rise-in p-4">
           <div className="flex items-center justify-between border-b border-dashed border-border pb-3">
-            <p className="text-base font-black">Street food</p>
+            <p className="text-base font-black">15 mins <span className="ml-1 rounded-full bg-brand px-2 py-1 text-[10px] text-primary">⚡ Superfast</span></p>
             <span className="text-xs text-muted-foreground">{lines.reduce((sum, line) => sum + line.qty, 0)} items</span>
           </div>
           <div className="mt-3 space-y-3">
@@ -575,38 +644,80 @@ function Cart() {
                   <p className="truncate text-sm font-semibold">{l.name}</p>
                   <p className="text-xs text-muted-foreground">{l.unit}</p>
                 </div>
-                <div className="grid h-9 grid-cols-[2rem_1.75rem_2rem] items-center rounded-lg border border-border bg-card text-primary">
+                <div className="flex h-9 items-center gap-3 rounded-lg border border-primary bg-card px-2 text-primary shadow-card">
                   <button
-                    aria-label={`Remove one ${l.name}`}
+                    aria-label="Remove one"
                     onClick={() => cart.remove(l.itemId)}
-                    className="grid h-8 w-8 place-items-center"
+                    className="px-1 font-bold"
                   >
-                    <Minus className="h-4 w-4" />
+                    −
                   </button>
-                  <span className="text-center text-xs font-bold">{l.qty}</span>
+                  <span className="text-xs font-bold">{l.qty}</span>
                   <button
-                    aria-label={`Add one ${l.name}`}
+                    aria-label="Add one"
                     onClick={() => cart.add(l)}
-                    className="grid h-8 w-8 place-items-center"
+                    className="px-1 font-bold"
                   >
-                    <Plus className="h-4 w-4" />
+                    +
                   </button>
                 </div>
                 <p className="w-14 text-right text-sm font-bold">{inr(l.price * l.qty)}</p>
               </div>
             ))}
           </div>
-          <label className="mt-4 block border-t border-border pt-3">
-            <span className="mb-1.5 block text-xs font-bold">Special cooking notes</span>
-            <textarea
-              rows={2}
-              value={cookingNotes}
-              onChange={(event) => setCookingNotes(event.target.value)}
-              placeholder="Less spicy, no onion, extra chutney…"
-              className="w-full resize-y rounded-lg border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary"
-            />
-          </label>
         </div>
+
+        {suggested.length > 0 ? (
+          <section className="py-2">
+            <div className="mb-3 flex items-end justify-between">
+              <div>
+                <h2 className="font-display text-2xl text-primary">You may also like</h2>
+                <p className="text-[11px] font-semibold text-muted-foreground">
+                  Popular add-ons from {vendor?.stall_name}
+                </p>
+              </div>
+            </div>
+            <div className="flex snap-x gap-3 overflow-x-auto pb-2 no-scrollbar">
+              {suggested.map((item) => (
+                <article
+                  key={item.id}
+                  className="w-36 shrink-0 snap-start rounded-2xl bg-card p-2 shadow-card"
+                >
+                  <div className="product-tile relative aspect-square">
+                    <img
+                      src={item.photo_url ?? "/food/food-tiffin.jpg"}
+                      alt={item.name}
+                      className="h-full w-full object-contain p-2"
+                    />
+                    <button
+                      type="button"
+                      aria-label={`Add ${item.name}`}
+                      onClick={() =>
+                        cart.add({
+                          itemId: item.id,
+                          vendorId: item.vendor_id,
+                          name: item.name,
+                          photo: item.photo_url,
+                          unit: item.unit,
+                          base: Number(item.price),
+                          price: Number(item.price),
+                          mrp: Number(item.mrp),
+                        })
+                      }
+                      className="press absolute bottom-2 right-2 grid h-9 w-9 place-items-center rounded-full border border-border bg-card text-primary shadow-card"
+                    >
+                      <Plus className="h-5 w-5" strokeWidth={2.4} />
+                    </button>
+                  </div>
+                  <p className="mt-2 line-clamp-2 min-h-9 text-xs font-extrabold leading-tight">
+                    {item.name}
+                  </p>
+                  <p className="mt-1 text-sm font-black text-primary">{inr(Number(item.price))}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <button onClick={() => setPickerOpen(true)} className="card-soft press rise-in flex w-full items-center gap-3 p-4 text-left">
           <MapPin className="h-5 w-5 shrink-0 text-primary" />
@@ -725,47 +836,22 @@ function Cart() {
         </div>
 
         <div className="card-soft rise-in space-y-3 p-4">
-          <p className="flex items-center gap-2 text-sm font-black"><Bike className="h-4 w-4 text-primary" /> Tip your delivery partner</p>
-          <div className="grid grid-cols-4 gap-2">
-            {[10, 20, 30].map((t) => (
+          <p className="text-[11px] font-black uppercase text-muted-foreground">Delivery tip</p>
+          <p className="text-sm font-bold">A small tip, a big gesture!</p>
+          <p className="text-[11px] text-muted-foreground">
+            A tip goes fully to your delivery partner.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {[0, 10, 20, 30].map((t) => (
               <button
                 key={t}
-                onClick={() => { setTip(t); setCustomTipActive(false); }}
-                className={`press rounded-lg border px-2 py-2.5 text-xs font-black ${tip === t && !customTipActive ? "border-primary bg-primary text-primary-foreground" : "border-border text-foreground"}`}
+                onClick={() => setTip(t)}
+                className={`press min-w-16 flex-1 rounded-lg border px-3 py-2.5 text-xs font-black ${tip === t ? "border-primary bg-primary text-primary-foreground" : "border-border text-foreground"}`}
               >
-                ₹{t}
+                {t === 0 ? "No tip" : `₹${t}`}
               </button>
             ))}
-            <button
-              onClick={() => { setCustomTipActive(true); setTip(Number(customTip) || 0); }}
-              className={`press rounded-lg border px-2 py-2.5 text-xs font-black ${customTipActive ? "border-primary bg-primary text-primary-foreground" : "border-border text-foreground"}`}
-            >
-              Custom
-            </button>
           </div>
-          {customTipActive ? (
-            <label className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
-              <span className="text-sm font-bold">₹</span>
-              <input
-                inputMode="numeric"
-                value={customTip}
-                onChange={(event) => {
-                  const value = event.target.value.replace(/\D/g, "").slice(0, 3);
-                  setCustomTip(value);
-                  setTip(Number(value) || 0);
-                }}
-                placeholder="Enter amount"
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-              />
-            </label>
-          ) : null}
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            <Bike className="h-3.5 w-3.5 shrink-0" /> 100% of your tip goes to your delivery partner.
-          </div>
-        </div>
-
-        <div className="card-soft rise-in space-y-3 p-4">
-          <p className="text-sm font-black">Delivery instructions</p>
           <div className="grid grid-cols-2 gap-2 pt-1">
             {instructionOptions.map(({ label, Icon }) => {
               const active = instructions === label;
@@ -786,7 +872,7 @@ function Cart() {
             rows={2}
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
-            placeholder="Optional note for the delivery partner"
+            placeholder="Delivery instructions (e.g. ring the bell, less spicy)"
             className="w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
           />
         </div>
@@ -848,7 +934,7 @@ function Cart() {
           <p className="text-[11px] font-black uppercase text-muted-foreground">Bill details</p>
           {bill ? (
             <dl className="mt-2 space-y-1.5 text-sm">
-              <Row label="Food items total" value={inr(bill.foodTotal)} />
+              <Row label="Item total" value={inr(bill.foodTotal)} />
               {stallOff > 0 ? (
                 <Row
                   label={`${vendor?.stall_name ?? "Stall"} offer (${Number(vendor?.offer_percent ?? 0)}% off)`}
@@ -860,8 +946,10 @@ function Cart() {
                 label={`Delivery fee (${bill.distanceKm} km)`}
                 value={bill.deliveryFee ? inr(bill.deliveryFee) : "FREE"}
               />
-              <Row label="Platform fee" value={inr(bill.platformFee)} />
-              <Row label="Other surcharges" value={inr(bill.handlingFee + bill.packingFee + bill.surgeFee)} />
+              {bill.platformFee ? <Row label="Platform fee" value={inr(bill.platformFee)} /> : null}
+              {bill.handlingFee ? <Row label="Handling fee" value={inr(bill.handlingFee)} /> : null}
+              {bill.packingFee ? <Row label="Packing fee" value={inr(bill.packingFee)} /> : null}
+              {bill.surgeFee ? <Row label="Surge fee" value={inr(bill.surgeFee)} /> : null}
               {couponOff > 0 ? (
                 <Row label={`Coupon ${coupon?.code}`} value={`− ${inr(couponOff)}`} good />
               ) : null}
@@ -957,16 +1045,22 @@ function Cart() {
           {blockedReason ? (
             <p className="px-1 pb-2 text-[11px] font-bold text-destructive">{blockedReason}</p>
           ) : null}
-          <button disabled={busy || !!blockedReason} onClick={() => void place()} className="press flex w-full items-center justify-between gap-3 rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-card disabled:opacity-50">
-            <span className="min-w-0">
-              <span className="block truncate text-[11px] font-bold opacity-80">
-                {form.full_name || "Delivering to you"} · {form.line || "Set your address"}
+          <button disabled={busy || !!blockedReason} onClick={() => void place()} className="press grid w-full grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] items-center gap-3 text-left disabled:opacity-50">
+            <span>
+              <span className="block text-[10px] font-bold opacity-65">
+                {lines.reduce((sum, line) => sum + line.qty, 0)} ITEMS
               </span>
-              <span className="mt-0.5 block text-sm font-black">
-                {busy ? "Placing order…" : !hasLocation ? "Choose address" : blockedReason ? "Not available" : payment === "COD" ? "Place cash order" : "Proceed to payment"}
-              </span>
+              <span className="text-base font-black">{bill ? inr(payable) : "—"}</span>
             </span>
-            <span className="shrink-0 text-lg font-black">{bill ? inr(netTotal) : "—"}</span>
+            <span className="rounded-xl bg-primary px-4 py-4 text-center text-sm font-black text-primary-foreground shadow-card">
+              {busy
+                ? "PLACING…"
+                : !hasLocation
+                  ? "Set your address first"
+                  : blockedReason
+                    ? "Not available"
+                    : payment === "COD" ? "Place cash order" : "Proceed to pay"}
+            </span>
           </button>
         </div>
       </div>
@@ -982,32 +1076,14 @@ function Cart() {
         </div>
       ) : null}
 
-      {flowState !== "checkout" ? (
-        <div className="fixed inset-0 z-[80] grid place-items-center bg-[#EBECEF] px-6 text-center" aria-live="polite">
-          {flowState === "placing" ? (
-            <div className="rise-in">
-              <div className="order-radar mx-auto grid h-44 w-44 place-items-center rounded-full border border-[#0C831F]/20 bg-white">
-                <span className="order-radar-ring" />
-                <span className="order-radar-ring order-radar-ring-delay" />
-                <span className="relative z-10 grid h-16 w-16 place-items-center rounded-full bg-[#0C831F] text-white shadow-lg">
-                  <MapPin className="h-8 w-8" />
-                </span>
-              </div>
-              <h2 className="mt-7 text-xl font-black text-[#173126]">Finding your thela</h2>
-              <p className="mt-1 text-sm font-semibold text-[#64706A]">Bhubaneswar</p>
-              <Bike className="mx-auto mt-5 h-5 w-5 animate-pulse text-[#0C831F]" />
-            </div>
-          ) : flowState === "placed" ? (
-            <div className="rise-in">
-              <span className="mx-auto grid h-24 w-24 place-items-center rounded-full bg-[#2563EB] text-white shadow-lg">
-                <svg viewBox="0 0 24 24" className="h-12 w-12" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                  <path d="m5 12 4.5 4.5L19 7" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </span>
-              <h2 className="mt-6 text-2xl font-black text-[#173126]">Order placed</h2>
-              <p className="mt-2 text-sm font-semibold text-[#64706A]">Order placed for Bhubaneswar.</p>
-            </div>
-          ) : null}
+      {codConfirmOpen ? (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-foreground/60" onClick={() => setCodConfirmOpen(false)}>
+          <div className="rise-in w-full max-w-[520px] rounded-t-[2rem] bg-card p-5 pb-8 text-center" onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-brand-soft text-primary"><CircleIndianRupee className="h-9 w-9" /></div>
+            <h2 className="mt-4 text-2xl font-black">Place cash order?</h2>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">Give cash or ask your delivery partner for a UPI QR code when your order is delivered.</p>
+            <div className="mt-6 grid grid-cols-2 gap-2"><button onClick={() => setCodConfirmOpen(false)} className="press rounded-xl bg-muted py-3.5 font-black">Cancel</button><button onClick={() => { setCodConfirmOpen(false); void place(true); }} className="press rounded-xl bg-primary py-3.5 font-black text-primary-foreground">Yes, place order</button></div>
+          </div>
         </div>
       ) : null}
     </Shell>

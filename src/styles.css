@@ -75,34 +75,34 @@
 
 :root {
   --radius: 0.85rem;
-  --background: #EBECEF;
+  --background: #f4f7f5;
   --foreground: #173126;
   --card: #ffffff;
   --card-foreground: #173126;
   --popover: #ffffff;
   --popover-foreground: #173126;
-  --primary: #0C831F;
+  --primary: #0f5132;
   --primary-foreground: #ffffff;
-  --brand: #e7f2e8;
+  --brand: #e6f0ea;
   --brand-foreground: #173126;
-  --brand-soft: #edf5ee;
-  --success: #0C831F;
+  --brand-soft: #eef4f0;
+  --success: #0f5132;
   --success-foreground: #ffffff;
   --festive-header-foreground: #ffffff;
-  --secondary: #f4f5f5;
+  --secondary: #f1f4f2;
   --secondary-foreground: #173126;
-  --muted: #EBECEF;
+  --muted: #eef2f0;
   --muted-foreground: #64706a;
-  --accent: #F8CB46;
+  --accent: #e5edf0;
   --accent-foreground: #173126;
   --destructive: #b54a3f;
   --destructive-foreground: #fffdf7;
-  --border: #d9dde2;
-  --input: #d9dde2;
-  --ring: #0C831F;
+  --border: #e5e6dc;
+  --input: #dfe4da;
+  --ring: #00472f;
   --tile: #ffffff;
-  --coupon: #fff8dc;
-  --coupon-strong: #f8cb46;
+  --coupon: #fff6d9;
+  --coupon-strong: #f1dfae;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -347,29 +347,6 @@
   0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-primary) 55%, transparent); }
   70% { box-shadow: 0 0 0 9px transparent; }
   100% { box-shadow: 0 0 0 0 transparent; }
-}
-
-@keyframes order-radar-pulse {
-  0% { opacity: 0.8; transform: scale(0.35); }
-  100% { opacity: 0; transform: scale(1.85); }
-}
-
-@utility order-radar {
-  position: relative;
-  isolation: isolate;
-}
-
-@utility order-radar-ring {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border: 2px solid #0C831F;
-  border-radius: 9999px;
-  animation: order-radar-pulse 1.5s ease-out infinite;
-}
-
-@utility order-radar-ring-delay {
-  animation-delay: 0.75s;
 }
 
 @keyframes float-y {
