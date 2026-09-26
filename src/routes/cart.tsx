@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { GUEST_PROFILE_EVENT, openLoginModal } from "@/components/LoginModal";
@@ -10,7 +10,7 @@ import { computeBill, haversineKm, inr, type Settings } from "@/lib/fees";
 import { checkoutGate, minimumOrderValue, stallOfferDiscount } from "@/lib/pricing";
 import { payInAppWithCashfree } from "@/lib/checkout";
 import { useSession } from "@/lib/session";
-import { BellOff, DoorOpen, PhoneOff, Plus, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, BellOff, ChevronRight, CircleIndianRupee, DoorOpen, MapPin, MoreVertical, Phone, PhoneOff, Plus, ShieldCheck, Sparkles, Tag } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/cart")({
@@ -71,6 +71,8 @@ function Cart() {
   const [locating, setLocating] = useState(false);
   const [saved, setSaved] = useState<SavedAddress[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [addressConfirmOpen, setAddressConfirmOpen] = useState(false);
+  const [codConfirmOpen, setCodConfirmOpen] = useState(false);
   const [recommendations, setRecommendations] = useState<
     Array<{
       id: string;
@@ -234,6 +236,7 @@ function Cart() {
       /* remembering the location is optional */
     }
     setPickerOpen(false);
+    setAddressConfirmOpen(true);
   }
 
   async function fillFromCoords(lat: number, lng: number, overwrite: boolean) {
@@ -294,6 +297,8 @@ function Cart() {
           return f;
         });
         setLocating(false);
+          setPickerOpen(false);
+          setAddressConfirmOpen(true);
       },
       () => {
         setLocating(false);
@@ -380,8 +385,16 @@ function Cart() {
     );
   }
 
-  async function place() {
+  async function place(confirmed = false) {
     setErr(null);
+    if (!coords) {
+      setPickerOpen(true);
+      return;
+    }
+    if (payment === "COD" && !confirmed) {
+      setCodConfirmOpen(true);
+      return;
+    }
     if (!user) {
       if (!guestProfile.name) {
         openLoginModal();
@@ -571,19 +584,26 @@ function Cart() {
 
   return (
     <Shell>
-      <div className="rounded-b-[2.25rem] bg-primary px-5 pb-7 pt-5 text-primary-foreground">
-        <p className="text-[11px] font-black uppercase tracking-[0.18em] opacity-70">Your basket</p>
-        <h1 className="font-display text-4xl">Your Cart</h1>
-        <p className="text-xs font-semibold opacity-75">
-          {vendor?.stall_name ?? "Your order"} · {lines.reduce((sum, line) => sum + line.qty, 0)}{" "}
-          items
-        </p>
+      <header className="sticky top-0 z-30 bg-card px-4 pb-3 pt-4 shadow-card">
+        <div className="flex items-center gap-3">
+          <Link to="/" aria-label="Back to home" className="press grid h-10 w-10 place-items-center rounded-full border border-border">
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-lg font-black">Your Cart</h1>
+            <p className="truncate text-[11px] text-muted-foreground">{vendor?.stall_name ?? "ThelaWala"} · {lines.reduce((sum, line) => sum + line.qty, 0)} items</p>
+          </div>
+          <MoreVertical className="h-5 w-5 text-muted-foreground" />
+        </div>
+      </header>
+      <div className="bg-brand px-4 py-2 text-center text-sm font-black text-primary">
+        {savings > 0 ? `${inr(savings)} saved on this order` : deliveryPromo}
       </div>
-      <div className="space-y-3 p-4 pb-36">
-        <div className="rounded-2xl border border-brand bg-brand-soft p-3 shadow-card">
+      <div className="space-y-3 bg-muted/45 p-3 pb-48">
+        <div className="rounded-lg border border-brand bg-brand-soft p-3">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
-            <p className="text-sm font-black">{deliveryPromo}</p>
+            <p className="text-xs font-black">{deliveryPromo}</p>
           </div>
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-card">
             <div
@@ -592,7 +612,7 @@ function Cart() {
             />
           </div>
         </div>
-        <div className="card-elevated rise-in grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border border-border p-3">
+        <div className="card-soft rise-in grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-black">{form.full_name || "Delivering to you"}</p>
             <p className="truncate text-[11px] text-muted-foreground">
@@ -607,23 +627,24 @@ function Cart() {
           </a>
         </div>
 
-        <div className="card-elevated rise-in p-3">
-          <p className="inline-flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-1 text-[11px] font-black text-primary-foreground">
-            ⚡ Free delivery in 15 mins
-          </p>
+        <div className="card-soft rise-in p-4">
+          <div className="flex items-center justify-between border-b border-dashed border-border pb-3">
+            <p className="text-base font-black">15 mins <span className="ml-1 rounded-full bg-brand px-2 py-1 text-[10px] text-primary">⚡ Superfast</span></p>
+            <span className="text-xs text-muted-foreground">{lines.reduce((sum, line) => sum + line.qty, 0)} items</span>
+          </div>
           <div className="mt-3 space-y-3">
             {lines.map((l) => (
               <div key={l.itemId} className="flex items-center gap-3">
                 <img
                   src={l.photo ?? "/food/food-tiffin.jpg"}
                   alt={l.name}
-                  className="h-14 w-14 rounded-xl object-cover"
+                  className="h-14 w-14 rounded-lg bg-muted object-contain p-1"
                 />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{l.name}</p>
                   <p className="text-xs text-muted-foreground">{l.unit}</p>
                 </div>
-                <div className="flex items-center gap-2 rounded-full bg-primary px-2.5 py-1 text-primary-foreground">
+                <div className="flex h-9 items-center gap-3 rounded-lg border border-primary bg-card px-2 text-primary shadow-card">
                   <button
                     aria-label="Remove one"
                     onClick={() => cart.remove(l.itemId)}
@@ -698,47 +719,40 @@ function Cart() {
           </section>
         ) : null}
 
-        <div className="card-elevated rise-in flex items-center gap-3 p-3">
+        <button onClick={() => setPickerOpen(true)} className="card-soft press rise-in flex w-full items-center gap-3 p-4 text-left">
+          <MapPin className="h-5 w-5 shrink-0 text-primary" />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold">Delivering to</p>
+            <p className="text-sm font-black">Delivering to {form.full_name || "you"}</p>
             <p className="truncate text-[12px] text-muted-foreground">
               {coords ? form.line || "Selected location" : "No location chosen yet"}
             </p>
           </div>
-          <button
-            onClick={() => setPickerOpen(true)}
-            className="press shrink-0 rounded-full border border-primary px-3 py-1.5 text-[11px] font-black text-primary"
-          >
-            {coords ? "Change" : "Choose"}
-          </button>
-        </div>
+          <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+        </button>
 
         {pickerOpen ? (
           <div
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+            className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/55"
             onClick={() => setPickerOpen(false)}
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-[480px] space-y-2 rounded-t-3xl bg-card p-4 pb-6"
+              className="rise-in w-full max-w-[480px] space-y-3 rounded-t-[2rem] bg-card p-5 pb-8"
             >
-              <p className="text-sm font-black">Choose delivery location</p>
-              <p className="text-[11px] text-muted-foreground">
+              <div className="mx-auto h-1 w-10 rounded-full bg-border" />
+              <p className="text-xl font-black">Choose delivery location</p>
+              <p className="text-xs text-muted-foreground">
                 Pick a saved location or use your current one.
               </p>
               {saved.map((a) => (
                 <button
                   key={a.id}
                   onClick={() => pickSaved(a)}
-                  className="press block w-full rounded-2xl border border-border p-3 text-left"
+                  className="press flex w-full items-start gap-3 rounded-xl border border-border p-3 text-left"
                 >
-                  <p className="truncate text-[13px] font-black">
-                    {a.full_name} · {a.mobile}
-                  </p>
-                  <p className="truncate text-[11px] text-muted-foreground">
-                    {a.line}
-                    {a.landmark ? `, ${a.landmark}` : ""} — {a.pincode}
-                  </p>
+                  <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                  <span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-black">{a.full_name} · {a.mobile}</span><span className="block truncate text-[11px] text-muted-foreground">{a.line}{a.landmark ? `, ${a.landmark}` : ""} — {a.pincode}</span></span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                 </button>
               ))}
               <button
@@ -821,17 +835,18 @@ function Cart() {
           ) : null}
         </div>
 
-        <div className="card-elevated rise-in space-y-2 p-3">
-          <p className="text-sm font-bold">Tip &amp; delivery note</p>
+        <div className="card-soft rise-in space-y-3 p-4">
+          <p className="text-[11px] font-black uppercase text-muted-foreground">Delivery tip</p>
+          <p className="text-sm font-bold">A small tip, a big gesture!</p>
           <p className="text-[11px] text-muted-foreground">
             A tip goes fully to your delivery partner.
           </p>
           <div className="flex flex-wrap gap-2">
-            {[0, 10, 20, 30, 50].map((t) => (
+            {[0, 10, 20, 30].map((t) => (
               <button
                 key={t}
                 onClick={() => setTip(t)}
-                className={`press rounded-full border px-3 py-1.5 text-[11px] font-black ${tip === t ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+                className={`press min-w-16 flex-1 rounded-lg border px-3 py-2.5 text-xs font-black ${tip === t ? "border-primary bg-primary text-primary-foreground" : "border-border text-foreground"}`}
               >
                 {t === 0 ? "No tip" : `₹${t}`}
               </button>
@@ -863,7 +878,7 @@ function Cart() {
         </div>
 
         <div className="coupon-card rise-in p-4">
-          <p className="text-sm font-bold">Coupons &amp; offers</p>
+          <p className="flex items-center gap-2 text-base font-black"><Tag className="h-5 w-5 text-primary" /> Use coupons</p>
           <div className="mt-2 flex gap-2">
             <input
               value={codeInput}
@@ -915,8 +930,8 @@ function Cart() {
           </div>
         </div>
 
-        <div className="card-elevated rise-in p-3">
-          <p className="text-sm font-bold">Bill details</p>
+        <div className="card-soft rise-in p-4">
+          <p className="text-[11px] font-black uppercase text-muted-foreground">Bill details</p>
           {bill ? (
             <dl className="mt-2 space-y-1.5 text-sm">
               <Row label="Item total" value={inr(bill.foodTotal)} />
@@ -942,7 +957,7 @@ function Cart() {
               {walletUse > 0 ? (
                 <Row label="Paid from wallet" value={`− ${inr(walletUse)}`} good />
               ) : null}
-              <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold">
+              <div className="mt-3 flex justify-between border-t border-dashed border-border pt-3 text-base font-black">
                 <span>To pay</span>
                 <span>{inr(payable)}</span>
               </div>
@@ -971,7 +986,7 @@ function Cart() {
           )}
         </div>
 
-        <div className="card-elevated rise-in p-3">
+        <div className="card-soft rise-in p-4">
           <p className="text-sm font-bold">Payment method</p>
           {walletBalance > 0 ? (
             <button
@@ -1008,11 +1023,15 @@ function Cart() {
           </div>
         </div>
 
+        <div className="card-soft p-4 text-sm leading-relaxed text-muted-foreground">
+          <span className="font-black text-destructive">NOTE: </span>Orders cannot be cancelled once the stall starts preparing them.
+          <Link to="/terms" className="mt-1 block font-black text-primary underline">Read cancellation policy</Link>
+        </div>
         {err ? <p className="text-xs font-semibold text-destructive">{err}</p> : null}
       </div>
 
-      <div className="fixed inset-x-0 bottom-[104px] z-40 mx-auto w-full max-w-[480px] px-3">
-        <div className="sticky-checkout rounded-2xl p-2">
+      <div className="fixed inset-x-0 bottom-[92px] z-40 mx-auto w-full max-w-[520px]">
+        <div className="sticky-checkout border-x-0 p-3">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-1 pb-2">
             <p className="truncate text-[11px] font-semibold text-muted-foreground">
               📍 {form.line || "Set your delivery address"}
@@ -1026,29 +1045,47 @@ function Cart() {
           {blockedReason ? (
             <p className="px-1 pb-2 text-[11px] font-bold text-destructive">{blockedReason}</p>
           ) : null}
-          <button
-            disabled={busy || !bill || !!blockedReason}
-            onClick={place}
-            className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-3.5 text-primary-foreground shadow-card disabled:opacity-50"
-          >
+          <button disabled={busy || !!blockedReason} onClick={() => void place()} className="press grid w-full grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] items-center gap-3 text-left disabled:opacity-50">
             <span>
               <span className="block text-[10px] font-bold opacity-65">
                 {lines.reduce((sum, line) => sum + line.qty, 0)} ITEMS
               </span>
               <span className="text-base font-black">{bill ? inr(payable) : "—"}</span>
             </span>
-            <span className="text-sm font-black">
+            <span className="rounded-xl bg-primary px-4 py-4 text-center text-sm font-black text-primary-foreground shadow-card">
               {busy
                 ? "PLACING…"
                 : !hasLocation
                   ? "Set your address first"
                   : blockedReason
                     ? "Not available"
-                    : "Select Payment Method ›"}
+                    : payment === "COD" ? "Place cash order" : "Proceed to pay"}
             </span>
           </button>
         </div>
       </div>
+
+      {addressConfirmOpen ? (
+        <div className="fixed inset-0 z-[60] grid place-items-center bg-foreground/60 p-5" onClick={() => setAddressConfirmOpen(false)}>
+          <div className="rise-in w-full max-w-sm rounded-2xl bg-card p-5 shadow-card" onClick={(e) => e.stopPropagation()}>
+            <p className="text-2xl font-black">Confirm details</p>
+            <div className="mt-4 flex gap-3"><MapPin className="mt-0.5 h-5 w-5 text-primary" /><div><p className="font-black">Bhubaneswar</p><p className="text-sm text-muted-foreground">{form.line}{form.landmark ? `, ${form.landmark}` : ""} — {form.pincode}</p></div></div>
+            <div className="mt-4 flex gap-3"><Phone className="mt-0.5 h-5 w-5 text-primary" /><p className="font-black">{form.full_name || "Receiver"}, {form.mobile || "add mobile number"}</p></div>
+            <div className="mt-5 grid grid-cols-2 gap-2"><button onClick={() => { setAddressConfirmOpen(false); document.getElementById("delivery-details")?.scrollIntoView({ behavior: "smooth" }); }} className="press rounded-xl bg-brand-soft py-3 text-sm font-black text-primary">Edit details</button><button onClick={() => setAddressConfirmOpen(false)} className="press rounded-xl bg-primary py-3 text-sm font-black text-primary-foreground">Confirm</button></div>
+          </div>
+        </div>
+      ) : null}
+
+      {codConfirmOpen ? (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-foreground/60" onClick={() => setCodConfirmOpen(false)}>
+          <div className="rise-in w-full max-w-[520px] rounded-t-[2rem] bg-card p-5 pb-8 text-center" onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-brand-soft text-primary"><CircleIndianRupee className="h-9 w-9" /></div>
+            <h2 className="mt-4 text-2xl font-black">Place cash order?</h2>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">Give cash or ask your delivery partner for a UPI QR code when your order is delivered.</p>
+            <div className="mt-6 grid grid-cols-2 gap-2"><button onClick={() => setCodConfirmOpen(false)} className="press rounded-xl bg-muted py-3.5 font-black">Cancel</button><button onClick={() => { setCodConfirmOpen(false); void place(true); }} className="press rounded-xl bg-primary py-3.5 font-black text-primary-foreground">Yes, place order</button></div>
+          </div>
+        </div>
+      ) : null}
     </Shell>
   );
 }

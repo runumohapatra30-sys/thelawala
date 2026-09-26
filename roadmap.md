@@ -10,3 +10,4 @@
 - [ ] Add admin-selectable fixed, per-km, and distance-slab delivery pricing
 - [ ] Diagnose and repair mobile OTP login without splitting existing user accounts
 - [ ] Verify database security, build, and mobile/desktop previews
+- [ ] Match cart, address, order success, tracking, and history to the supplied mobile references in ThelaWala colors
