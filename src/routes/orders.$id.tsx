@@ -10,6 +10,7 @@ import { openInvoice, type InvoiceOrder } from "@/lib/invoice";
 import { OrderDeliveredRating } from "@/components/OrderDeliveredRating";
 import { useSession } from "@/lib/session";
 import { RefundPanel } from "@/components/RefundPanel";
+import { Bike, Clock3, MessageCircle, PackageOpen, PhoneCall, ShoppingBasket } from "lucide-react";
 
 export const Route = createFileRoute("/orders/$id")({
   validateSearch: (s: Record<string, unknown>): { placed?: 1 } => (s['placed'] ? { placed: 1 } : {}),
@@ -54,9 +55,12 @@ function Track() {
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<{ id: string; name: string; qty: number; price: number; photo_url: string | null }[]>([]);
   const [vendor, setVendor] = useState<{ stall_name: string; lat: number; lng: number; mobile: string | null } | null>(null);
+  const [deals, setDeals] = useState<{ id: string; name: string; photo_url: string | null; unit: string | null; price: number; mrp: number }[]>([]);
   const [rider, setRider] = useState<{ name: string; mobile: string | null; lat: number | null; lng: number | null } | null>(null);
   const [eta, setEta] = useState<number | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [showJourney, setShowJourney] = useState(false);
   const [reason, setReason] = useState(REASONS[0]!);
   const [splash, setSplash] = useState(Boolean(placed));
   const [tipMsg, setTipMsg] = useState<string | null>(null);
@@ -75,10 +79,6 @@ function Track() {
       const { data } = await supabase.from("orders").select("*").eq("id", id).maybeSingle();
       if (!alive || !data) return;
       setOrder(data as Order);
-      if (!vendor) {
-        const { data: v } = await supabase.from("vendors").select("stall_name,lat,lng,mobile").eq("id", data.vendor_id).maybeSingle();
-        if (v) setVendor(v);
-      }
       if (data.partner_id) {
         const { data: r } = await supabase.from("delivery_partners").select("name,mobile,lat,lng").eq("id", data.partner_id).maybeSingle();
         if (r) setRider(r);
@@ -100,6 +100,22 @@ function Track() {
       supabase.removeChannel(channel);
     };
   }, [id]);
+
+  useEffect(() => {
+    if (!order?.vendor_id) return;
+    let alive = true;
+    const loadStallContent = async () => {
+      const [vendorResult, dealResult] = await Promise.all([
+        supabase.from("vendors").select("stall_name,lat,lng,mobile").eq("id", order.vendor_id).maybeSingle(),
+        supabase.from("menu_items").select("id,name,photo_url,unit,price,mrp").eq("vendor_id", order.vendor_id).eq("in_stock", true).gte("price", 49).order("price").limit(8),
+      ]);
+      if (!alive) return;
+      if (vendorResult.data) setVendor(vendorResult.data);
+      setDeals((dealResult.data ?? []) as typeof deals);
+    };
+    void loadStallContent();
+    return () => { alive = false; };
+  }, [order?.vendor_id]);
 
   // Follow the delivery partner's location live.
   const partnerId = order?.partner_id ?? null;
@@ -168,6 +184,106 @@ function Track() {
   const stepIndex = FLOW.indexOf(order.status);
   const cancellable = ["ORDER_PLACED", "PREPARING"].includes(order.status);
   const live = !["DELIVERED", "CANCELLED"].includes(order.status);
+  const etaMinutes = eta ? Math.max(5, Math.round(eta)) : 11;
+  const isOnTheWay = order.status === "OUT_FOR_DELIVERY";
+  const trackingStatus = isOnTheWay ? "Out for delivery" : "Order getting packed!";
+
+  if (live) {
+    return (
+      <Shell hideNavigation>
+        <div className="fixed inset-0 z-[50] overflow-hidden bg-[#EBECEF]">
+          {vendor ? (
+            <LiveMap
+              from={{ lat: Number(vendor.lat), lng: Number(vendor.lng) }}
+              to={{ lat: Number(order.drop_lat), lng: Number(order.drop_lng) }}
+              rider={rider?.lat != null && rider.lng != null ? { lat: Number(rider.lat), lng: Number(rider.lng) } : null}
+              onEta={(minutes) => setEta(minutes)}
+              className="absolute inset-0 h-full w-full !rounded-none"
+            />
+          ) : (
+            <div className="absolute inset-0 grid place-items-center text-sm font-semibold text-muted-foreground">Loading your stall and delivery map…</div>
+          )}
+
+          <motion.header initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 mx-auto flex max-w-[480px] items-center gap-3 rounded-xl border border-[#EBECEF] bg-white/95 p-3 shadow-xl backdrop-blur">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#E8F5E9] text-[#0C831F]"><ShoppingBasket className="h-5 w-5" /></span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-black text-[#111827]">Arriving in {etaMinutes} mins</p>
+              <p className="truncate text-[11px] font-medium text-[#6B7280]">{isOnTheWay ? "Your order is out for delivery" : "Your order is getting packed"}</p>
+            </div>
+            <button type="button" onClick={() => setShowJourney((visible) => !visible)} aria-expanded={showJourney} className="shrink-0 rounded-lg border border-[#0052FF] px-3 py-2 text-[10px] font-black text-[#0052FF]">TRACK ORDER</button>
+          </motion.header>
+
+          <motion.section initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} id="tracking-status" className="absolute inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-10 mx-auto max-h-[58dvh] max-w-[480px] space-y-3 overflow-y-auto rounded-2xl border border-[#EBECEF] bg-white p-4 shadow-2xl">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-wide text-[#0C831F]">{vendor?.stall_name ?? "ThelaWala"}</p>
+                <h1 className="mt-1 text-lg font-black text-[#111827]">{trackingStatus}</h1>
+                <p className="mt-0.5 text-xs text-[#6B7280]">{isOnTheWay ? "Your order is on the way." : "Your food is being packed at the stall."}</p>
+              </div>
+              <span className="flex shrink-0 items-center gap-1 rounded-lg bg-[#E8F5E9] px-2.5 py-2 text-xs font-black text-[#0C831F]"><Clock3 className="h-3.5 w-3.5" />{etaMinutes} min</span>
+            </div>
+
+            <div className="flex items-center gap-3 border-y border-[#EBECEF] py-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#F8F9FA] text-[#0C831F]"><Bike className="h-5 w-5" /></span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-black text-[#111827]">{vendor?.stall_name ?? "Your food stall"}</p>
+                <p className="text-[10px] text-[#6B7280]">Order #{order.code} · Bhubaneswar</p>
+              </div>
+              {vendor?.mobile ? <a href={`tel:${vendor.mobile}`} aria-label={`Call ${vendor.stall_name}`} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#0C831F] text-white"><PhoneCall className="h-4 w-4" /></a> : null}
+              {order.partner_id ? (
+                <button type="button" onClick={() => setChatOpen((open) => !open)} aria-label={chatOpen ? "Close delivery chat" : "Message delivery partner"} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#EBECEF] text-[#0C831F]"><MessageCircle className="h-4 w-4" /></button>
+              ) : (
+                <Link to="/support" search={{ order: order.id }} aria-label="Message support about this order" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#EBECEF] text-[#0C831F]"><MessageCircle className="h-4 w-4" /></Link>
+              )}
+            </div>
+
+            {showJourney ? (
+              <ol className="grid grid-cols-4 gap-1" aria-label="Order progress">
+                {["Order placed", "Getting packed", "Out for delivery", "Delivered"].map((label, index) => {
+                  const current = isOnTheWay ? index < 3 : index < 2;
+                  return <li key={label} className={`rounded-md px-1.5 py-2 text-center text-[9px] font-bold ${current ? "bg-[#E8F5E9] text-[#0C831F]" : "bg-[#F8F9FA] text-[#6B7280]"}`}><span className="mx-auto mb-1 block h-1.5 w-1.5 rounded-full bg-current" />{label}</li>;
+                })}
+              </ol>
+            ) : null}
+
+            {chatOpen && order.partner_id ? <OrderChat orderId={order.id} role="CUSTOMER" senderId={user?.id} /> : null}
+
+            {deals.length > 0 ? (
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <h2 className="text-sm font-black text-[#111827]">Deals from ₹49</h2>
+                  <span className="text-[10px] font-semibold text-[#6B7280]">From this stall</span>
+                </div>
+                <div className="flex snap-x gap-2 overflow-x-auto pb-1">
+                  {deals.map((deal) => (
+                    <article key={deal.id} className="w-28 shrink-0 snap-start overflow-hidden rounded-lg border border-[#EBECEF] bg-white">
+                      <img src={deal.photo_url ?? "/food/food-tiffin.jpg"} alt={deal.name} className="aspect-square w-full object-cover" />
+                      <div className="p-2">
+                        <p className="truncate text-[11px] font-bold text-[#111827]">{deal.name}</p>
+                        <p className="text-xs font-black text-[#0C831F]">{inr(Number(deal.price))}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {cancellable ? <button type="button" onClick={() => setCancelOpen(true)} className="w-full border-t border-[#EBECEF] pt-2 text-left text-[11px] font-bold text-destructive">Cancel order</button> : null}
+          </motion.section>
+
+          {cancelOpen ? (
+            <div className="fixed inset-0 z-[70] flex items-end bg-black/40" onClick={() => setCancelOpen(false)}>
+              <div className="mx-auto w-full max-w-[480px] rounded-t-2xl bg-white p-4" onClick={(event) => event.stopPropagation()}>
+                <p className="text-sm font-bold">Why are you cancelling?</p>
+                <div className="mt-2 space-y-2">{REASONS.map((choice) => <button key={choice} onClick={() => setReason(choice)} className={`w-full rounded-xl border px-3 py-2.5 text-left text-sm ${reason === choice ? "border-primary font-semibold text-primary" : "border-border"}`}>{choice}</button>)}</div>
+                <div className="mt-3 flex gap-2"><button onClick={() => setCancelOpen(false)} className="flex-1 rounded-xl border border-border py-2.5 text-sm font-bold">Keep order</button><button onClick={cancelOrder} className="flex-1 rounded-xl bg-destructive py-2.5 text-sm font-bold text-white">Cancel order</button></div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </Shell>
+    );
+  }
 
   return (
     <Shell>

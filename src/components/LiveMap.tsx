@@ -76,9 +76,10 @@ export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className 
           lineJoin: "round",
         }).addTo(map);
         const line = L.polyline(route.coords, {
-          color: "#2563EB",
+          color: "#0052FF",
           weight: 5,
           opacity: 0.98,
+          dashArray: "8 10",
           lineCap: "round",
           lineJoin: "round",
         }).addTo(map);

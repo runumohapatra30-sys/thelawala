@@ -10,7 +10,8 @@ import { computeBill, haversineKm, inr, type Settings } from "@/lib/fees";
 import { checkoutGate, minimumOrderValue, stallOfferDiscount } from "@/lib/pricing";
 import { payInAppWithCashfree } from "@/lib/checkout";
 import { useSession } from "@/lib/session";
-import { ArrowLeft, Banknote, Bike, BellOff, Check, ChevronRight, CircleDollarSign, CreditCard, DoorOpen, MapPin, Phone, PhoneOff, Plus, ShieldCheck, Smartphone, Sparkles, Tag } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowLeft, Banknote, Bike, BellOff, Check, ChevronRight, ChevronsRight, CircleDollarSign, CreditCard, DoorOpen, MapPin, Phone, PhoneOff, Plus, ShieldCheck, Smartphone, Tag } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/cart")({
@@ -33,13 +34,15 @@ export const Route = createFileRoute("/cart")({
 
 const otp = () => String(Math.floor(100000 + Math.random() * 900000));
 const pin4 = () => String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+type PlacementStage = "idle" | "placing" | "placed";
 
 function Cart() {
   const navigate = useNavigate();
   const { user } = useSession();
   const lines = useCart();
-  const { foodTotal, baseTotal } = cartTotals(lines);
+  const { foodTotal, baseTotal, mrpTotal } = cartTotals(lines);
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "payment">("cart");
+  const [placementStage, setPlacementStage] = useState<PlacementStage>("idle");
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [vendor, setVendor] = useState<{
@@ -334,20 +337,9 @@ function Cart() {
     : 0;
   const walletUse = bill && useWallet ? Math.min(walletBalance, netTotal) : 0;
   const payable = bill ? Math.round((netTotal - walletUse) * 100) / 100 : 0;
-  const unlockTarget = foodTotal < 200 ? 200 : Math.ceil(foodTotal / 100) * 100;
-  const unlockLeft = Math.max(0, unlockTarget - foodTotal);
-  const unlockProgress = Math.min(100, (foodTotal / unlockTarget) * 100);
   const standardDeliveryFee = bill ? 22 + Math.max(0, bill.distanceKm - 2) * 3.5 : 0;
   const deliverySavings = bill ? Math.max(0, standardDeliveryFee - bill.deliveryFee) : 0;
-  const freeDeliveryUnlocked = Boolean(bill && foodTotal >= 200 && bill.distanceKm <= 5);
-  const deliveryPromo = freeDeliveryUnlocked
-    ? "You've unlocked free delivery"
-    : bill && foodTotal >= 200
-      ? "₹30 delivery discount unlocked"
-      : foodTotal < 200
-        ? `Add ${inr(unlockLeft)} more to unlock free delivery`
-        : "Choose an address to unlock free delivery";
-  const savings = Math.round((stallOff + couponOff + deliverySavings) * 100) / 100;
+  const savings = Math.round((Math.max(0, mrpTotal - foodTotal) + stallOff + couponOff + deliverySavings) * 100) / 100;
   const instructionOptions = [
     { label: "Avoid ringing bell", Icon: BellOff },
     { label: "Leave at the door", Icon: DoorOpen },
@@ -419,7 +411,13 @@ function Cart() {
     if (blockedReason) return setErr(blockedReason);
     if (!bill || !vendor) return;
 
+    let placementStartedAt: number | null = null;
+    const startPlacement = () => {
+      placementStartedAt = performance.now();
+      setPlacementStage("placing");
+    };
     setBusy(true);
+    if (!(payable > 0 && payment === "ONLINE")) startPlacement();
     const { data: sameAddr } = await supabase
       .from("addresses")
       .select("id")
@@ -472,6 +470,7 @@ function Cart() {
           return setErr("Payment Failed! Please try again. Your items are still in the cart.");
         }
         paidRef = res.reference;
+        startPlacement();
       } catch {
         setBusy(false);
         return setErr("Payment Failed! Please try again. Your items are still in the cart.");
@@ -519,6 +518,7 @@ function Cart() {
     if (error || !order) {
       console.error("[Order Create Failed]", error);
       setBusy(false);
+      setPlacementStage("idle");
       return setErr(error?.message ?? "Could not place the order.");
     }
 
@@ -558,7 +558,11 @@ function Cart() {
     cart.clear();
 
     setBusy(false);
-    navigate({ to: "/orders/$id", params: { id: order.id }, search: { placed: 1 } });
+    const startedAt = placementStartedAt ?? performance.now();
+    await new Promise((resolve) => setTimeout(resolve, Math.max(0, 2000 - (performance.now() - startedAt))));
+    setPlacementStage("placed");
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await navigate({ to: "/orders/$id", params: { id: order.id } });
   }
 
   return (
@@ -574,27 +578,15 @@ function Cart() {
             <h1 className="truncate text-lg font-black">Your Cart</h1>
             <p className="truncate text-[11px] text-muted-foreground">{vendor?.stall_name ?? "ThelaWala"} · {lines.reduce((sum, line) => sum + line.qty, 0)} items</p>
           </div>
-            <span className="shrink-0 rounded-full bg-primary/10 px-3 py-2 text-xs font-black text-primary">{savings > 0 ? `${inr(savings)} saved!` : "Street food, made local"}</span>
+            <span className="shrink-0 rounded-full bg-[#E8F5E9] px-3 py-2 text-xs font-black text-[#0C831F]">{inr(savings)} saved!</span>
         </div>
       </header>
       <div className="space-y-3 bg-muted/45 p-3 pb-48">
-        <div className="rounded-lg border border-brand bg-brand-soft p-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <p className="text-xs font-black">{deliveryPromo}</p>
-          </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-card">
-            <div
-              className="h-full rounded-full bg-primary transition-[width] duration-500"
-              style={{ width: `${unlockProgress}%` }}
-            />
-          </div>
-        </div>
         <div className="card-soft rise-in grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-3">
           <div className="min-w-0">
-            <p className="truncate text-sm font-black">{form.full_name || "Delivering to you"}</p>
+            <p className="truncate text-sm font-black">Bhubaneswar</p>
             <p className="truncate text-[11px] text-muted-foreground">
-              {form.line || "Add your full address below"}
+              {form.line || "Choose a delivery address"}
             </p>
           </div>
           <a
@@ -682,7 +674,7 @@ function Cart() {
                           mrp: Number(item.mrp),
                         })
                       }
-                      className="press absolute bottom-2 right-2 grid h-9 w-9 place-items-center rounded-full border border-border bg-card text-primary shadow-card"
+                      className="press absolute bottom-2 right-2 grid h-9 w-9 place-items-center rounded-full bg-[#0052FF] text-white shadow-card"
                     >
                       <Plus className="h-5 w-5" strokeWidth={2.4} />
                     </button>
@@ -690,7 +682,15 @@ function Cart() {
                   <p className="mt-2 line-clamp-2 min-h-9 text-xs font-extrabold leading-tight">
                     {item.name}
                   </p>
-                  <p className="mt-1 text-sm font-black text-primary">{inr(Number(item.price))}</p>
+                  <p className="mt-0.5 text-[10px] text-muted-foreground">{item.unit || "Street food"}</p>
+                  <p className="mt-1 text-sm font-black text-primary">
+                    {inr(Number(item.price))}{" "}
+                    {Number(item.mrp) > Number(item.price) ? (
+                      <span className="text-[10px] font-medium text-muted-foreground line-through">
+                        {inr(Number(item.mrp))}
+                      </span>
+                    ) : null}
+                  </p>
                 </article>
               ))}
             </div>
@@ -700,9 +700,9 @@ function Cart() {
         <button onClick={() => setPickerOpen(true)} className="card-soft press rise-in flex w-full items-center gap-3 p-4 text-left">
           <MapPin className="h-5 w-5 shrink-0 text-primary" />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-black">Delivering to {form.full_name || "you"}</p>
+            <p className="text-sm font-black">Bhubaneswar</p>
             <p className="truncate text-[12px] text-muted-foreground">
-              {coords ? form.line || "Selected location" : "No location chosen yet"}
+              {coords ? form.line || "Selected location" : "Choose a delivery address"}
             </p>
           </div>
           <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
@@ -984,30 +984,19 @@ function Cart() {
       </div>
 
       <div className="fixed inset-x-0 bottom-[92px] z-40 mx-auto w-full max-w-[520px]">
-        <div className="sticky-checkout border-x-0 p-3">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-1 pb-2">
-            <p className="truncate text-[11px] font-semibold text-muted-foreground">
-              📍 {form.line || "Set your delivery address"}
-            </p>
-            {coords && vendor ? (
-              <span className="shrink-0 text-[11px] font-black text-primary">
-                {distanceKm} km away
-              </span>
-            ) : null}
-          </div>
-          {blockedReason ? (
-            <p className="px-1 pb-2 text-[11px] font-bold text-destructive">{blockedReason}</p>
-          ) : null}
-          <button disabled={busy || !!blockedReason} onClick={proceedToPayment} className="press grid w-full grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] items-center gap-3 text-left disabled:opacity-50">
-            <span>
-              <span className="block text-[10px] font-bold opacity-65">
-                {lines.reduce((sum, line) => sum + line.qty, 0)} ITEMS
-              </span>
-              <span className="text-base font-black">{bill ? inr(payable) : "—"}</span>
+        <div className="border-t border-border bg-white p-3 shadow-[0_-10px_30px_rgba(17,24,39,0.1)]">
+          <button type="button" onClick={() => setCheckoutStep("payment")} className="mb-2 flex w-full items-center gap-3 rounded-lg border border-[#EBECEF] bg-[#F8F9FA] px-3 py-2.5 text-left">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#E8F5E9] text-[#0C831F]"><Banknote className="h-5 w-5" /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-xs font-black">{payment === "COD" ? "Cash/Pay on Delivery" : onlineMethod === "UPI" ? "UPI payment" : "Credit or debit card"}</span>
+              <span className="block truncate text-[10px] text-muted-foreground">{payment === "COD" ? "Pay cash at the time of delivery." : `Pay securely with ${settings?.payment_gateway ?? "online payment"}.`}</span>
             </span>
-            <span className="rounded-xl bg-primary px-4 py-4 text-center text-sm font-black text-primary-foreground shadow-card">
-              {blockedReason ? "Not available" : !hasLocation ? "Select delivery address" : "Proceed to Pay · Select Payment"}
-            </span>
+            <span className="flex shrink-0 items-center gap-0.5 text-[11px] font-black text-[#0C831F]">Change <ChevronRight className="h-3.5 w-3.5" /></span>
+          </button>
+          {blockedReason ? <p className="px-1 pb-2 text-[11px] font-bold text-destructive">{blockedReason}</p> : null}
+          <button disabled={busy || !!blockedReason || !hasLocation} onClick={() => void place()} className="press flex w-full items-center justify-between gap-3 rounded-xl bg-[#0052FF] px-4 py-4 text-left text-white shadow-md disabled:opacity-50">
+            <span className="flex items-center gap-2"><ChevronsRight className="h-5 w-5" /><span className="text-sm font-black">{busy ? "Placing your order…" : payment === "COD" ? "Place Cash Order" : `Pay with ${onlineMethod}`}</span></span>
+            <span className="shrink-0 text-base font-black">{bill ? inr(payable) : "—"}</span>
           </button>
         </div>
       </div>
@@ -1094,6 +1083,44 @@ function Cart() {
           </div>
         </div>
       ) : null}
+
+      <AnimatePresence mode="wait" initial={false}>
+        {placementStage !== "idle" ? (
+          <motion.div
+            key={placementStage}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22 }}
+            className="fixed inset-0 z-[100] grid place-items-center bg-white px-6 text-center"
+            aria-live="assertive"
+          >
+            {placementStage === "placing" ? (
+              <motion.div initial={{ y: 10, scale: 0.97 }} animate={{ y: 0, scale: 1 }} className="w-full max-w-sm">
+                <div className="relative mx-auto grid h-40 w-40 place-items-center rounded-full">
+                  <motion.span animate={{ rotate: 360 }} transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }} className="absolute inset-0 rounded-full border-[5px] border-[#EBECEF] border-t-[#0052FF]" />
+                  <motion.span animate={{ scale: [1, 1.55], opacity: [0.55, 0] }} transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut" }} className="absolute h-16 w-16 rounded-full border-2 border-[#0052FF]" />
+                  <span className="relative z-10 grid h-16 w-16 place-items-center rounded-full bg-white text-[#111827]">
+                    <MapPin className="h-9 w-9" strokeWidth={2.5} />
+                  </span>
+                </div>
+                <p className="mt-7 text-sm font-bold text-[#111827]">Placing order to</p>
+                <h2 className="mt-1 text-2xl font-black text-[#0052FF]">Bhubaneswar</h2>
+                <p className="mt-2 text-sm leading-relaxed text-[#6B7280]">{[form.line, form.landmark, form.pincode].filter(Boolean).join(", ")}</p>
+              </motion.div>
+            ) : (
+              <motion.div initial={{ y: 18, scale: 0.82 }} animate={{ y: 0, scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }} className="w-full max-w-sm">
+                <motion.span initial={{ scale: 0.6 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 320, damping: 18 }} className="mx-auto grid h-28 w-28 place-items-center rounded-full bg-[#0052FF] text-white shadow-[0_18px_50px_rgba(0,82,255,0.25)]">
+                  <Check className="h-14 w-14" strokeWidth={3} />
+                </motion.span>
+                <p className="mt-7 text-sm font-semibold text-[#111827]">Order placed for</p>
+                <h2 className="mt-1 text-2xl font-black text-[#0052FF]">Bhubaneswar</h2>
+                <p className="mt-2 text-sm leading-relaxed text-[#6B7280]">{[form.line, form.landmark, form.pincode].filter(Boolean).join(", ")}</p>
+              </motion.div>
+            )}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
     </Shell>
   );
