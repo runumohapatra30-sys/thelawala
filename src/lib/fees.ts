@@ -53,7 +53,6 @@ export function slabsOf(s: Settings): FeeSlab[] {
 }
 
 export function computeBill({
-  settings: s,
   foodTotal,
   mrpTotal,
   distanceKm,
@@ -66,10 +65,10 @@ export function computeBill({
   }
   deliveryFee = r2(deliveryFee);
 
-  const platformFee = s?.enable_platform_fee ? Number(s.platform_fee) : 0;
+  const platformFee = 3;
   const handlingFee = 0;
-  const packingFee = 5;
-  const surgeFee = s?.enable_surge_fee ? Number(s.surge_fee) : 0;
+  const packingFee = 0;
+  const surgeFee = 0;
 
   return {
     mrpTotal: r2(mrpTotal),

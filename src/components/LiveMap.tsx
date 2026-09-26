@@ -48,10 +48,10 @@ export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className 
           14,
         );
         mapRef.current = map;
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 19,
-          subdomains: "abcd",
-          attribution: "© OpenStreetMap © CARTO",
+          subdomains: "abc",
+          attribution: "© OpenStreetMap contributors",
         }).addTo(map);
 
         const icon = (html: string) =>
