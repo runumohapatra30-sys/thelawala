@@ -11,3 +11,7 @@
 - [ ] Diagnose and repair mobile OTP login without splitting existing user accounts
 - [ ] Verify database security, build, and mobile/desktop previews
 - [ ] Match cart, address, order success, tracking, and history to the supplied mobile references in ThelaWala colors
+- [ ] Add live auto-moving food and deal rails from current menu data
+- [ ] Replace the 2D plate preview with a lightweight auto-rotating 3D plate
+- [ ] Expose managed Google sign-in in the customer login modal without extra profile writes
+- [ ] Verify the 3D plate, cart controls, moving rails, and Google sign-in entry on mobile and desktop
