@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { ActiveOrderTracker } from "@/components/ActiveOrderTracker";
 import { HomeChat } from "@/components/HomeChat";
 import { Shell } from "@/components/Shell";
@@ -21,7 +20,7 @@ import { FestiveAmbience, FestiveHero, FestiveSections } from "@/components/Fest
 import { useHomeSections } from "@/lib/homeSections";
 import { FestivePhotoStrip } from "@/components/FestivePhotoStrip";
 import { themeStyle, useTopBarTheme } from "@/lib/appTheme";
-import { ArrowRight, Bike, Bookmark, CircleUserRound, Gift, Heart, MapPin, Plus, Search, ShoppingBag, Utensils, X, Zap } from "lucide-react";
+import { ArrowRight, Bike, Gift, Heart, MapPin, Plus, Search, ShoppingBag, Utensils, Wallet, X, Zap } from "lucide-react";
 import { StreetFoodExperience, type CuratedFoodDeal, type StreetFoodCategory, type StreetFoodItem, type StreetFoodVendor } from "@/components/StreetFoodExperience";
 
 export const Route = createFileRoute("/")({
@@ -78,9 +77,8 @@ function Home() {
   const [active, setActive] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+  const [balance, setBalance] = useState(0);
   const [address, setAddress] = useState<string | null>(null);
-  const [searchIndex, setSearchIndex] = useState(0);
-  const [searchFocused, setSearchFocused] = useState(false);
   const [favs, setFavs] = useState<string[]>([]);
   const [onlyFav, setOnlyFav] = useState(false);
   const [onlyVeg, setOnlyVeg] = useState(false);
@@ -92,12 +90,6 @@ function Home() {
   const homeSections = useHomeSections();
   const festiveTheme = homeSections.find((s) => s.section_type === "FESTIVE_GRID_4" && s.cards.some((c) => c.title || c.image_url)) ?? null;
   const otherSections = festiveTheme ? homeSections.filter((s) => s.id !== festiveTheme.id) : homeSections;
-  const searchPrompts = ["Search for 'Garam Bara'", "Search for 'Kurkure Momos'", "Search for 'Dahi Bara'", "Search for 'Kathi Rolls'"];
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setSearchIndex((index) => (index + 1) % searchPrompts.length), 2600);
-    return () => window.clearInterval(timer);
-  }, [searchPrompts.length]);
 
   useEffect(() => {
     let alive = true;
@@ -145,6 +137,9 @@ function Home() {
 
   useEffect(() => {
     if (!user) return;
+    supabase.from("wallets").select("balance,status").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      setBalance(data?.status === "ACTIVE" ? Number(data.balance) : 0);
+    });
     supabase
       .from("addresses")
       .select("line,landmark")
@@ -361,12 +356,9 @@ function Home() {
           {shown.map((i, idx) => {
             const line = lines.find((l) => l.itemId === i.id);
             const shownPrice = customerPrice(i.price);
-            const originalPrice = customerPrice(i.mrp);
             // Discounts only exist when the stall itself runs an offer.
             const off = vendorOffer[i.vendor_id] ?? 0;
             const offerPrice = off > 0 ? Math.round(shownPrice * (100 - off)) / 100 : shownPrice;
-            const rating = ratings[i.vendor_id];
-            const eta = vendors.find((vendor) => vendor.id === i.vendor_id)?.default_prep_minutes;
             return (
               <div key={i.id} style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }} className="press rise-in overflow-visible rounded-2xl bg-white p-2 shadow-card hover:-translate-y-0.5">
                 <div className={`product-tile relative aspect-square overflow-visible ${PRODUCT_TINTS[idx % PRODUCT_TINTS.length]}`}>
@@ -375,12 +367,11 @@ function Home() {
                     alt={i.name}
                     className="h-full w-full rounded-2xl object-contain p-2"
                   />
-                  {off > 0 || originalPrice > offerPrice ? (
-                    <span className="absolute left-2 top-2 rounded-full bg-[#E63946] px-2 py-0.5 text-[10px] font-extrabold text-white shadow-md">
-                      {off > 0 ? `${off}% OFF` : `${Math.round((1 - offerPrice / originalPrice) * 100)}% OFF`}
+                  {off > 0 ? (
+                    <span className="absolute left-2 top-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-extrabold text-primary-foreground shadow-md">
+                      {off}% OFF
                     </span>
                   ) : null}
-                  <span className="absolute bottom-2 left-2 rounded-full bg-white/95 px-2 py-1 text-[8px] font-black text-[#1C2024] shadow-sm">{rating ? `★ ${rating.toFixed(1)}` : "NEW"}{eta ? ` · ${eta} MIN` : ""}</span>
                   {!i.in_stock ? (
                     <span className="absolute inset-0 grid place-items-center rounded-[1.4rem] bg-black/55 text-xs font-bold text-white">
                       Out of stock
@@ -405,13 +396,13 @@ function Home() {
                     <button
                       onClick={() => add(i)}
                       aria-label={`Add ${i.name}`}
-                      className="press absolute -bottom-3 right-2 z-20 grid h-8 w-8 place-items-center rounded-full bg-[#0052FF] text-white shadow-sm"
+                      className="press absolute -bottom-3 right-2 z-20 grid h-8 w-8 place-items-center rounded-full border border-primary bg-white text-primary shadow-sm"
                     >
-                      <span className="text-[9px] font-black">+ ADD</span>
+                      <Plus className="h-4 w-4" strokeWidth={2.4} />
                     </button>
                   )}
                 </div>
-                <p className="mt-4 truncate px-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-primary">{off > 0 ? "Stall offer" : vendorName[i.vendor_id] ?? "Thela favourite"}</p>
+                <p className="mt-4 truncate px-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-primary">{off > 0 ? "Member's pick" : vendorName[i.vendor_id] ?? "Thela favourite"}</p>
                 <p className="mt-1 truncate px-0.5 text-[13px] font-semibold">{i.name}</p>
                 <p className="truncate px-0.5 text-[11px] font-medium text-muted-foreground">
                   {i.unit ?? "Freshly made"}
@@ -419,8 +410,8 @@ function Home() {
                 <div className="mt-2.5 flex items-center justify-between px-0.5">
                   <p className="text-[15px] font-extrabold text-primary">
                     {inr(offerPrice)}{" "}
-                    {originalPrice > offerPrice ? (
-                      <span className="text-[11px] font-medium text-muted-foreground line-through">{inr(originalPrice)}</span>
+                    {off > 0 ? (
+                      <span className="text-[11px] font-medium text-muted-foreground line-through">{inr(shownPrice)}</span>
                     ) : null}
                   </p>
                 </div>
@@ -434,40 +425,45 @@ function Home() {
 
   return (
     <Shell>
-       <header className="sticky top-0 z-40 min-w-0 border-b border-[#EBECEF] bg-white/95 px-4 pb-3 pt-3 text-[#1C2024] shadow-[0_8px_20px_-20px_rgba(28,32,36,0.7)] backdrop-blur">
+       <header className="relative z-20 flex min-w-0 flex-col gap-4 overflow-hidden bg-background px-5 pb-5 pt-4 text-foreground">
+        {festiveTheme ? <FestiveAmbience /> : null}
+
         <div className="relative z-10 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2 sm:gap-3">
           <Link to="/cart" className="min-w-0 text-left">
-            <p className="flex items-center gap-1.5 text-[10px] font-extrabold text-[#68717A]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#0C831F]" /> 12 mins to Bhubaneswar (Dumduma / Nayapalli)
+            <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Delivery in 15–20 mins
             </p>
-            <p className="mt-1 flex items-center gap-1 text-sm font-extrabold text-[#1C2024]">
-              <MapPin className="h-3.5 w-3.5 text-[#0C831F]" />
+            <p className="mt-1 flex items-center gap-1 text-sm font-extrabold text-foreground">
+              <MapPin className="h-3.5 w-3.5 text-primary" />
               <span className="truncate">{address ?? "Bhubaneswar · set your address"}</span>
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0 text-[#0C831F]" fill="none" stroke="currentColor" strokeWidth="2.6">
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0 text-primary" fill="none" stroke="currentColor" strokeWidth="2.6">
                 <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </p>
           </Link>
           <div className="flex shrink-0 items-center justify-end gap-1.5">
-            <button type="button" aria-label={onlyFav ? "Show all foods" : "Show saved foods"} onClick={() => setOnlyFav((value) => !value)} className={`press grid h-10 w-10 place-items-center rounded-full border ${onlyFav ? "border-[#0C831F] bg-[#E8F5EC] text-[#0C831F]" : "border-[#EBECEF] bg-white text-[#1C2024]"}`}><Bookmark className="h-4 w-4" fill={onlyFav ? "currentColor" : "none"} /></button>
-            <Link to="/profile" aria-label="Profile" className="press grid h-10 w-10 place-items-center rounded-full border border-[#EBECEF] bg-white text-[#1C2024]"><CircleUserRound className="h-4 w-4" /></Link>
+            <Link to="/profile" aria-label="Gifts and rewards" className="press grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-primary">
+              <Gift className="h-4 w-4" />
+            </Link>
+            <Link
+              to="/wallet"
+              className="press flex h-10 items-center gap-1 rounded-full border border-border bg-card px-3 text-[11px] font-extrabold text-primary"
+              aria-label="Wallet"
+            >
+              <Wallet className="h-4 w-4" />
+              {inr(balance)}
+            </Link>
           </div>
         </div>
 
-        <div className="relative z-10 mt-2 flex min-w-0 items-center gap-2.5 rounded-xl border border-[#EBECEF] bg-[#F8F9FA] px-3.5 py-2.5 text-[#1C2024]">
-          <Search className="h-5 w-5 shrink-0 text-[#68717A]" />
-          <div className="relative min-w-0 flex-1">
+        <div className="relative z-10 flex min-w-0 items-center gap-2.5 rounded-full border border-border bg-card px-4 py-3 text-card-foreground shadow-[0_12px_28px_-18px_rgba(0,71,47,0.38)]">
+          <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-            placeholder=""
-            aria-label="Search street food and stalls"
-            className="relative z-10 w-full bg-transparent text-sm font-medium text-[#1C2024] outline-none"
+            placeholder="Search for Dahi Bara, Rolls, Biryani..."
+            className="min-w-0 flex-1 bg-transparent text-sm font-medium text-foreground outline-none"
           />
-          {!q && !searchFocused ? <span className="pointer-events-none absolute inset-0 overflow-hidden text-sm text-[#68717A]"><AnimatePresence mode="wait"><motion.span key={searchIndex} initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -12, opacity: 0 }} transition={{ duration: 0.2 }} className="absolute inset-0 truncate">{searchPrompts[searchIndex]}</motion.span></AnimatePresence></span> : null}
-          </div>
           <VoiceSearch
             stalls={vendors.map((v) => v.stall_name)}
             items={items.map((i) => i.name)}
@@ -479,15 +475,10 @@ function Home() {
               setVendorFilter(v?.id ?? null);
             }}
           />
-          <Link to="/categories" aria-label="Browse food categories" className="press grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#C4E0CE] text-[#0C831F]">
+          <Link to="/categories" aria-label="Browse food categories" className="press grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-soft text-primary">
             <Utensils className="h-4 w-4" />
           </Link>
         </div>
-       </header>
-
-      <div className="relative z-20 flex min-w-0 flex-col gap-4 overflow-hidden bg-white px-5 pb-5 pt-4 text-[#1C2024]">
-       <DynamicBanners onInternalRoute={openBannerRoute} />
-        {festiveTheme ? <FestiveAmbience /> : null}
 
         <div className="relative z-10 -mx-1 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
           {RIBBON_CATEGORIES.map((category) => (
@@ -530,15 +521,15 @@ function Home() {
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2.5">
             {[
-              { label: "Street favourites", tag: "chaat", image: "/food/food-chaat.jpg", tone: "bg-[#0C831F]", text: "text-white" },
-              { label: "Comfort food", tag: "thali", image: "/food/food-thali.jpg", tone: "bg-[#0052FF]", text: "text-white" },
-              { label: "Fresh every day", tag: "fresh", image: "/food/food-tiffin.jpg", tone: "bg-[#C4E0CE]", text: "text-[#1C2024]" },
-              { label: "Made for sharing", tag: "biryani", image: "/food/food-biryani.jpg", tone: "bg-[#F8CB46]", text: "text-[#1C2024]" },
+              { label: "Street favourites", tag: "chaat", image: "/food/food-chaat.jpg", tone: "bg-[#7D1D24]" },
+              { label: "Comfort food", tag: "thali", image: "/food/food-thali.jpg", tone: "bg-[#C25B38]" },
+              { label: "Fresh every day", tag: "fresh", image: "/food/food-tiffin.jpg", tone: "bg-[#1F3E2C]" },
+              { label: "Made for sharing", tag: "biryani", image: "/food/food-biryani.jpg", tone: "bg-[#1B3B54]" },
             ].map((card) => (
               <button
                 key={card.label}
                 onClick={() => { setQ(card.tag); setActive(null); setVendorFilter(null); }}
-                className={`press relative aspect-square overflow-hidden rounded-xl ${card.tone} p-3 text-left ${card.text}`}
+                className={`press relative aspect-square overflow-hidden rounded-3xl ${card.tone} p-3 text-left text-white`}
               >
                 <img src={card.image} alt="" className="absolute inset-0 h-full w-full object-cover opacity-55 mix-blend-screen" />
                 <span className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
@@ -583,9 +574,10 @@ function Home() {
             ))}
           </div>
         </div>
-        </div>
+      </header>
 
       <main className="flex min-w-0 flex-col gap-4 overflow-x-hidden">
+        <DynamicBanners onInternalRoute={openBannerRoute} />
         {topBarTheme?.header_bg_image_url ? (
           <section className="px-5 py-3">
             <img
@@ -637,7 +629,6 @@ function Home() {
           regularCartTotal={regularCartTotal}
           promoFocus={promoFocus}
           onSelectCategory={(categoryId) => { setActive(categoryId); setQ(""); setVendorFilter(null); }}
-          onExploreCategory={() => document.getElementById("street-food-recommendations")?.scrollIntoView({ behavior: "smooth", block: "start" })}
           onAdd={(item, offerPrice, promoMinimum) => add(item, offerPrice, promoMinimum)}
           onRemove={(itemId) => cart.remove(itemId)}
           onOptions={(itemId, options) => cart.setOptions(itemId, options)}
@@ -659,18 +650,18 @@ function Home() {
       ) : null}
 
       {count ? (
-        <motion.div initial={{ y: 72, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: "spring", stiffness: 330, damping: 28 }} className="fixed inset-x-0 bottom-[104px] z-40 mx-auto w-full max-w-[480px] px-3">
+        <div className="fixed inset-x-0 bottom-[104px] z-40 mx-auto w-full max-w-[480px] px-3">
           <Link
             to="/cart"
-            className="press grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl bg-[#0052FF] p-3 text-white shadow-[0_18px_36px_-18px_rgba(0,82,255,0.7)]"
+             className="press pop-in grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-full border border-border bg-white p-2 pl-3 text-foreground shadow-[0_18px_36px_-18px_var(--color-primary)]"
           >
-            <span className="flex -space-x-2">
-              {lines.slice(0, 3).map((line) => <img key={line.itemId} src={line.photo ?? "/food/food-tiffin.jpg"} alt="" className="h-9 w-9 rounded-full border-2 border-[#0052FF] object-cover" />)}
-            </span>
-            <span><span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-white/80">{count} items</span><span className="text-sm font-black">{inr(foodTotal)}</span></span>
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-white text-[#0052FF]"><ShoppingBag className="h-4 w-4" /></span>
+             <span className="flex -space-x-2">
+               {lines.slice(0, 3).map((line) => <img key={line.itemId} src={line.photo ?? "/food/food-tiffin.jpg"} alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />)}
+             </span>
+             <span><span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Cart ({count})</span><span className="text-sm font-black">{inr(foodTotal)}</span></span>
+             <span className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground"><ShoppingBag className="h-4 w-4" /></span>
           </Link>
-        </motion.div>
+        </div>
       ) : null}
     </Shell>
   );

@@ -54,7 +54,6 @@ type Props = {
   regularCartTotal: number;
   promoFocus: string | null;
   onSelectCategory: (id: string | null) => void;
-  onExploreCategory: () => void;
   onAdd: (item: StreetFoodItem, offerPrice?: number, promoMinimum?: number) => void;
   onRemove: (itemId: string) => void;
   onOptions: (itemId: string, options: string[]) => void;
@@ -70,14 +69,6 @@ const BUILDERS = [
   { id: "chaat", label: "Chaat & Gupchup", match: /chaat|gupchup|pani puri|panipuri|dahibara|bhel/ },
   { id: "rolls", label: "Rolls & Fast Food", match: /roll|chowmein|noodle|burger|fries|sandwich|fast food/ },
 ] as const;
-const CATEGORY_HUB = [
-  { label: "Fresh items", match: /fresh|snack|daily/i },
-  { label: "Morning tiffin", match: /breakfast|tiffin|bara|singada|idli|dosa/i },
-  { label: "Evening momos", match: /momo|dumpling/i },
-  { label: "Chaat & gupchup", match: /chaat|gupchup|pani puri|panipuri/i },
-  { label: "Kathi rolls", match: /roll|kathi|frankie/i },
-  { label: "Drinks", match: /drink|beverage|chai|tea|coffee|lassi/i },
-];
 const OPTIONS = ["Less Spicy", "Extra Onion"];
 const POSITIONS = [
   { left: "22%", top: "24%" },
@@ -116,7 +107,6 @@ export function StreetFoodExperience({
   regularCartTotal,
   promoFocus,
   onSelectCategory,
-  onExploreCategory,
   onAdd,
   onRemove,
   onOptions,
@@ -125,35 +115,14 @@ export function StreetFoodExperience({
   deals,
 }: Props) {
   const [builderOverride, setBuilderOverride] = useState<string | null>(null);
-  const [customizerOpen, setCustomizerOpen] = useState(false);
-  const [midnightCountdown, setMidnightCountdown] = useState("00:00:00");
   useEffect(() => {
     if (!promoFocus) return;
     const target = promoFocus.includes("rupee") ? "one-rupee-store" : "street-food-recommendations";
     document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "start" });
     onClearPromoFocus();
   }, [promoFocus, onClearPromoFocus]);
-  useEffect(() => {
-    const update = () => {
-      const now = new Date();
-      const midnight = new Date(now);
-      midnight.setHours(24, 0, 0, 0);
-      const remaining = Math.max(0, Math.floor((midnight.getTime() - now.getTime()) / 1000));
-      const hours = String(Math.floor(remaining / 3600)).padStart(2, "0");
-      const minutes = String(Math.floor((remaining % 3600) / 60)).padStart(2, "0");
-      const seconds = String(remaining % 60).padStart(2, "0");
-      setMidnightCountdown(`${hours}:${minutes}:${seconds}`);
-    };
-    update();
-    const timer = window.setInterval(update, 1000);
-    return () => window.clearInterval(timer);
-  }, []);
 
   const activeCategory = categories.find((category) => category.id === activeCategoryId);
-  const categoryHub = CATEGORY_HUB.flatMap((hub) => {
-    const category = categories.find((candidate) => hub.match.test(candidate.name));
-    return category ? [{ ...hub, category }] : [];
-  });
   const activeBuilder = activeCategory
     ? BUILDERS.find((builder) => builder.id !== "all" && builder.match.test(activeCategory.name))
     : undefined;
@@ -167,17 +136,11 @@ export function StreetFoodExperience({
   const builderItems = items.filter((item) => item.in_stock && (activeCategory && !activeBuilder
     ? item.category_id === activeCategory.id
     : selectedBuilder.match.test(menuText(item))));
-  const recommendationMatch = selectedBuilder.id === "momos"
-    ? /momo|dumpling|fries|peri.?peri|drink|coffee|chowmein|noodle/i
-    : selectedBuilder.id === "chaat"
-      ? /chaat|gupchup|pani puri|panipuri|bhel|lassi|drink|sweet|bara/i
-      : selectedBuilder.id === "rolls"
-        ? /roll|kathi|frankie|burger|fries|chowmein|noodle|drink/i
-        : /bara|singada|singhara|aluchop|piaji|tiffin|breakfast|chai|tea|ghuguni/i;
-  const categoryItems = items.filter((item) => item.category_id === activeCategoryId && item.in_stock);
   const relatedItems = (activeCategoryId
-    ? [...categoryItems, ...items.filter((item) => item.in_stock && recommendationMatch.test(menuText(item)) && item.category_id !== activeCategoryId)]
-    : items.filter((item) => item.in_stock && (selectedBuilder.id === "all" || recommendationMatch.test(menuText(item))))
+    ? items.filter((item) => item.category_id === activeCategoryId && item.in_stock)
+    : selectedBuilder.id === "tiffin"
+      ? builderItems.length ? builderItems : items.filter((item) => item.in_stock)
+      : builderItems.length ? builderItems : items.filter((item) => item.in_stock)
   ).slice(0, 24);
   const plateItems = lines
     .filter((line) => builderItems.some((item) => item.id === line.itemId))
@@ -211,24 +174,13 @@ export function StreetFoodExperience({
 
   return (
     <div className="space-y-8 px-5 pb-8">
-      {categoryHub.length ? (
-        <section aria-label="Street food categories">
-          <div className="mb-3 flex items-end justify-between gap-2"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#0C831F]">Pick a craving</p><h2 className="mt-1 text-xl font-black text-[#1C2024]">Street food, by mood</h2></div><span className="text-[10px] font-semibold text-[#68717A]">{categories.length} categories</span></div>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-            {categoryHub.map(({ label, category }, index) => <button key={category.id} type="button" onClick={() => { onSelectCategory(category.id); onExploreCategory(); }} className="press min-w-0 overflow-hidden rounded-xl border border-[#EBECEF] bg-white text-left shadow-[0_7px_18px_-17px_rgba(28,32,36,0.8)]">
-              <div className={`relative aspect-[1.2/1] overflow-hidden ${index % 2 ? "bg-[#C4E0CE]" : "bg-[#F8F9FA]"}`}><img src={foodImage(category.name)} alt={category.name} loading="lazy" className="h-full w-full object-cover" /><span className="absolute inset-0 bg-gradient-to-t from-[#1C2024]/45 to-transparent" /><span className="absolute bottom-1.5 left-2 text-[9px] font-black text-white">{category.emoji || "🍽️"}</span></div>
-              <span className="block truncate px-2 py-2 text-[9px] font-black text-[#1C2024]">{label}</span>
-            </button>)}
-          </div>
-        </section>
-      ) : null}
       <section id="plate-builder" className="scroll-mt-4">
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#0C831F]">Made your way</p>
             <h2 className="mt-1 text-xl font-black text-[#111827]">Build your plate</h2>
           </div>
-          <button type="button" onClick={() => setCustomizerOpen(true)} className="flex items-center gap-1 text-[10px] font-bold text-[#0052FF]"><Utensils className="h-3.5 w-3.5" /> Customize</button>
+          <span className="flex items-center gap-1 text-[10px] font-bold text-[#6B7280]"><Utensils className="h-3.5 w-3.5" /> Live cart plate</span>
         </div>
         <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {BUILDERS.map((builder) => {
@@ -245,7 +197,7 @@ export function StreetFoodExperience({
         <div className="grid gap-4 rounded-2xl border border-[#EBECEF] bg-white p-3 shadow-[0_10px_28px_-22px_rgba(17,24,39,0.65)] sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:p-4">
           <div className="relative grid min-h-[270px] place-items-center overflow-hidden rounded-xl bg-[#F8F9FA]">
             <div className="pointer-events-none absolute inset-x-0 top-4 flex justify-center gap-6">
-              {[0, 1, 2].map((steam) => <span key={steam} style={{ animationDelay: `${steam * 0.48}s` }} className="steam-wisp h-8 w-1.5 rounded-full bg-white blur-[3px]" />)}
+              {[0, 1, 2].map((steam) => <motion.span key={steam} animate={{ y: [-2, -26], opacity: [0, 0.5, 0] }} transition={{ duration: 2.2, repeat: Infinity, delay: steam * 0.48, ease: "easeOut" }} className="h-8 w-1.5 rounded-full bg-white blur-[3px]" />)}
             </div>
             <div className={`relative h-[226px] w-[226px] ${vesselFor(selectedBuilder.id)}`}>
               <span className="absolute inset-[13%] rounded-full border border-white/60" />
@@ -365,25 +317,9 @@ export function StreetFoodExperience({
           </div>
         ) : <p className="rounded-xl border border-dashed border-[#EBECEF] p-4 text-xs text-[#6B7280]">No discounted menu or curated bundles are live right now.</p>}
 
-        {dailyDeals.length ? (
-          <div>
-            <div className="mb-2 flex items-center justify-between gap-2"><h3 className="text-sm font-black text-[#1C2024]">Best Prices, Always!</h3><span className="text-[9px] font-semibold text-[#68717A]">Verified stall prices</span></div>
-            <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1">
-              {dailyDeals.slice(0, 8).map(({ deal, item }) => {
-                const saved = Math.max(0, Number(deal.original_price) - Number(deal.offer_price));
-                const discount = Number(deal.original_price) > 0 ? Math.round(saved / Number(deal.original_price) * 100) : 0;
-                return <button key={`best-${deal.id}`} type="button" onClick={() => addCurated(deal, item)} className="flex w-[200px] shrink-0 snap-start items-center gap-2 rounded-lg border border-[#EBECEF] bg-white p-2 text-left">
-                  <img src={deal.image_url || item.photo_url || foodImage(item.name)} alt={item.name} className="h-11 w-11 rounded-md object-cover" />
-                  <span className="min-w-0 flex-1"><span className="block truncate text-[10px] font-bold text-[#1C2024]">{item.name}</span><span className="mt-0.5 block text-[9px] font-black text-[#0C831F]">{discount}% OFF · SAVE {inr(saved)}</span></span>
-                </button>;
-              })}
-            </div>
-          </div>
-        ) : null}
-
         {rushDeals.length ? (
           <div className="rounded-xl border border-[#EBECEF] bg-white p-4">
-            <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-wide text-[#E63946]">Deal rush</p><h3 className="mt-1 text-sm font-black text-[#111827]">Stall-curated limited offers</h3></div><span className="animate-pulse rounded-full bg-[#E63946] px-2 py-1 text-[9px] font-black text-white">{/12\s?am|midnight/i.test(rushDeals[0]!.deal.tag ?? "") ? `Only till 12 AM · ${midnightCountdown}` : "LIVE NOW"}</span></div>
+            <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-wide text-[#E63946]">Deal rush</p><h3 className="mt-1 text-sm font-black text-[#111827]">Stall-curated limited offers</h3></div><span className="animate-pulse rounded-full bg-[#E63946] px-2 py-1 text-[9px] font-black text-white">{/12\s?am|midnight/i.test(rushDeals[0]!.deal.tag ?? "") ? "Only till 12 AM" : "LIVE NOW"}</span></div>
             <div className="mt-3 flex gap-2 overflow-x-auto pb-1">{rushDeals.slice(0, 5).map(({ deal, item }) => <button key={deal.id} type="button" onClick={() => addCurated(deal, item)} className="flex shrink-0 items-center gap-2 rounded-lg bg-[#F8F9FA] p-2 text-left"><img src={deal.image_url || item.photo_url || foodImage(item.name)} alt={item.name} className="h-10 w-10 rounded-md object-cover" /><span><span className="block max-w-32 truncate text-[10px] font-bold text-[#111827]">{item.name}</span><span className="text-[10px] font-black text-[#0C831F]">{inr(Number(deal.offer_price))} <span className="font-medium text-[#6B7280] line-through">{inr(Number(deal.original_price))}</span></span></span></button>)}</div>
           </div>
         ) : null}
@@ -412,34 +348,13 @@ export function StreetFoodExperience({
           ) : <p className="mt-3 rounded-lg bg-[#F8F9FA] p-3 text-[10px] leading-relaxed text-[#6B7280]">No ₹1 bundle is currently configured by a stall. Active offers will appear here automatically.</p>}
         </div>
 
-        <div className="rounded-xl bg-[#0052FF] p-4 text-white">
+        <div className="rounded-xl bg-[#111827] p-4 text-white">
           <div className="flex items-center justify-between gap-3">
             <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#F8CB46]">Saver Pass preview</p><h3 className="mt-1 text-base font-black">Live discounts from your local stalls</h3><p className="mt-1 text-[10px] text-white/70">30-day price locks are not enabled yet. Current stall offers are shown here.</p></div>
             <button type="button" onClick={() => document.getElementById("street-food-recommendations")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="shrink-0 rounded-lg bg-[#0052FF] px-3 py-2 text-[10px] font-black">Browse deals</button>
           </div>
         </div>
       </section>
-
-      <AnimatePresence>
-        {customizerOpen ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[90] flex items-end justify-center bg-[#1C2024]/45 p-0 sm:items-center sm:p-5" onClick={() => setCustomizerOpen(false)}>
-            <motion.section role="dialog" aria-modal="true" aria-labelledby="plate-customizer-title" initial={{ y: 36, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 28, opacity: 0 }} transition={{ type: "spring", stiffness: 300, damping: 28 }} onClick={(event) => event.stopPropagation()} className="max-h-[88dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:rounded-2xl">
-              <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#EBECEF] sm:hidden" />
-              <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-wide text-[#0C831F]">ThelaWala plate builder</p><h2 id="plate-customizer-title" className="mt-1 text-lg font-black text-[#1C2024]">Customize {selectedBuilder.label}</h2></div><button type="button" onClick={() => setCustomizerOpen(false)} aria-label="Close plate customizer" className="grid h-9 w-9 place-items-center rounded-full bg-[#F8F9FA] text-[#1C2024]">×</button></div>
-              <div className="relative mx-auto my-4 grid h-40 w-40 place-items-center rounded-full border-[9px] border-[#C4E0CE] bg-[#F8F4DF]">
-                {[0, 1, 2].map((steam) => <span key={steam} style={{ animationDelay: `${steam * 0.48}s` }} className="steam-wisp absolute top-1 h-8 w-1.5 rounded-full bg-[#C4E0CE] blur-[2px]" />)}
-                {plateItems.length ? <div className="grid grid-cols-2 gap-1">{plateItems.slice(0, 4).map((line) => <div key={line.itemId} className="relative h-11 w-11 overflow-hidden rounded-full border-2 border-white"><img src={line.photo ?? foodImage(line.name)} alt={line.name} className="h-full w-full object-cover" /><span className="absolute bottom-0 right-0 rounded-full bg-[#0C831F] px-1 text-[8px] font-black text-white">{line.qty}</span></div>)}</div> : <span className="px-6 text-center text-[10px] font-semibold text-[#68717A]">Your plate will fill as you add food</span>}
-              </div>
-              <div className="space-y-2">{builderItems.slice(0, 12).map((item) => {
-                const line = lines.find((candidate) => candidate.itemId === item.id);
-                const options = line?.options ?? [];
-                return <div key={item.id} className="flex items-center gap-2 rounded-lg border border-[#EBECEF] p-2"><img src={item.photo_url ?? foodImage(item.name)} alt={item.name} className="h-10 w-10 rounded-md object-cover" /><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-[#1C2024]">{item.name}</span><span className="text-[10px] font-bold text-[#0C831F]">{inr(customerPrice(item.price))}</span></span>{line ? <span className="flex gap-1">{OPTIONS.map((option) => <button key={option} type="button" onClick={() => toggleOption(item.id, options, option)} className={`rounded-full border px-2 py-1 text-[8px] font-bold ${options.includes(option) ? "border-[#0C831F] bg-[#E8F5EC] text-[#0C831F]" : "border-[#EBECEF] text-[#68717A]"}`}>{option}</button>)}</span> : null}<button type="button" onClick={() => onAdd(item)} className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#0052FF] text-white"><Plus className="h-4 w-4" /></button></div>;
-              })}</div>
-              <button type="button" onClick={() => setCustomizerOpen(false)} className="mt-4 w-full rounded-xl bg-[#0C831F] py-3.5 text-sm font-black text-white">Done · {inr(plateItems.reduce((sum, line) => sum + line.price * line.qty, 0))}</button>
-            </motion.section>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
 
       <section className="scroll-mt-4" aria-label="Nearby street food stalls">
         <div className="flex items-end justify-between gap-3">

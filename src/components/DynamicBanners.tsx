@@ -3,12 +3,10 @@ import { useNavigate } from "@tanstack/react-router";
 import useEmblaCarousel from "embla-carousel-react";
 import { listDynamicBanners, type DynamicBanner } from "@/lib/dynamicBanners";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Volume2, VolumeX } from "lucide-react";
 
 export function DynamicBanners({ onInternalRoute }: { onInternalRoute?: (route: string) => void } = {}) {
   const [rows, setRows] = useState<DynamicBanner[]>([]);
   const [selected, setSelected] = useState(0);
-  const [soundBannerId, setSoundBannerId] = useState<string | null>(null);
   const navigate = useNavigate();
   const [emblaRef, embla] = useEmblaCarousel({ align: "center", loop: false, containScroll: false });
 
@@ -78,7 +76,7 @@ export function DynamicBanners({ onInternalRoute }: { onInternalRoute?: (route: 
       <video
         src={b.media_url}
         autoPlay
-        muted={soundBannerId !== b.id}
+        muted
         loop
         playsInline
         preload="metadata"
@@ -97,23 +95,18 @@ export function DynamicBanners({ onInternalRoute }: { onInternalRoute?: (route: 
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex gap-3 px-5">
           {rows.map((b) => (
-            <article
+            <button
               key={b.id}
-              className={`relative shrink-0 grow-0 overflow-hidden bg-white shadow-md ${
+              type="button"
+              onClick={() => open(b)}
+              aria-label="Offer banner"
+              className={`relative shrink-0 grow-0 overflow-hidden bg-card shadow-md ${
                 b.banner_format === "4_GRID" ? "w-[82%] basis-[82%] rounded-2xl" : "w-[88%] basis-[88%]"
               }`}
               style={{ borderRadius: `${b.banner_format === "SLIM" ? 12 : 16}px` }}
             >
-              <button type="button" onClick={() => open(b)} aria-label={`Shop ${b.banner_format === "4_GRID" ? "collection" : "banner offer"}`} className="relative block w-full text-left">
-                {media(b)}
-                <span className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-black text-[#0C831F] shadow">Shop now <ArrowRight className="h-3 w-3" /></span>
-              </button>
-              {b.media_type === "video" && b.banner_format !== "4_GRID" ? (
-                <button type="button" onClick={() => setSoundBannerId((current) => current === b.id ? null : b.id)} aria-label={soundBannerId === b.id ? "Mute banner video" : "Unmute banner video"} className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-[#1C2024]/70 text-white backdrop-blur">
-                  {soundBannerId === b.id ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-                </button>
-              ) : null}
-            </article>
+              {media(b)}
+            </button>
           ))}
         </div>
       </div>
