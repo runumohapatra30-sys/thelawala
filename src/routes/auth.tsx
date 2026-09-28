@@ -1,14 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
+import { GoogleButton } from "@/components/LoginModal";
 import { ThelaLogo } from "@/components/Shell";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in — ThelaWala" },
-      { name: "description", content: "Continue to ThelaWala with Google or guest checkout." },
+      { name: "description", content: "Continue to ThelaWala with one-tap Google sign-in." },
       { property: "og:title", content: "Sign in — ThelaWala" },
       {
         property: "og:description",
@@ -23,12 +23,6 @@ export const Route = createFileRoute("/auth")({
 
 export function AuthPage() {
   const navigate = useNavigate();
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  const fullPhone = `+91${phone.replace(/\D/g, "").slice(-10)}`;
 
   async function goAfterLogin() {
     const { data: u } = await supabase.auth.getUser();
@@ -69,32 +63,6 @@ export function AuthPage() {
     });
   }, [navigate]);
 
-  async function continueAsGuest() {
-    setBusy(true);
-    setMsg(null);
-    const { data, error } = await supabase.auth.signInAnonymously({
-      options: { data: { full_name: name.trim(), mobile: fullPhone } },
-    });
-    if (error || !data.user) {
-      localStorage.setItem("thelawala.guest_name", name.trim());
-      localStorage.setItem("thelawala.guest_mobile", fullPhone);
-      setBusy(false);
-      await goAfterLogin();
-      return;
-    }
-    const { error: profileError } = await supabase.from("profiles").upsert({
-      id: data.user.id,
-      full_name: name.trim(),
-      mobile: fullPhone,
-      email: data.user.email ?? null,
-    });
-    setBusy(false);
-    if (profileError) return setMsg("We could not save your profile. Please try again.");
-    localStorage.setItem("thelawala.guest_name", name.trim());
-    localStorage.setItem("thelawala.guest_mobile", fullPhone);
-    await goAfterLogin();
-  }
-
   return (
     <div className="food-grid-bg min-h-screen">
       <div className="mx-auto flex min-h-screen w-full max-w-[480px] flex-col px-5 pb-8 pt-4">
@@ -117,60 +85,9 @@ export function AuthPage() {
           </p>
 
           <div className="mt-6 w-full rounded-3xl bg-card p-4 shadow-lg">
-            <p className="text-sm font-black">Log in or sign up</p>
-            <>
-              <label className="mt-3 block text-[11px] font-semibold text-muted-foreground">
-                Your name
-              </label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Full name"
-                className="mt-1 w-full rounded-xl border border-border px-3 py-3 text-sm outline-none focus:border-primary"
-              />
-              <label className="mt-3 block text-[11px] font-semibold text-muted-foreground">
-                Mobile number
-              </label>
-              <div className="mt-1 flex items-center rounded-xl border border-border focus-within:border-primary">
-                <span className="px-3 text-sm font-bold text-muted-foreground">+91</span>
-                <input
-                  inputMode="numeric"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                  placeholder="10-digit number"
-                  className="w-full rounded-r-xl py-3 pr-3 text-sm outline-none"
-                />
-              </div>
-            </>
-
-            <button
-              disabled={busy}
-              onClick={continueAsGuest}
-              className="press mt-3 w-full rounded-xl bg-primary py-3.5 text-sm font-black text-primary-foreground disabled:opacity-50"
-            >
-              {busy ? "Please wait…" : "Continue as guest"}
-            </button>
-            <button
-              disabled={busy}
-              onClick={async () => {
-                setBusy(true);
-                setMsg(null);
-                const res = await lovable.auth.signInWithOAuth("google", {
-                  redirect_uri: window.location.origin + "/auth",
-                });
-                if (res.error) {
-                  setBusy(false);
-                  return setMsg("Google sign-in failed. Please try again.");
-                }
-                if (res.redirected) return;
-                setBusy(false);
-                await goAfterLogin();
-              }}
-              className="press mt-2 w-full rounded-xl border border-border bg-card py-3.5 text-sm font-black text-foreground disabled:opacity-50"
-            >
-              Continue with Google
-            </button>
-            {msg ? <p className="mt-2 text-xs text-muted-foreground">{msg}</p> : null}
+            <p className="text-sm font-black">One tap sign in</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">Continue with your Google account — no OTP needed.</p>
+            <div className="mt-3"><GoogleButton /></div>
 
             <div className="mt-3 grid grid-cols-2 gap-2">
               <Link

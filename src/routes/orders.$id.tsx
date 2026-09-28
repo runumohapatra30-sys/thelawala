@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { LiveMap } from "@/components/LiveMap";
@@ -66,6 +67,7 @@ function Track() {
   const [tipMsg, setTipMsg] = useState<string | null>(null);
   const [customTip, setCustomTip] = useState("");
   const [rateOpen, setRateOpen] = useState(false);
+  const [missing, setMissing] = useState(false);
 
   useEffect(() => {
     if (!splash) return;
@@ -77,7 +79,9 @@ function Track() {
     let alive = true;
     const load = async () => {
       const { data } = await supabase.from("orders").select("*").eq("id", id).maybeSingle();
-      if (!alive || !data) return;
+      if (!alive) return;
+      if (!data) { setMissing(true); return; }
+      setMissing(false);
       setOrder(data as Order);
       if (data.partner_id) {
         const { data: r } = await supabase.from("delivery_partners").select("name,mobile,lat,lng").eq("id", data.partner_id).maybeSingle();
@@ -176,7 +180,18 @@ function Track() {
     return (
       <Shell>
         <PortalHeader title="Tracking" />
-        <p className="px-4 py-20 text-center text-sm text-muted-foreground">Loading your order…</p>
+        {missing ? (
+          <div className="px-6 py-20 text-center">
+            <p className="text-sm font-bold">We couldn't open this order.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Please sign in with the Google account you ordered from.</p>
+            <div className="mt-4 flex justify-center gap-2">
+              <Link to="/auth" className="press rounded-full bg-primary px-4 py-2 text-xs font-black text-primary-foreground">Sign in with Google</Link>
+              <Link to="/orders" className="press rounded-full border border-border px-4 py-2 text-xs font-black">My orders</Link>
+            </div>
+          </div>
+        ) : (
+          <p className="px-4 py-20 text-center text-sm text-muted-foreground">Loading your order…</p>
+        )}
       </Shell>
     );
   }

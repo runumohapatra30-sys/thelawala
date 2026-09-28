@@ -283,7 +283,7 @@ export function StreetFoodExperience({
                   <div className="p-2.5">
                     <p className="truncate text-[11px] font-bold text-[#111827]">{item.name}</p>
                     <p className="mt-1 flex items-baseline gap-1 text-xs font-black text-[#111827]">{inr(price)} {discount > 0 ? <span className="text-[9px] font-medium text-[#6B7280] line-through">{inr(original)}</span> : null}</p>
-                    <p className="mt-1 text-[9px] font-medium text-[#6B7280]">{ratings[item.vendor_id] ? `★ ${ratings[item.vendor_id].toFixed(1)} stall rating` : "New menu item"}{line ? ` · ${line.qty} in cart` : ""}</p>
+                    <p className="mt-1 text-[9px] font-medium text-[#6B7280]">{ratings[item.vendor_id] ? `★ ${(ratings[item.vendor_id] ?? 0).toFixed(1)} stall rating` : "New menu item"}{line ? ` · ${line.qty} in cart` : ""}</p>
                   </div>
                 </article>
               );
