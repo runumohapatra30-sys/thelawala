@@ -39,7 +39,7 @@ export function PayoutPanel({ party, id }: { party: "VENDOR" | "PARTNER"; id: st
     ]);
     setBalance(Number(bal ?? 0));
     setEarned((led ?? []).reduce((a, r) => a + Number(r.amount), 0));
-    const upcoming = (led ?? []).map((r) => r.eligible_at).filter((d): d is string => Boolean(d) && new Date(d) > new Date()).sort()[0];
+    const upcoming = (led ?? []).map((r) => r.eligible_at).filter((d): d is string => !!d && new Date(d as string) > new Date()).sort()[0];
     setNextDate(upcoming ?? null);
     setRows((reqs ?? []) as Req[]);
   };

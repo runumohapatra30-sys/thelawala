@@ -32,7 +32,7 @@ export function SettlementHistory({ party, id, shopName = "ThelaWala vendor" }: 
       supabase.from("payout_requests").select("amount,payment_reference,method,upi_id,bank_account_no").eq(col, id).eq("status", "APPROVED").order("created_at", { ascending: false }).limit(20),
     ]).then(([led, set, done, global, payout]) => {
       setEarned((led.data ?? []).reduce((a, r) => a + Number(r.amount), 0));
-      const upcoming = (led.data ?? []).map((r) => r.eligible_at).filter((d): d is string => Boolean(d) && new Date(d) > new Date()).sort()[0];
+      const upcoming = (led.data ?? []).map((r) => r.eligible_at).filter((d): d is string => !!d && new Date(d as string) > new Date()).sort()[0];
       setNextDate(upcoming ?? null);
       setRows((set.data ?? []) as Row[]);
       setOrders((done.data ?? []) as Order[]);
