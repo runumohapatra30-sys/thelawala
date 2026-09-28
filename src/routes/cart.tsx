@@ -1144,18 +1144,20 @@ function PayBtn({
   onClick,
   label,
   hint,
+  Icon,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
   hint: string;
+  Icon?: import("react").ComponentType<{ className?: string }>;
 }) {
   return (
     <button
       onClick={onClick}
       className={`rounded-xl border px-3 py-2.5 text-left ${active ? "border-primary" : "border-border"}`}
     >
-      <p className={`text-sm font-bold ${active ? "text-primary" : ""}`}>{label}</p>
+      <p className={`flex items-center gap-1.5 text-sm font-bold ${active ? "text-primary" : ""}`}>{Icon ? <Icon className="h-4 w-4" /> : null}{label}</p>
       <p className="text-[11px] text-muted-foreground">{hint}</p>
     </button>
   );
