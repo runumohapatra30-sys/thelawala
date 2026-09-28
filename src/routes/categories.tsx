@@ -61,11 +61,8 @@ function Categories() {
   }, [cat]);
 
   function add(i: Item) {
-    try {
-      cart.add({ itemId: i.id, vendorId: i.vendor_id, name: i.name, photo: i.photo_url, unit: i.unit, base: Number(i.price), price: customerPrice(i.price), mrp: customerPrice(i.mrp) });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not add this item");
-    }
+    const r = cart.add({ itemId: i.id, vendorId: i.vendor_id, name: i.name, photo: i.photo_url, unit: i.unit, base: Number(i.price), price: customerPrice(i.price), mrp: customerPrice(i.mrp) });
+    if (r && "ok" in r && !r.ok) toast.error(r.error);
   }
 
   useEffect(() => {
