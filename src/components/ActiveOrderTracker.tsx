@@ -13,7 +13,7 @@ export function ActiveOrderTracker({ userId }: { userId?: string }) {
     const fetchOrders = async () => {
       const { data } = await supabase
         .from("orders")
-        .select("id, code, status, vendor_id, vendors(stall_name)")
+        .select("id, code, status, vendor_id, delivery_otp, vendors(stall_name)")
         .eq("user_id", userId)
         .in("status", ["ORDER_PLACED", "PREPARING", "READY_FOR_PICKUP", "RIDER_ASSIGNED", "OUT_FOR_DELIVERY"])
         .order("created_at", { ascending: false });
@@ -61,7 +61,12 @@ export function ActiveOrderTracker({ userId }: { userId?: string }) {
                 </span>
               </div>
             </div>
-            <ChevronRight className="h-5 w-5 opacity-60" />
+            {order.delivery_otp ? (
+              <span className="shrink-0 rounded-lg bg-white/20 px-2 py-1 text-[11px] font-black tracking-[0.2em]">
+                OTP {order.delivery_otp}
+              </span>
+            ) : null}
+            <ChevronRight className="h-5 w-5 shrink-0 opacity-60" />
           </Link>
         ))}
       </div>
