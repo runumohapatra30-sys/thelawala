@@ -22,6 +22,7 @@ import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 import { Html5Qrcode } from "html5-qrcode";
 import { RiderOrderSwipe } from "@/components/RiderOrderSwipe";
 import { RiderCodUpiQr } from "@/components/RiderCodUpiQr";
+import { RiderCollectQr } from "@/components/RiderCollectQr";
 
 export const Route = createFileRoute("/_authenticated/rider")({
   head: () => ({
@@ -149,6 +150,7 @@ function RiderPortal() {
     photo: null, panCard: null, idDoc: null, dlDoc: null, bankProof: null,
   });
   const [terms, setTerms] = useState(false);
+  const [regStep, setRegStep] = useState(1);
   const [regBusy, setRegBusy] = useState(false);
   const [dlDraft, setDlDraft] = useState("");
   const [dlMsg, setDlMsg] = useState<string | null>(null);
@@ -317,6 +319,32 @@ function RiderPortal() {
     const emBad = form.emergency_phone ? phoneError(form.emergency_phone) : null;
     const ifscBad = form.bank_ifsc ? ifscError(form.bank_ifsc) : null;
 
+    function nextRegStep() {
+      if (regStep === 1) {
+        if (!form.name.trim()) return setMsg("Add your full name.");
+        if (phoneError(form.mobile)) return setMsg(phoneError(form.mobile));
+        if (phoneError(form.emergency_phone)) return setMsg(`Emergency contact: ${phoneError(form.emergency_phone)}`);
+      }
+      if (regStep === 2) {
+        if (!form.address.trim()) return setMsg("Add your address.");
+        if (zones.length === 0) return setMsg("Pick at least one delivery zone.");
+      }
+      if (regStep === 3) {
+        if (dlError(form.dl_number)) return setMsg(dlError(form.dl_number));
+        if (!docs.dlDoc) return setMsg("Upload a photo of your driving licence.");
+      }
+      if (regStep === 4) {
+        if (panError(form.pan)) return setMsg(panError(form.pan));
+        if (!form.identity_number.trim()) return setMsg("Add your identity proof number.");
+        if (!docs.idDoc) return setMsg("Upload your identity proof document.");
+        if (!form.bank_holder.trim() || !form.bank_account_no.trim()) return setMsg("Add the account holder name and account number.");
+        if (ifscError(form.bank_ifsc)) return setMsg(ifscError(form.bank_ifsc));
+        if (!docs.bankProof) return setMsg("Upload a bank proof (passbook or cancelled cheque).");
+      }
+      setMsg(null);
+      setRegStep((s) => Math.min(s + 1, 5));
+    }
+
     async function submitRegistration() {
       if (!form.name.trim()) return setMsg("Add your full name.");
       if (phoneError(form.mobile)) return setMsg(phoneError(form.mobile));
@@ -388,7 +416,19 @@ function RiderPortal() {
       <Shell>
         <RiderHeader subtitle="Join as delivery partner" />
         <div className="space-y-2 p-4 pb-40">
-          <p className="text-xs font-black uppercase tracking-wide text-muted-foreground">Personal details</p>
+          <div className="mb-1 flex items-center justify-between">
+            <p className="text-xs font-black uppercase tracking-wide text-muted-foreground">
+              {["Basic info", "Personal details", "Licence & vehicle", "Identity & bank", "Review & terms"][regStep - 1]}
+            </p>
+            <span className="rounded-full bg-brand/20 px-2.5 py-0.5 text-[10px] font-black text-primary">Step {regStep} of 5</span>
+          </div>
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((s) => (
+              <span key={s} className={`h-1 flex-1 rounded-full ${s <= regStep ? "bg-primary" : "bg-border"}`} />
+            ))}
+          </div>
+
+          {regStep === 1 ? (<>
           {field("name", "Your full name")}
           {field("mobile", "Mobile number", mobileBad, "+91…")}
           {field("emergency_phone", "Emergency contact number", emBad, "+91…")}
@@ -843,6 +883,11 @@ function RiderPortal() {
                 <>
                   <p className="text-[11px] font-bold uppercase tracking-wide">Collect cash</p>
                   <p className="text-2xl font-black">{inr(Number(trip.grand_total))}</p>
+                  <RiderCollectQr
+                    orderId={trip.id}
+                    orderCode={trip.code ?? trip.id.slice(0, 6).toUpperCase()}
+                    amount={Math.round(Number(trip.grand_total))}
+                  />
                   <RiderCodUpiQr
                     orderId={trip.id}
                     amount={Math.round(Number(trip.grand_total))}
