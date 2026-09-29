@@ -25,6 +25,7 @@ export const Route = createFileRoute("/orders/")({
 type Row = {
   id: string; code: string; status: string; grand_total: number; food_total: number;
   delivery_fee: number; platform_fee: number; handling_fee: number; packing_fee: number;
+  delivery_otp: string | null;
   surge_fee: number; tip_amount: number; payment_mode: string; distance_km: number;
   created_at: string; vendor_id: string; address_line: string;
 };
@@ -103,7 +104,7 @@ function Orders() {
     (async () => {
       const { data } = await supabase
         .from("orders")
-        .select("id,code,status,grand_total,food_total,delivery_fee,platform_fee,handling_fee,packing_fee,surge_fee,tip_amount,payment_mode,distance_km,created_at,vendor_id,address_line")
+        .select("id,code,status,grand_total,food_total,delivery_fee,platform_fee,handling_fee,packing_fee,surge_fee,tip_amount,payment_mode,distance_km,created_at,vendor_id,address_line,delivery_otp")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(40);
@@ -208,6 +209,22 @@ function Orders() {
                         <p className="mt-1 text-sm font-black">{inr(Number(o.grand_total) + Number(o.tip_amount ?? 0))}</p>
                       </div>
                     </div>
+
+                    {o.status !== "DELIVERED" && o.status !== "CANCELLED" && o.delivery_otp ? (
+                      <div className="mx-3 mb-1 flex items-center justify-between gap-2 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 px-3 py-2">
+                        <p className="text-[10px] font-bold leading-tight text-muted-foreground">
+                          Delivery OTP<br />
+                          <span className="font-normal">Share with partner at delivery</span>
+                        </p>
+                        <div className="flex gap-1">
+                          {String(o.delivery_otp).split("").map((d, i) => (
+                            <span key={i} className="grid h-8 w-7 place-items-center rounded-lg bg-primary text-base font-black text-primary-foreground">
+                              {d}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
 
                     <div className="flex items-center gap-2 border-t border-border p-2.5">
                       <button
