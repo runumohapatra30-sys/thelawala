@@ -123,6 +123,19 @@ export const verifyCashfreePayment = createServerFn({ method: "POST" })
 
 export type CollectSession = { cfOrderId: string; paymentSessionId: string; paymentLink: string | null; live: boolean };
 
+type CashfreeCollectOrderResponse = {
+  payment_session_id?: string;
+  payment_link?: string;
+  payload?: { default?: string };
+  channel_details?: { intent_url?: string };
+  data?: {
+    payload?: { default?: string };
+    channel_details?: { intent_url?: string };
+    data?: { payload?: { default?: string } };
+  };
+  message?: string;
+};
+
 /**
  * Creates a real Cashfree order (PG /orders only — never the restricted /orders/pay)
  * and returns the payment session for the official Cashfree checkout SDK.
@@ -159,19 +172,25 @@ export const createCashfreeCollectSession = createServerFn({ method: "POST" })
         order_tags: { user_id: context.userId, purpose: "ORDER", order_id: data.orderId },
       }),
     });
-    const order = (await orderRes.json()) as {
-      payment_session_id?: string;
-      payment_link?: string;
-      message?: string;
-    };
+    const order = (await orderRes.json()) as CashfreeCollectOrderResponse;
     if (!orderRes.ok || !order.payment_session_id) {
       throw new Error(order.message ?? "Could not start the payment right now.");
     }
 
+    const paymentLink = (
+      order.data?.payload?.default ??
+      order.data?.channel_details?.intent_url ??
+      order.data?.data?.payload?.default ??
+      order.payload?.default ??
+      order.channel_details?.intent_url ??
+      order.payment_link ??
+      ""
+    ).trim();
+
     return {
       cfOrderId,
       paymentSessionId: order.payment_session_id,
-      paymentLink: order.payment_link ?? null,
+      paymentLink: paymentLink || null,
       live,
     };
   });
