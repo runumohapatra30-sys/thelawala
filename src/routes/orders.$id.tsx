@@ -205,7 +205,7 @@ function Track() {
 
   if (live) {
     return (
-      <Shell hideNavigation>
+      <Shell>
         <div className="fixed inset-0 z-[50] overflow-hidden bg-[#EBECEF]">
           {vendor ? (
             <LiveMap
