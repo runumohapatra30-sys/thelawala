@@ -142,7 +142,7 @@ type CashfreeCollectOrderResponse = {
  */
 export const createCashfreeCollectSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { amount: number; orderId: string; name: string; mobile: string }) => {
+  .inputValidator((input: { amount: number; orderId: string; name?: string; mobile?: string }) => {
     if (!input || !(input.amount > 0)) throw new Error("Amount must be more than zero");
     if (!input.orderId) throw new Error("Missing order");
     return input;
@@ -150,7 +150,7 @@ export const createCashfreeCollectSession = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<CollectSession> => {
     const { appId, secret, base, live } = await cashfreeCreds();
     const cfOrderId = `TWQR${Date.now()}${Math.floor(Math.random() * 1000)}`;
-    const phone = data.mobile.replace(/\D/g, "").slice(-10) || "9999999999";
+    const phone = (data.mobile ?? "").replace(/\D/g, "").slice(-10) || "9999999999";
 
     const orderRes = await fetch(`${base}/orders`, {
       method: "POST",
