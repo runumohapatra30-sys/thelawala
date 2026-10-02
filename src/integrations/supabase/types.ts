@@ -161,6 +161,30 @@ export type Database = {
         }
         Relationships: []
       }
+      app_integrations: {
+        Row: {
+          api_key: string
+          enabled: boolean
+          from_email: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          api_key: string
+          enabled?: boolean
+          from_email?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string
+          enabled?: boolean
+          from_email?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       app_page_layouts: {
         Row: {
           created_at: string

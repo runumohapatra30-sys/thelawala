@@ -1,3 +1,4 @@
+import type { ErrorComponentProps } from "@tanstack/react-router";
 import { PwaUpdater } from "@/components/PwaUpdater";
 import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 import { Toaster } from "@/components/ui/sonner";
@@ -38,7 +39,7 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
