@@ -432,6 +432,8 @@ function RiderPortal() {
           {field("name", "Your full name")}
           {field("mobile", "Mobile number", mobileBad, "+91…")}
           {field("emergency_phone", "Emergency contact number", emBad, "+91…")}
+          </>) : null}
+          {regStep === 2 ? (<>
           {field("address", "Home address")}
           {fileRow("Profile photo", docs.photo, (f) => setDocs({ ...docs, photo: f }))}
           <label className="block">
@@ -450,7 +452,8 @@ function RiderPortal() {
             </div>
           </label>
 
-          <p className="pt-2 text-xs font-black uppercase tracking-wide text-muted-foreground">Licence & vehicle</p>
+          </>) : null}
+          {regStep === 3 ? (<>
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-muted-foreground">Driving licence number</span>
             <input
@@ -471,7 +474,8 @@ function RiderPortal() {
           </label>
           {field("vehicle_no", "Vehicle number (optional)", null, "OD 02 AB 1234")}
 
-          <p className="pt-2 text-xs font-black uppercase tracking-wide text-muted-foreground">Identity</p>
+          </>) : null}
+          {regStep === 4 ? (<>
           {field("pan", "PAN number", panBad, "ABCDE1234F")}
           {fileRow("PAN card photo", docs.panCard, (f) => setDocs({ ...docs, panCard: f }))}
           <label className="block">
@@ -501,6 +505,8 @@ function RiderPortal() {
           {field("upi_id", "UPI ID (optional)", null, "name@bank")}
           {fileRow("Bank proof (passbook / cancelled cheque)", docs.bankProof, (f) => setDocs({ ...docs, bankProof: f }))}
 
+          </>) : null}
+          {regStep === 5 ? (<>
           <label className="flex items-start gap-2 rounded-xl border border-border p-3">
             <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} className="mt-0.5" />
             <span className="text-xs text-muted-foreground">
@@ -509,12 +515,21 @@ function RiderPortal() {
           </label>
 
           <button
-            disabled={regBusy}
+            disabled={regBusy || !terms}
             onClick={submitRegistration}
             className="press w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
           >
             {regBusy ? "Uploading documents…" : "Send for approval"}
           </button>
+          </>) : null}
+          <div className="flex gap-2 pt-1">
+            {regStep > 1 ? (
+              <button type="button" onClick={() => setRegStep(regStep - 1)} className="press flex-1 rounded-xl border border-border py-3 text-sm font-bold text-primary">Back</button>
+            ) : null}
+            {regStep < 5 ? (
+              <button type="button" onClick={nextRegStep} className="press flex-1 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground">Next</button>
+            ) : null}
+          </div>
           {msg ? <p className="text-xs font-semibold text-destructive">{msg}</p> : null}
         </div>
       </Shell>
