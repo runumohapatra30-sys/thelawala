@@ -177,15 +177,40 @@ export const createCashfreeCollectSession = createServerFn({ method: "POST" })
       throw new Error(order.message ?? "Could not start the payment right now.");
     }
 
-    const paymentLink = (
-      order.data?.payload?.default ??
-      order.data?.channel_details?.intent_url ??
-      order.data?.data?.payload?.default ??
-      order.payload?.default ??
-      order.channel_details?.intent_url ??
-      order.payment_link ??
-      ""
-    ).trim();
+    // /orders never returns a UPI link. The dynamic UPI QR string only comes
+    // from the pay-session step: POST /orders/sessions with the session id and
+    // the upi qrcode channel. Its reply carries data.payload.default.
+    const headers = {
+      "content-type": "application/json",
+      "x-api-version": "2023-08-01",
+      "x-client-id": appId,
+      "x-client-secret": secret,
+    };
+    let paymentLink = "";
+    try {
+      const payRes = await fetch(`${base}/orders/sessions`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          payment_session_id: order.payment_session_id,
+          payment_method: { upi: { channel: "qrcode" } },
+        }),
+      });
+      const pay = (await payRes.json()) as CashfreeCollectOrderResponse;
+      paymentLink = (
+        pay.data?.payload?.default ??
+        pay.data?.channel_details?.intent_url ??
+        pay.data?.data?.payload?.default ??
+        pay.payload?.default ??
+        pay.channel_details?.intent_url ??
+        ""
+      ).trim();
+    } catch {
+      paymentLink = "";
+    }
+
+    // Only ever return a genuine UPI intent string — never a placeholder.
+    if (!paymentLink.startsWith("upi://")) paymentLink = "";
 
     return {
       cfOrderId,
