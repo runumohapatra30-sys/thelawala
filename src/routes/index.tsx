@@ -74,6 +74,9 @@ function Home() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [deals, setDeals] = useState<CuratedFoodDeal[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [catalogReload, setCatalogReload] = useState(0);
   const [active, setActive] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [toast, setToast] = useState<string | null>(null);
@@ -95,6 +98,8 @@ function Home() {
     let alive = true;
     activeCampaign().then((value) => { if (alive) setCampaign(value); });
     const loadCatalog = async () => {
+      setCatalogLoading(true);
+      setCatalogError(null);
       const [categoryResult, vendorResult, itemResult, dealResult] = await Promise.all([
         supabase.from("categories").select("id,name,emoji").order("sort_order"),
         supabase.from("vendors").select("id,stall_name,is_open,photo_url,offer_percent,offer_label,address,zone,default_prep_minutes").eq("status", "APPROVED"),
@@ -102,11 +107,17 @@ function Home() {
         supabase.from("curated_bundles").select("id,menu_item_id,item_name,offer_price,original_price,image_url,tag,bundle_title,bundle_subtitle").eq("is_active", true).order("sort_order"),
       ]);
       if (!alive) return;
+      if (itemResult.error) {
+        setCatalogError("We couldn't load the food menu. Please try again.");
+        setCatalogLoading(false);
+        return;
+      }
       const catalogVendors = (vendorResult.data ?? []) as Vendor[];
       setCats(categoryResult.data ?? []);
       setVendors(catalogVendors);
       setItems((itemResult.data ?? []) as Item[]);
       setDeals((dealResult.data ?? []) as CuratedFoodDeal[]);
+      setCatalogLoading(false);
       const vendorIds = catalogVendors.map((vendor) => vendor.id);
       if (!vendorIds.length) { setRatings({}); return; }
       const { data: ratingsData } = await supabase.from("order_ratings").select("vendor_id,food_stars").in("vendor_id", vendorIds);
@@ -133,7 +144,7 @@ function Home() {
       .on("postgres_changes", { event: "*", schema: "public", table: "campaigns" }, refreshCampaign)
       .subscribe();
     return () => { alive = false; supabase.removeChannel(channel); };
-  }, []);
+  }, [catalogReload]);
 
   useEffect(() => {
     if (!user) return;
@@ -589,6 +600,55 @@ function Home() {
           </section>
         ) : null}
         {user?.id ? <ActiveOrderTracker userId={user.id} /> : null}
+        {catalogLoading ? (
+          <section className="px-5 py-4" aria-live="polite">
+            <div className="grid grid-cols-2 gap-3">
+              {[0, 1, 2, 3].map((slot) => (
+                <div key={slot} className="animate-pulse rounded-xl border border-border bg-card p-2">
+                  <div className="aspect-[4/3] rounded-lg bg-muted" />
+                  <div className="mt-3 h-3 w-3/4 rounded bg-muted" />
+                  <div className="mt-2 h-3 w-1/3 rounded bg-muted" />
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : catalogError ? (
+          <section className="mx-5 rounded-xl border border-border bg-card px-5 py-8 text-center">
+            <span className="text-4xl" aria-hidden="true">🛒</span>
+            <p className="mt-3 text-sm font-extrabold text-foreground">Food menu didn’t load</p>
+            <p className="mt-1 text-xs text-muted-foreground">Check your connection and try once more.</p>
+            <button type="button" onClick={() => setCatalogReload((value) => value + 1)} className="press mt-4 rounded-full bg-primary px-5 py-2.5 text-xs font-extrabold text-primary-foreground">Try again</button>
+          </section>
+        ) : items.length ? (
+          <section className="px-5 pt-2">
+            <div className="mb-3 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-primary">Fresh near you</p>
+                <h2 className="mt-1 font-display text-2xl text-foreground">Order food now</h2>
+              </div>
+              <Link to="/categories" className="text-xs font-extrabold text-primary">See all</Link>
+            </div>
+            <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {items.filter((item) => item.in_stock).slice(0, 8).map((item) => (
+                <article key={item.id} className="w-[142px] shrink-0 overflow-hidden rounded-xl border border-border bg-card">
+                  <div className="relative aspect-[4/3] bg-muted">
+                    <img src={item.photo_url ?? foodImage(item.name)} alt={item.name} className="h-full w-full object-cover" />
+                    <button type="button" onClick={() => add(item)} aria-label={`Add ${item.name}`} className="press absolute bottom-2 right-2 grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground shadow-md"><Plus className="h-4 w-4" /></button>
+                  </div>
+                  <div className="p-2.5">
+                    <p className="truncate text-xs font-extrabold text-foreground">{item.name}</p>
+                    <p className="mt-1 text-xs font-black text-primary">{inr(customerPrice(item.price))}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : (
+          <section className="mx-5 rounded-xl border border-dashed border-border px-5 py-8 text-center">
+            <span className="text-4xl" aria-hidden="true">🍽️</span>
+            <p className="mt-3 text-sm font-extrabold">No food is available right now</p>
+          </section>
+        )}
         {vendors.length > 0 ? (
           <section className="px-5 pt-2">
             <h2 className="font-display text-2xl text-primary">Your stalls</h2>
