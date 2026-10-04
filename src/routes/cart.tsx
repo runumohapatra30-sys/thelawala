@@ -11,7 +11,7 @@ import { checkoutGate, minimumOrderValue, stallOfferDiscount } from "@/lib/prici
 import { payInAppWithCashfree } from "@/lib/checkout";
 import { useSession } from "@/lib/session";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Banknote, Bike, BellOff, Check, ChevronRight, ChevronsRight, CircleDollarSign, CreditCard, DoorOpen, MapPin, Phone, PhoneOff, Plus, ShieldCheck, Smartphone, Tag } from "lucide-react";
+import { ArrowLeft, Banknote, Bike, BellOff, Check, ChevronRight, ChevronsRight, CircleDollarSign, CreditCard, DoorOpen, MapPin, Phone, PhoneOff, Plus, ShieldCheck, ShoppingCart, Smartphone, Tag } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/cart")({
@@ -367,9 +367,18 @@ function Cart() {
     return (
       <Shell>
         <PortalHeader title="Your cart" />
-        <p className="px-4 py-20 text-center text-sm text-muted-foreground">
-          Your cart is empty. Add something hot.
-        </p>
+        <section className="grid min-h-[55vh] place-items-center px-6 py-12 text-center">
+          <div>
+            <div className="relative mx-auto grid h-32 w-32 place-items-center rounded-full bg-brand-soft text-primary">
+              <ShoppingCart className="h-16 w-16" strokeWidth={1.6} />
+              <span className="absolute -right-1 top-1 text-4xl" aria-hidden="true">🛒</span>
+              <span className="absolute -bottom-1 left-1 text-3xl" aria-hidden="true">🍽️</span>
+            </div>
+            <h2 className="mt-6 font-display text-3xl text-primary">ThelaWala cart is empty</h2>
+            <p className="mx-auto mt-2 max-w-[260px] text-sm leading-relaxed text-muted-foreground">Add your favourite hot street food and it will appear here.</p>
+            <Link to="/" className="press mt-6 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-extrabold text-primary-foreground">Browse food</Link>
+          </div>
+        </section>
       </Shell>
     );
   }

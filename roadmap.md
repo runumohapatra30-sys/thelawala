@@ -15,3 +15,4 @@
 - [ ] Replace the 2D plate preview with a lightweight auto-rotating 3D plate
 - [ ] Expose managed Google sign-in in the customer login modal without extra profile writes
 - [ ] Verify the 3D plate, cart controls, moving rails, and Google sign-in entry on mobile and desktop
+- [x] Move live products higher on home and add a ThelaWala empty-cart illustration
