@@ -22,6 +22,7 @@ import { FestivePhotoStrip } from "@/components/FestivePhotoStrip";
 import { themeStyle, useTopBarTheme } from "@/lib/appTheme";
 import { ArrowRight, Bike, Gift, Heart, MapPin, Plus, Search, ShoppingBag, Utensils, Wallet, X, Zap } from "lucide-react";
 import { StreetFoodExperience, type CuratedFoodDeal, type StreetFoodCategory, type StreetFoodItem, type StreetFoodVendor } from "@/components/StreetFoodExperience";
+import { PremiumHome } from "@/components/PremiumHome";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -48,15 +49,6 @@ const TINTS = [
   "bg-[color-mix(in_oklab,var(--color-chart-2)_16%,white)]",
   "bg-[color-mix(in_oklab,var(--color-chart-5)_18%,white)]",
   "bg-[color-mix(in_oklab,var(--color-chart-3)_12%,white)]",
-];
-
-const RIBBON_CATEGORIES = [
-  { label: "All", icon: "✦" },
-  { label: "Dahi Bara", icon: "🥣" },
-  { label: "Chaat & Rolls", icon: "🌯" },
-  { label: "Biryani & Thali", icon: "🍛" },
-  { label: "Fast Food", icon: "🍔" },
-  { label: "Sweets & Lassi", icon: "🍨" },
 ];
 
 const PRODUCT_TINTS = ["bg-[#E5F0E6]", "bg-[#F7F0E2]", "bg-[#FFF5C9]", "bg-[#E8EEF2]"];
@@ -436,156 +428,24 @@ function Home() {
 
   return (
     <Shell>
-       <header className="relative z-20 flex min-w-0 flex-col gap-4 overflow-hidden bg-background px-5 pb-5 pt-4 text-foreground">
-        {festiveTheme ? <FestiveAmbience /> : null}
-
-        <div className="relative z-10 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2 sm:gap-3">
-          <Link to="/cart" className="min-w-0 text-left">
-            <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Delivery in 15–20 mins
-            </p>
-            <p className="mt-1 flex items-center gap-1 text-sm font-extrabold text-foreground">
-              <MapPin className="h-3.5 w-3.5 text-primary" />
-              <span className="truncate">{address ?? "Bhubaneswar · set your address"}</span>
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0 text-primary" fill="none" stroke="currentColor" strokeWidth="2.6">
-                <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </p>
-          </Link>
-          <div className="flex shrink-0 items-center justify-end gap-1.5">
-            <Link to="/profile" aria-label="Gifts and rewards" className="press grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-primary">
-              <Gift className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/wallet"
-              className="press flex h-10 items-center gap-1 rounded-full border border-border bg-card px-3 text-[11px] font-extrabold text-primary"
-              aria-label="Wallet"
-            >
-              <Wallet className="h-4 w-4" />
-              {inr(balance)}
-            </Link>
-          </div>
-        </div>
-
-        <div className="relative z-10 flex min-w-0 items-center gap-2.5 rounded-full border border-border bg-card px-4 py-3 text-card-foreground shadow-[0_12px_28px_-18px_rgba(0,71,47,0.38)]">
-          <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search for Dahi Bara, Rolls, Biryani..."
-            className="min-w-0 flex-1 bg-transparent text-sm font-medium text-foreground outline-none"
-          />
-          <VoiceSearch
-            stalls={vendors.map((v) => v.stall_name)}
-            items={items.map((i) => i.name)}
-            onResult={(r) => {
-              setQ(r.query);
-              setActive(null);
-              setOnlyFav(false);
-              const v = r.stall ? vendors.find((x) => x.stall_name === r.stall) : null;
-              setVendorFilter(v?.id ?? null);
-            }}
-          />
-          <Link to="/categories" aria-label="Browse food categories" className="press grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-soft text-primary">
-            <Utensils className="h-4 w-4" />
-          </Link>
-        </div>
-
-        <div className="relative z-10 -mx-1 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-          {RIBBON_CATEGORIES.map((category) => (
-            <button
-              key={category.label}
-              onClick={() => {
-                setVendorFilter(null);
-                if (category.label === "All") {
-                  setActive(null);
-                  setQ("");
-                } else {
-                  const tokens = category.label.toLowerCase().split(/[^a-z0-9]+/).filter((token) => token && token !== "and");
-                  const match = cats.find((candidate) => tokens.some((token) => candidate.name.toLowerCase().includes(token)));
-                  setActive(match?.id ?? null);
-                  setQ(match ? "" : category.label);
-                }
-              }}
-              className="press flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-transparent px-3 py-2 text-[10px] font-extrabold text-foreground"
-            >
-              <span className="text-sm">{category.icon}</span>{category.label}
-            </button>
-          ))}
-        </div>
-
-        <Link to="/categories" className="relative z-10 flex items-center gap-3 rounded-2xl bg-primary px-4 py-3 text-primary-foreground">
-          <span className="min-w-0 flex-1">
-            <span className="block text-[10px] font-black uppercase tracking-[0.18em] opacity-70">Best of ThelaWala</span>
-            <span className="block text-sm font-extrabold">EXCLUSIVE DEALS</span>
-          </span>
-          <ArrowRight className="h-5 w-5 shrink-0" />
-        </Link>
-
-        <section className="relative z-10 pt-1">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">Curated for your day</p>
-              <h2 className="mt-1 font-display text-3xl leading-none text-primary">What makes us different</h2>
-            </div>
-            <span className="pb-1 text-[10px] font-bold text-muted-foreground">Freshly picked</span>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-2.5">
-            {[
-              { label: "Street favourites", tag: "chaat", image: "/food/food-chaat.jpg", tone: "bg-[#7D1D24]" },
-              { label: "Comfort food", tag: "thali", image: "/food/food-thali.jpg", tone: "bg-[#C25B38]" },
-              { label: "Fresh every day", tag: "fresh", image: "/food/food-tiffin.jpg", tone: "bg-[#1F3E2C]" },
-              { label: "Made for sharing", tag: "biryani", image: "/food/food-biryani.jpg", tone: "bg-[#1B3B54]" },
-            ].map((card) => (
-              <button
-                key={card.label}
-                onClick={() => { setQ(card.tag); setActive(null); setVendorFilter(null); }}
-                className={`press relative aspect-square overflow-hidden rounded-3xl ${card.tone} p-3 text-left text-white`}
-              >
-                <img src={card.image} alt="" className="absolute inset-0 h-full w-full object-cover opacity-55 mix-blend-screen" />
-                <span className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
-                <span className="relative z-10 flex h-full flex-col justify-end">
-                  <span className="max-w-[120px] text-lg font-extrabold leading-tight">{card.label}</span>
-                  <span className="mt-1 flex items-center gap-1 text-[10px] font-bold opacity-80">Shop now <ArrowRight className="h-3 w-3" /></span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {festiveTheme ? (
-          <div className="relative z-10 min-w-0 pt-1">
-            <FestiveHero
-              section={festiveTheme}
-              cardClass={theme.card}
-              onFilter={(v) => { setQ(v); setActive(null); setVendorFilter(null); }}
-            />
-          </div>
-        ) : topBarTheme?.festive_style_active && campaign?.title ? (
-          <div className="relative z-10 min-w-0">
-            <div className="mb-1 flex items-center gap-2 text-brand">
-              <span className="h-0.5 w-6 rounded-full bg-brand" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Celebrate</span>
-            </div>
-            <p className="line-clamp-1 text-[clamp(1.4rem,7vw,2.1rem)] font-extrabold leading-none drop-shadow-md">
-              {campaign.title}
-            </p>
-          </div>
-        ) : null}
-
-        <div className="relative z-10 min-w-0 overflow-hidden rounded-full festive-glass-chip py-1.5">
-          <div className="marquee-track">
-            {[0, 1].map((n) => (
-              <span key={n} aria-hidden={n === 1} className="flex shrink-0 items-center gap-6 pr-6 text-[11px] font-extrabold">
-                <span className="flex items-center gap-1"><Zap className="h-3.5 w-3.5" /> Free delivery on your first order</span>
-                <span className="flex items-center gap-1"><Utensils className="h-3.5 w-3.5" /> Fresh from the thela, straight to you</span>
-                <span className="flex items-center gap-1"><Gift className="h-3.5 w-3.5" /> Refer a friend · both earn ₹25</span>
-                <span className="flex items-center gap-1"><Bike className="h-3.5 w-3.5" /> Live tracking on every order</span>
-              </span>
-            ))}
-          </div>
-        </div>
-      </header>
+      <PremiumHome
+        address={address}
+        balance={balance}
+        categories={cats}
+        vendors={vendors}
+        items={shown}
+        deals={deals}
+        lines={lines}
+        query={q}
+        activeCategoryId={active}
+        voiceSearch={<VoiceSearch stalls={vendors.map((vendor) => vendor.stall_name)} items={items.map((item) => item.name)} onResult={(result) => { setQ(result.query); setActive(null); setOnlyFav(false); const vendor = result.stall ? vendors.find((candidate) => candidate.stall_name === result.stall) : null; setVendorFilter(vendor?.id ?? null); }} />}
+        onQueryChange={(value) => { setQ(value); setVendorFilter(null); }}
+        onCategoryChange={(categoryId) => { setActive(categoryId); setQ(""); setVendorFilter(null); }}
+        onVendor={(vendorId) => navigate({ to: "/stalls/$id", params: { id: vendorId } })}
+        onAdd={add}
+        onRemove={(itemId) => cart.remove(itemId)}
+        onViewDeals={() => { setPromoFocus("deals"); document.getElementById("street-food-recommendations")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+      />
 
       <main className="flex min-w-0 flex-col gap-4 overflow-x-hidden">
         <DynamicBanners onInternalRoute={openBannerRoute} />
@@ -619,31 +479,7 @@ function Home() {
             <p className="mt-1 text-xs text-muted-foreground">Check your connection and try once more.</p>
             <button type="button" onClick={() => setCatalogReload((value) => value + 1)} className="press mt-4 rounded-full bg-primary px-5 py-2.5 text-xs font-extrabold text-primary-foreground">Try again</button>
           </section>
-        ) : items.length ? (
-          <section className="px-5 pt-2">
-            <div className="mb-3 flex items-end justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-primary">Fresh near you</p>
-                <h2 className="mt-1 font-display text-2xl text-foreground">Order food now</h2>
-              </div>
-              <Link to="/categories" className="text-xs font-extrabold text-primary">See all</Link>
-            </div>
-            <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {items.filter((item) => item.in_stock).slice(0, 8).map((item) => (
-                <article key={item.id} className="w-[142px] shrink-0 overflow-hidden rounded-xl border border-border bg-card">
-                  <div className="relative aspect-[4/3] bg-muted">
-                    <img src={item.photo_url ?? foodImage(item.name)} alt={item.name} className="h-full w-full object-cover" />
-                    <button type="button" onClick={() => add(item)} aria-label={`Add ${item.name}`} className="press absolute bottom-2 right-2 grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground shadow-md"><Plus className="h-4 w-4" /></button>
-                  </div>
-                  <div className="p-2.5">
-                    <p className="truncate text-xs font-extrabold text-foreground">{item.name}</p>
-                    <p className="mt-1 text-xs font-black text-primary">{inr(customerPrice(item.price))}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        ) : (
+        ) : items.length ? null : (
           <section className="mx-5 rounded-xl border border-dashed border-border px-5 py-8 text-center">
             <span className="text-4xl" aria-hidden="true">🍽️</span>
             <p className="mt-3 text-sm font-extrabold">No food is available right now</p>
@@ -709,20 +545,6 @@ function Home() {
         </div>
       ) : null}
 
-      {count ? (
-        <div className="fixed inset-x-0 bottom-[104px] z-40 mx-auto w-full max-w-[480px] px-3">
-          <Link
-            to="/cart"
-             className="press pop-in grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-full border border-border bg-white p-2 pl-3 text-foreground shadow-[0_18px_36px_-18px_var(--color-primary)]"
-          >
-             <span className="flex -space-x-2">
-               {lines.slice(0, 3).map((line) => <img key={line.itemId} src={line.photo ?? "/food/food-tiffin.jpg"} alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />)}
-             </span>
-             <span><span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Cart ({count})</span><span className="text-sm font-black">{inr(foodTotal)}</span></span>
-             <span className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground"><ShoppingBag className="h-4 w-4" /></span>
-          </Link>
-        </div>
-      ) : null}
     </Shell>
   );
 }
