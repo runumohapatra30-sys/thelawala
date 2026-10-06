@@ -23,6 +23,7 @@ import { themeStyle, useTopBarTheme } from "@/lib/appTheme";
 import { ArrowRight, Bike, Gift, Heart, MapPin, Plus, Search, ShoppingBag, Utensils, Wallet, X, Zap } from "lucide-react";
 import { StreetFoodExperience, type CuratedFoodDeal, type StreetFoodCategory, type StreetFoodItem, type StreetFoodVendor } from "@/components/StreetFoodExperience";
 import { PremiumHome } from "@/components/PremiumHome";
+import { HomeMarketingModules } from "@/components/HomeMarketingModules";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -446,6 +447,8 @@ function Home() {
         onRemove={(itemId) => cart.remove(itemId)}
         onViewDeals={() => { setPromoFocus("deals"); document.getElementById("street-food-recommendations")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
       />
+
+      <HomeMarketingModules onSearch={(value) => { setQ(value); setActive(null); setVendorFilter(null); }} />
 
       <main className="flex min-w-0 flex-col gap-4 overflow-x-hidden">
         <DynamicBanners onInternalRoute={openBannerRoute} />
