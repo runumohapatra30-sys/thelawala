@@ -17,4 +17,4 @@
 - [ ] Verify the 3D plate, cart controls, moving rails, and Google sign-in entry on mobile and desktop
 - [x] Move live products higher on home and add a ThelaWala empty-cart illustration
 - [ ] Apply the supplied premium home layout using live stalls, products, search, cart, and navigation
-- [ ] Add the five home marketing conversion modules without changing the existing layout
+- [x] Add the five home marketing conversion modules without changing the existing layout
