@@ -66,7 +66,7 @@ export function HomeMarketingModules({ onSearch }: Props) {
             <motion.section
               initial={reduceMotion ? false : { y: 60, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={reduceMotion ? undefined : { y: 40, opacity: 0 }}
+              exit={reduceMotion ? {} : { y: 40, opacity: 0 }}
               transition={{ type: "spring", stiffness: 260, damping: 26 }}
               onClick={(event) => event.stopPropagation()}
               className="relative w-full max-w-[440px] overflow-hidden rounded-t-3xl border border-border bg-card px-5 pb-6 pt-4 shadow-2xl sm:rounded-3xl"
@@ -87,7 +87,7 @@ export function HomeMarketingModules({ onSearch }: Props) {
                   width={1024}
                   height={1024}
                   className="h-36 w-36 max-w-full object-contain drop-shadow-xl"
-                  animate={reduceMotion ? undefined : { y: [0, -6, 0] }}
+                  animate={reduceMotion ? {} : { y: [0, -6, 0] }}
                   transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
                 />
               </div>
