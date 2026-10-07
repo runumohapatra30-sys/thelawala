@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, ChevronDown, MapPin, Minus, Plus, QrCode, Search, ShoppingBag, Wallet } from "lucide-react";
+import { ChevronDown, MapPin, Minus, Plus, QrCode, Search, ShoppingBag, Wallet, Zap } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { foodImage } from "@/lib/foodImage";
 import { inr } from "@/lib/fees";
@@ -93,39 +93,39 @@ export function PremiumHome({
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-border bg-card/95 px-4 pb-3 pt-3 shadow-sm backdrop-blur-xl">
+      <motion.header initial={reduceMotion ? false : { opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="sticky top-0 z-30 border-b border-border bg-card/95 px-4 pb-3 pt-4 shadow-card backdrop-blur-xl">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <Link to="/cart" className="flex min-w-0 items-center gap-2.5 text-left">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-primary"><MapPin className="h-5 w-5" /></span>
-            <span className="min-w-0">
-              <span className="flex items-center gap-1.5 text-sm font-black text-foreground">
-                15 min delivery
-                <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" /><span className="relative inline-flex h-2 w-2 rounded-full bg-success" /></span>
-              </span>
-              <span className="flex min-w-0 items-center gap-1 text-xs font-semibold text-muted-foreground"><span className="max-w-[220px] truncate">{address ?? "Bhubaneswar · set your address"}</span><ChevronDown className="h-3.5 w-3.5 shrink-0" /></span>
-            </span>
-          </Link>
-          <div className="flex shrink-0 items-center gap-2">
-            <Link to="/categories" aria-label="Scan or browse categories" className="grid h-9 w-9 place-items-center rounded-full bg-muted text-foreground"><QrCode className="h-4 w-4" /></Link>
-            <Link to="/wallet" aria-label={`Wallet balance ${inr(balance)}`} className="grid h-9 min-w-9 place-items-center rounded-full bg-primary px-2 text-[10px] font-black text-primary-foreground"><Wallet className="h-4 w-4" /></Link>
+          <div className="min-w-0">
+            <p className="text-xl font-black leading-none text-primary">ThelaWala<span className="text-destructive">.</span></p>
+            <Link to="/cart" title={address ?? "Set your delivery address"} className="mt-2 flex min-w-0 items-center gap-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:text-primary">
+              <MapPin className="h-3 w-3 shrink-0" /><span className="max-w-[200px] truncate">{address ?? "Bhubaneswar · set your address"}</span><ChevronDown className="h-3 w-3 shrink-0" />
+            </Link>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <Link to="/categories" title="Browse categories" aria-label="Scan or browse categories" className="grid h-9 w-9 place-items-center rounded-lg border border-border bg-card text-primary transition-colors hover:bg-brand-soft"><QrCode className="h-4 w-4" /></Link>
+            <Link to="/wallet" title={`Wallet ${inr(balance)}`} aria-label={`Wallet balance ${inr(balance)}`} className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary/90"><Wallet className="h-4 w-4" /></Link>
           </div>
         </div>
+        <div className="mb-3 flex items-center justify-between gap-2 border-y border-border bg-brand-soft/60 px-2.5 py-2">
+          <span className="flex items-center gap-1.5 text-xs font-black text-primary"><Zap className="h-3.5 w-3.5 fill-current" />15 min delivery</span>
+          <span className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground"><motion.span animate={reduceMotion ? {} : { opacity: [0.45, 1, 0.45], scale: [0.9, 1.1, 0.9] }} transition={{ duration: 2.8, repeat: Infinity }} className="h-1.5 w-1.5 rounded-full bg-success" />Bhubaneswar</span>
+        </div>
 
-        <label className="flex h-11 items-center rounded-2xl border border-border bg-muted/70 px-3.5 shadow-inner focus-within:border-primary focus-within:bg-card">
-          <Search className="mr-2.5 h-4 w-4 shrink-0 text-muted-foreground" />
+        <label className="flex h-11 items-center rounded-lg border border-border bg-muted/50 px-3.5 transition-colors focus-within:border-primary focus-within:bg-card focus-within:ring-2 focus-within:ring-primary/10">
+          <Search className="mr-2.5 h-4 w-4 shrink-0 text-primary" />
           <span className="relative h-5 min-w-0 flex-1 overflow-hidden">
             {query ? null : (
               <AnimatePresence mode="wait">
-                <motion.span key={suggestionIndex} initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -12, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.22 }} className="absolute inset-x-0 truncate text-xs font-semibold text-muted-foreground">
+                <motion.span key={suggestionIndex} initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -12, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] }} className="absolute inset-x-0 truncate text-xs font-semibold text-muted-foreground">
                   Search “{SEARCH_SUGGESTIONS[suggestionIndex]}”
                 </motion.span>
               </AnimatePresence>
             )}
             <input value={query} onChange={(event) => onQueryChange(event.target.value)} aria-label="Search food and stalls" className="absolute inset-0 w-full bg-transparent text-sm font-semibold text-foreground outline-none" />
           </span>
-          <span className="ml-2 shrink-0">{voiceSearch}</span>
+          <span className="ml-2 shrink-0 border-l border-border pl-2">{voiceSearch}</span>
         </label>
-      </header>
+      </motion.header>
 
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 py-3">
         <button type="button" onClick={() => onCategoryChange(null)} className={`shrink-0 rounded-full border px-3.5 py-2 text-xs font-extrabold transition ${activeCategoryId === null ? "border-foreground bg-foreground text-background shadow-sm" : "border-border bg-card text-muted-foreground"}`}>All stalls</button>
