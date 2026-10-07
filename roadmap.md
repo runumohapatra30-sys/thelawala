@@ -1,5 +1,5 @@
 # Roadmap
-- [ ] Refine and animate the home header after style selection
+- [x] Refine and animate the home header
 - [x] Cycle all live stalls and their food in Local spotlight
 - [x] Remove post-delivery tip requests while preserving ratings
 - [x] Add banner format fields to the backend
