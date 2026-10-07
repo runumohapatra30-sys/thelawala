@@ -1,4 +1,7 @@
 # Roadmap
+- [ ] Refine and animate the home header after style selection
+- [ ] Cycle all live stalls and their food in Local spotlight
+- [ ] Remove post-delivery tip requests while preserving ratings
 - [x] Add banner format fields to the backend
 - [x] Add HERO, SLIM, and 4_GRID admin selection and previews
 - [x] Render format-specific banners without stretching
