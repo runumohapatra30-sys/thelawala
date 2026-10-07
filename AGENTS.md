@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Keep home-only conversion content isolated from the live catalog UI so campaigns cannot alter ordering behavior.
+- Keep the local-stall slideshow in a dedicated client component fed by the unfiltered approved-stall catalog, so search filters cannot silently exclude stalls from its rotation.

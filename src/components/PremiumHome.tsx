@@ -7,6 +7,7 @@ import { inr } from "@/lib/fees";
 import { customerPrice } from "@/lib/pricing";
 import type { CartLine } from "@/lib/cart";
 import type { CuratedFoodDeal, StreetFoodCategory, StreetFoodItem, StreetFoodVendor } from "@/components/StreetFoodExperience";
+import { LocalSpotlight } from "@/components/LocalSpotlight";
 
 const SEARCH_SUGGESTIONS = [
   "Khandagiri Dahi Bara",
@@ -22,6 +23,7 @@ type Props = {
   categories: StreetFoodCategory[];
   vendors: StreetFoodVendor[];
   items: StreetFoodItem[];
+  spotlightItems: StreetFoodItem[];
   deals: CuratedFoodDeal[];
   lines: CartLine[];
   query: string;
@@ -41,6 +43,7 @@ export function PremiumHome({
   categories,
   vendors,
   items,
+  spotlightItems,
   deals,
   lines,
   query,
@@ -62,7 +65,6 @@ export function PremiumHome({
     return () => window.clearInterval(timer);
   }, [query, reduceMotion]);
 
-  const openVendors = useMemo(() => vendors.filter((vendor) => vendor.is_open), [vendors]);
   const inStock = useMemo(() => items.filter((item) => item.in_stock), [items]);
   const valueItems = useMemo(
     () => [...inStock].sort((a, b) => customerPrice(a.price) - customerPrice(b.price)).slice(0, 3),
@@ -88,8 +90,6 @@ export function PremiumHome({
       },
     }));
   }, [deals, inStock]);
-  const spotlightVendor = openVendors[0] ?? vendors[0];
-  const spotlightItems = spotlightVendor ? inStock.filter((item) => item.vendor_id === spotlightVendor.id).slice(0, 4) : inStock.slice(0, 4);
 
   return (
     <>
@@ -136,17 +136,7 @@ export function PremiumHome({
 
       <section className="px-4 pb-2">
         <div className="grid grid-cols-2 gap-3">
-          <button type="button" onClick={() => spotlightVendor && onVendor(spotlightVendor.id)} className="relative flex min-h-[252px] flex-col justify-between overflow-hidden rounded-3xl bg-primary p-3.5 text-left text-primary-foreground shadow-[0_18px_34px_-22px_var(--color-primary)]">
-            <span className="relative z-10">
-              <span className="rounded-md bg-primary-foreground/15 px-2 py-1 text-[9px] font-black uppercase">Local spotlight</span>
-              <span className="mt-2 block text-lg font-black leading-tight">{spotlightVendor?.stall_name ?? "Bhubaneswar street-food picks"}</span>
-              <span className="mt-1 block text-[11px] font-semibold opacity-75">{spotlightVendor?.offer_label ?? "Hot, fresh and close to you"}</span>
-            </span>
-            <span className="relative z-10 my-3 grid grid-cols-2 gap-1.5">
-              {spotlightItems.map((item) => <span key={item.id} className="overflow-hidden rounded-xl border border-primary-foreground/15 bg-primary-foreground/10 p-1.5"><img src={item.photo_url ?? foodImage(item.name)} alt="" className="mx-auto h-10 w-10 rounded-lg object-cover" /><span className="mt-1 block truncate text-center text-[9px] font-bold">{item.name}</span></span>)}
-            </span>
-            <span className="relative z-10 flex w-full items-center justify-center gap-1 rounded-xl bg-card py-2 text-[11px] font-black text-primary">Explore stall <ArrowRight className="h-3 w-3" /></span>
-          </button>
+          <LocalSpotlight vendors={vendors} items={spotlightItems} onVendor={onVendor} />
 
           <div className="flex min-h-[252px] flex-col rounded-3xl border border-border bg-card p-3 shadow-card">
             <div className="mb-2 flex items-center justify-between gap-1"><span className="text-xs font-black text-foreground">Best value</span><Link to="/categories" className="text-[10px] font-black text-primary">See all ›</Link></div>
