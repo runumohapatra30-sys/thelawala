@@ -3,8 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import riderArt from "@/assets/rating-rider.png";
 
-const TIPS = [10, 20, 30];
-
 /** Bright ThelaWala-yellow thank-you and rating card shown once an order is delivered. */
 export function OrderDeliveredRating({
   orderId, userId, vendorId, partnerId, riderName, stallName, deliveredAt, onDone,
@@ -20,7 +18,6 @@ export function OrderDeliveredRating({
 }) {
   const [stars, setStars] = useState(0);
   const [foodStars, setFoodStars] = useState(0);
-  const [tip, setTip] = useState<number | null>(null);
   const [review, setReview] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -40,9 +37,6 @@ export function OrderDeliveredRating({
       food_stars: foodStars || stars,
       review: review.trim() || null,
     });
-    if (!error && tip) {
-      await supabase.from("orders").update({ tip_amount: tip }).eq("id", orderId);
-    }
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Thanks for rating!");
@@ -82,21 +76,6 @@ export function OrderDeliveredRating({
 
           <p className="mt-3 text-center text-xs font-black">And the food from {stallName}?</p>
           <Stars value={foodStars} onChange={setFoodStars} />
-
-          <p className="mt-4 text-center text-xs font-black">Add a tip for {riderName}</p>
-          <div className="mt-2 flex justify-center gap-2">
-            {TIPS.map((t) => (
-              <button
-                key={t}
-                onClick={() => setTip(tip === t ? null : t)}
-                className={`rounded-full border-2 px-4 py-1.5 text-sm font-black ${
-                  tip === t ? "border-amber-500 bg-amber-100 text-amber-700" : "border-neutral-200 text-neutral-600"
-                }`}
-              >
-                ₹{t}
-              </button>
-            ))}
-          </div>
 
           <textarea
             value={review}

@@ -433,7 +433,7 @@ function Track() {
               ) : null}
             </div>
 
-            <div className="mt-3 border-t border-border pt-3">
+            {order.status !== "DELIVERED" && order.status !== "CANCELLED" ? <div className="mt-3 border-t border-border pt-3">
               <p className="text-xs font-bold">Tip your delivery partner</p>
               <p className="text-[11px] text-muted-foreground">100% of the tip goes to {rider.name}.</p>
               <div className="mt-2 flex gap-2">
@@ -470,7 +470,7 @@ function Track() {
                 />
               </div>
               {tipMsg ? <p className="mt-2 text-[11px] font-bold text-primary">{tipMsg}</p> : null}
-            </div>
+            </div> : null}
           </div>
         ) : null}
 

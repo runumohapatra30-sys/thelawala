@@ -435,6 +435,7 @@ function Home() {
         categories={cats}
         vendors={vendors}
         items={shown}
+        spotlightItems={items}
         deals={deals}
         lines={lines}
         query={q}
