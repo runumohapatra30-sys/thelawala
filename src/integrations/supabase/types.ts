@@ -113,10 +113,12 @@ export type Database = {
       app_dynamic_banners: {
         Row: {
           aspect_ratio: string
+          badge: string
           banner_format: string
           border_radius: number
           created_at: string
           display_order: number
+          ends_at: string | null
           grid_image_urls: string[]
           height_px: number
           id: string
@@ -124,15 +126,21 @@ export type Database = {
           media_path: string | null
           media_type: string
           media_url: string
+          starts_at: string | null
+          subtitle: string
           target_route: string | null
+          theme_color: string | null
+          title: string
           updated_at: string
         }
         Insert: {
           aspect_ratio?: string
+          badge?: string
           banner_format?: string
           border_radius?: number
           created_at?: string
           display_order?: number
+          ends_at?: string | null
           grid_image_urls?: string[]
           height_px?: number
           id?: string
@@ -140,15 +148,21 @@ export type Database = {
           media_path?: string | null
           media_type: string
           media_url: string
+          starts_at?: string | null
+          subtitle?: string
           target_route?: string | null
+          theme_color?: string | null
+          title?: string
           updated_at?: string
         }
         Update: {
           aspect_ratio?: string
+          badge?: string
           banner_format?: string
           border_radius?: number
           created_at?: string
           display_order?: number
+          ends_at?: string | null
           grid_image_urls?: string[]
           height_px?: number
           id?: string
@@ -156,7 +170,11 @@ export type Database = {
           media_path?: string | null
           media_type?: string
           media_url?: string
+          starts_at?: string | null
+          subtitle?: string
           target_route?: string | null
+          theme_color?: string | null
+          title?: string
           updated_at?: string
         }
         Relationships: []
