@@ -68,6 +68,7 @@
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-festive-header-foreground: var(--festive-header-foreground);
+  --color-home-theme: var(--home-theme);
   --shadow-card: var(--shadow-soft);
   --font-display: "DM Serif Display", Georgia, serif;
 }
@@ -75,6 +76,7 @@
 
 :root {
   --radius: 0.85rem;
+  --home-theme: #e6f0ea;
   --background: #f4f7f5;
   --foreground: #173126;
   --card: #ffffff;
@@ -121,6 +123,7 @@
 
 
 .dark {
+  --home-theme: oklch(0.32 0.05 146);
   --brand: oklch(0.82 0.16 96.5);
   --brand-foreground: oklch(0.19 0.02 90);
   --brand-soft: oklch(0.32 0.05 96.5);
@@ -171,6 +174,25 @@
     color: var(--color-foreground);
     overflow-x: hidden;
   }
+}
+
+@property --home-theme {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #e6f0ea;
+}
+
+.home-live-header {
+  background-color: color-mix(in oklab, var(--home-theme) 32%, var(--color-card));
+  background-image: linear-gradient(180deg, color-mix(in oklab, var(--home-theme) 42%, transparent), transparent);
+  transition: --home-theme 500ms ease, background-color 500ms ease;
+  overflow-anchor: none;
+}
+.home-banner-copy {
+  background: linear-gradient(180deg, transparent, var(--color-card) 35%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-live-header { transition: none; }
 }
 
 @layer base {

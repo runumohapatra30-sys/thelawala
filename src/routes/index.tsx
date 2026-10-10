@@ -24,8 +24,13 @@ import { ArrowRight, Bike, Gift, Heart, MapPin, Plus, Search, ShoppingBag, Utens
 import { StreetFoodExperience, type CuratedFoodDeal, type StreetFoodCategory, type StreetFoodItem, type StreetFoodVendor } from "@/components/StreetFoodExperience";
 import { PremiumHome } from "@/components/PremiumHome";
 import { HomeMarketingModules } from "@/components/HomeMarketingModules";
+import { homeBannersQuery } from "@/lib/homeBanners";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
+  loader: ({ context }) => context.queryClient.ensureQueryData(homeBannersQuery),
+  errorComponent: ({ error }) => <Shell><div role="alert" className="px-5 py-12 text-center"><h1 className="text-xl font-bold">ThelaWala</h1><p className="my-3 text-sm text-muted-foreground">{error.message}</p><Button onClick={() => window.location.reload()}>Try again</Button></div></Shell>,
+  notFoundComponent: () => <Shell><p className="px-5 py-12">ThelaWala page not found.</p></Shell>,
   head: () => ({
     meta: [
       { title: "ThelaWala — Local Thela, super fast delivery in Bhubaneswar" },
@@ -447,12 +452,12 @@ function Home() {
         onAdd={add}
         onRemove={(itemId) => cart.remove(itemId)}
         onViewDeals={() => { setPromoFocus("deals"); document.getElementById("street-food-recommendations")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+        onInternalRoute={openBannerRoute}
       />
 
       <HomeMarketingModules onSearch={(value) => { setQ(value); setActive(null); setVendorFilter(null); }} />
 
       <main className="flex min-w-0 flex-col gap-4 overflow-x-hidden">
-        <DynamicBanners onInternalRoute={openBannerRoute} />
         {topBarTheme?.header_bg_image_url ? (
           <section className="px-5 py-3">
             <img
