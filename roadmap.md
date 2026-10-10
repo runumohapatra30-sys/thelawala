@@ -1,4 +1,7 @@
 # Roadmap
+- [ ] Add collapsing sticky home header and synchronized banner theme
+- [ ] Add live admin banner copy, colors, scheduling and multi-slide editing
+- [ ] Verify carousel rotation, pause, loop, scheduling and live updates
 - [x] Refine and animate the home header
 - [x] Cycle all live stalls and their food in Local spotlight
 - [x] Remove post-delivery tip requests while preserving ratings

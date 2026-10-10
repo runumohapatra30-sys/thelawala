@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791646146359,
+      "tag": "0000_scheduled_live_home_banners",
+      "breakpoints": true
+    }
+  ]
+}
