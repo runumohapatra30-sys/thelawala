@@ -29,7 +29,7 @@ import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
   loader: ({ context }) => context.queryClient.ensureQueryData(homeBannersQuery),
-  errorComponent: ({ error }) => <Shell><div role="alert" className="px-5 py-12 text-center"><h1 className="text-xl font-bold">ThelaWala</h1><p className="my-3 text-sm text-muted-foreground">{error.message}</p><Button onClick={() => window.location.reload()}>Try again</Button></div></Shell>,
+  errorComponent: ({ error }) => <Shell><div role="alert" className="px-5 py-12 text-center"><h1 className="text-xl font-bold">ThelaWala</h1><p className="my-3 text-sm text-muted-foreground">{error instanceof Error ? error.message : "Please try loading ThelaWala again."}</p><Button onClick={() => window.location.reload()}>Try again</Button></div></Shell>,
   notFoundComponent: () => <Shell><p className="px-5 py-12">ThelaWala page not found.</p></Shell>,
   head: () => ({
     meta: [
