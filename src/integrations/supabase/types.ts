@@ -1852,6 +1852,7 @@ export type Database = {
           payu_key: string | null
           platform_fee: number
           support_number: string
+          soundbox_product: Json
           surge_fee: number
           tds_pct: number
           updated_at: string
@@ -1884,6 +1885,7 @@ export type Database = {
           payu_key?: string | null
           platform_fee?: number
           support_number?: string
+          soundbox_product?: Json
           surge_fee?: number
           tds_pct?: number
           updated_at?: string
@@ -1916,6 +1918,7 @@ export type Database = {
           payu_key?: string | null
           platform_fee?: number
           support_number?: string
+          soundbox_product?: Json
           surge_fee?: number
           tds_pct?: number
           updated_at?: string

@@ -85,3 +85,5 @@ CREATE TRIGGER update_soundbox_hardware_orders_updated_at
 
 ALTER PUBLICATION supabase_realtime ADD TABLE public.soundbox_product_settings;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.soundbox_hardware_orders;
+
+NOTIFY pgrst, 'reload schema';

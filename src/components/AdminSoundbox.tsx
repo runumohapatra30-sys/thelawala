@@ -3,13 +3,12 @@ import { ImagePlus, PackageCheck, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadSectionImage } from "@/lib/homeSections";
-
-type ProductSettings = {
-  front_image_url: string | null;
-  back_image_url: string | null;
-  packaging_image_url: string | null;
-  is_in_stock: boolean;
-};
+import {
+  EMPTY_SOUNDBOX_PRODUCT,
+  readSoundboxProductSettings,
+  updateSoundboxProductSettings,
+  type SoundboxProductSettings,
+} from "@/lib/soundboxProductSettings";
 
 type HardwareOrder = {
   id: string;
@@ -40,12 +39,7 @@ function money(amount: number) {
 }
 
 export function AdminSoundbox() {
-  const [product, setProduct] = useState<ProductSettings>({
-    front_image_url: null,
-    back_image_url: null,
-    packaging_image_url: null,
-    is_in_stock: false,
-  });
+  const [product, setProduct] = useState<SoundboxProductSettings>(EMPTY_SOUNDBOX_PRODUCT);
   const [orders, setOrders] = useState<HardwareOrder[]>([]);
   const [vendors, setVendors] = useState<Record<string, VendorInfo>>({});
   const [loading, setLoading] = useState(true);
@@ -54,35 +48,29 @@ export function AdminSoundbox() {
   const [savingOrder, setSavingOrder] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [{ data: settings, error: settingsError }, { data: rows, error: ordersError }] =
-      await Promise.all([
-        supabase
-          .from("soundbox_product_settings")
-          .select("front_image_url,back_image_url,packaging_image_url,is_in_stock")
-          .eq("id", true)
-          .maybeSingle(),
-        supabase
-          .from("soundbox_hardware_orders")
-          .select("id,vendor_id,payment_plan,total_amount,delivery_address,status,created_at")
-          .order("created_at", { ascending: false })
-          .limit(100),
-      ]);
-    if (settingsError || ordersError) {
-      toast.error(
-        settingsError?.message ?? ordersError?.message ?? "Could not load Soundbox management.",
-      );
+    const [settingsResult, { data: rows, error: ordersError }] = await Promise.all([
+      readSoundboxProductSettings()
+        .then((data) => ({ data, error: null }))
+        .catch((error: Error) => ({
+          data: EMPTY_SOUNDBOX_PRODUCT,
+          error,
+        })),
+      supabase
+        .from("soundbox_hardware_orders")
+        .select("id,vendor_id,payment_plan,total_amount,delivery_address,status,created_at")
+        .order("created_at", { ascending: false })
+        .limit(100),
+    ]);
+    const { data: settings, error: settingsError } = settingsResult;
+    if (settingsError) toast.error(`Could not load Soundbox settings: ${settingsError.message}`);
+    setProduct(settings);
+    if (ordersError) {
+      toast.error(`Could not load Soundbox orders: ${ordersError.message}`);
+      setOrders([]);
+      setVendors({});
       setLoading(false);
-      return;
     }
-    setProduct(
-      settings ?? {
-        front_image_url: null,
-        back_image_url: null,
-        packaging_image_url: null,
-        is_in_stock: false,
-      },
-    );
-    const orderRows = rows ?? [];
+    const orderRows = ordersError ? [] : (rows ?? []);
     setOrders(orderRows);
     const vendorIds = [...new Set(orderRows.map((order) => order.vendor_id))];
     if (vendorIds.length) {
@@ -102,11 +90,6 @@ export function AdminSoundbox() {
     void load();
     const channel = supabase
       .channel("admin-soundbox")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "soundbox_product_settings" },
-        () => void load(),
-      )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "soundbox_hardware_orders" },
@@ -136,30 +119,32 @@ export function AdminSoundbox() {
         : key === "back_image_url"
           ? { back_image_url: uploaded.url }
           : { packaging_image_url: uploaded.url };
-    const { error } = await supabase
-      .from("soundbox_product_settings")
-      .update(update)
-      .eq("id", true);
-    setBusyImage(null);
-    if (error) {
-      toast.error(`Image uploaded but could not be published: ${error.message}`);
+    try {
+      await updateSoundboxProductSettings(update);
+    } catch (error) {
+      setBusyImage(null);
+      toast.error(
+        `Image uploaded but could not be published: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
       return;
     }
+    setBusyImage(null);
     setProduct((previous) => ({ ...previous, [key]: uploaded.url }));
     toast.success("Soundbox gallery updated.");
   }
 
   async function updateStock(isInStock: boolean) {
     setSavingStock(true);
-    const { error } = await supabase
-      .from("soundbox_product_settings")
-      .update({ is_in_stock: isInStock })
-      .eq("id", true);
-    setSavingStock(false);
-    if (error) {
-      toast.error(`Could not update stock: ${error.message}`);
+    try {
+      await updateSoundboxProductSettings({ is_in_stock: isInStock });
+    } catch (error) {
+      setSavingStock(false);
+      toast.error(
+        `Could not update stock: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
       return;
     }
+    setSavingStock(false);
     setProduct((previous) => ({ ...previous, is_in_stock: isInStock }));
     toast.success(isInStock ? "Soundbox is now in stock." : "Soundbox marked out of stock.");
   }

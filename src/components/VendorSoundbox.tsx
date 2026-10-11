@@ -16,18 +16,15 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  readSoundboxProductSettings,
+  type SoundboxProductSettings,
+} from "@/lib/soundboxProductSettings";
 
 type Vendor = {
   id: string;
   stall_name: string;
   address: string | null;
-};
-
-type ProductSettings = {
-  front_image_url: string | null;
-  back_image_url: string | null;
-  packaging_image_url: string | null;
-  is_in_stock: boolean;
 };
 
 type HardwareOrder = {
@@ -100,7 +97,7 @@ function money(amount: number) {
 }
 
 export function VendorSoundbox({ vendor }: { vendor: Vendor }) {
-  const [product, setProduct] = useState<ProductSettings | null>(null);
+  const [product, setProduct] = useState<SoundboxProductSettings | null>(null);
   const [orders, setOrders] = useState<HardwareOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -113,26 +110,25 @@ export function VendorSoundbox({ vendor }: { vendor: Vendor }) {
   useEffect(() => {
     let alive = true;
     const load = async () => {
-      const [{ data: settings, error: settingsError }, { data: orderRows, error: orderError }] =
-        await Promise.all([
-          supabase
-            .from("soundbox_product_settings")
-            .select("front_image_url,back_image_url,packaging_image_url,is_in_stock")
-            .eq("id", true)
-            .maybeSingle(),
-          supabase
-            .from("soundbox_hardware_orders")
-            .select("id,payment_plan,total_amount,delivery_address,status,created_at")
-            .eq("vendor_id", vendor.id)
-            .order("created_at", { ascending: false })
-            .limit(10),
-        ]);
+      const [settingsResult, { data: orderRows, error: orderError }] = await Promise.all([
+        readSoundboxProductSettings()
+          .then((data) => ({ data, error: null }))
+          .catch((error: Error) => ({
+            data: null,
+            error,
+          })),
+        supabase
+          .from("soundbox_hardware_orders")
+          .select("id,payment_plan,total_amount,delivery_address,status,created_at")
+          .eq("vendor_id", vendor.id)
+          .order("created_at", { ascending: false })
+          .limit(10),
+      ]);
+      const { data: settings, error: settingsError } = settingsResult;
       if (!alive) return;
-      if (settingsError || orderError) {
-        toast.error(
-          settingsError?.message ?? orderError?.message ?? "Could not load Soundbox details.",
-        );
-      }
+      if (settingsError)
+        toast.error(`Could not load Soundbox product details: ${settingsError.message}`);
+      if (orderError) toast.error(`Could not load Soundbox orders: ${orderError.message}`);
       setProduct(settings);
       setOrders(orderRows ?? []);
       setLoading(false);
@@ -141,13 +137,6 @@ export function VendorSoundbox({ vendor }: { vendor: Vendor }) {
 
     const channel = supabase
       .channel(`vendor-soundbox-${vendor.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "soundbox_product_settings" },
-        () => {
-          void load();
-        },
-      )
       .on(
         "postgres_changes",
         {
