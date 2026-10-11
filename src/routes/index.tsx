@@ -11,6 +11,7 @@ import { foodImage } from "@/lib/foodImage";
 import { useSession } from "@/lib/session";
 import { BannerCarousel } from "@/components/BannerCarousel";
 import { FestiveWidget } from "@/components/FestiveWidget";
+import { FestiveContextBanner } from "@/components/FestiveContextBanner";
 import { activeCampaign, type Campaign } from "@/lib/marketing";
 import { VoiceSearch } from "@/components/VoiceSearch";
 import { DynamicAssetBanner } from "@/components/DynamicAssetBanner";
@@ -537,6 +538,15 @@ function Home() {
       />
 
       <main className="flex min-w-0 flex-col gap-4 overflow-x-hidden">
+        <FestiveContextBanner
+          campaign={campaign}
+          theme={topBarTheme}
+          onFilter={(value) => {
+            setQ(value);
+            setActive(null);
+            setVendorFilter(null);
+          }}
+        />
         {topBarTheme?.header_bg_image_url ? (
           <section className="px-5 py-3">
             <img
