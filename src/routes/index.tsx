@@ -23,6 +23,7 @@ import { themeStyle, useTopBarTheme } from "@/lib/appTheme";
 import { ArrowRight, Bike, Gift, Heart, MapPin, Plus, Search, ShoppingBag, Utensils, Wallet, X, Zap } from "lucide-react";
 import { StreetFoodExperience, type CuratedFoodDeal, type StreetFoodCategory, type StreetFoodItem, type StreetFoodVendor } from "@/components/StreetFoodExperience";
 import { PremiumHome } from "@/components/PremiumHome";
+import { OnboardingScreen } from "@/components/OnboardingScreen";
 import { HomeMarketingModules } from "@/components/HomeMarketingModules";
 import { homeBannersQuery } from "@/lib/homeBanners";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,7 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: Home,
+  component: HomeEntry,
 });
 
 type Item = StreetFoodItem;
@@ -60,6 +61,32 @@ const TINTS = [
 const PRODUCT_TINTS = ["bg-[#E5F0E6]", "bg-[#F7F0E2]", "bg-[#FFF5C9]", "bg-[#E8EEF2]"];
 
 const routeSlug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+function HomeEntry() {
+  const navigate = useNavigate();
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setOnboardingComplete(
+      window.localStorage.getItem("thelawala_onboarding_completed") === "true",
+    );
+  }, []);
+
+  if (onboardingComplete === null) {
+    return <div className="fixed inset-0 bg-[#FAFAFA]" aria-hidden="true" />;
+  }
+  if (!onboardingComplete) {
+    return (
+      <OnboardingScreen
+        onComplete={() => {
+          setOnboardingComplete(true);
+          void navigate({ to: "/", replace: true });
+        }}
+      />
+    );
+  }
+  return <Home />;
+}
 
 function Home() {
   const { user } = useSession();
