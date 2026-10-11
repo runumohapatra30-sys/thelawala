@@ -11,7 +11,7 @@ import { openInvoice, type InvoiceOrder } from "@/lib/invoice";
 import { OrderDeliveredRating } from "@/components/OrderDeliveredRating";
 import { useSession } from "@/lib/session";
 import { RefundPanel } from "@/components/RefundPanel";
-import { Bike, Check, Clock3, Home, MessageCircle, PackageOpen, PhoneCall, ShoppingBasket, Star } from "lucide-react";
+import { ArrowLeft, Check, Clock3, Home, MapPin, MessageCircle, PackageOpen, PhoneCall, Star } from "lucide-react";
 
 export const Route = createFileRoute("/orders/$id")({
   validateSearch: (s: Record<string, unknown>): { placed?: 1 } => (s['placed'] ? { placed: 1 } : {}),
@@ -73,15 +73,13 @@ function Track() {
   const { placed } = Route.useSearch();
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<{ id: string; name: string; qty: number; price: number; photo_url: string | null }[]>([]);
-  const [vendor, setVendor] = useState<{ stall_name: string; lat: number | null; lng: number | null; mobile: string | null; default_prep_minutes: number | null } | null>(null);
-  const [deals, setDeals] = useState<{ id: string; name: string; photo_url: string | null; unit: string | null; price: number; mrp: number }[]>([]);
+  const [vendor, setVendor] = useState<{ stall_name: string; lat: number | null; lng: number | null; default_prep_minutes: number | null } | null>(null);
   const [rider, setRider] = useState<{ name: string; mobile: string | null; lat: number | null; lng: number | null; photo_url: string | null; profile_photo_url: string | null } | null>(null);
   const [riderRating, setRiderRating] = useState<number | null>(null);
   const [eta, setEta] = useState<number | null>(null);
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const [showJourney, setShowJourney] = useState(true);
   const [reason, setReason] = useState(REASONS[0]!);
   const [splash, setSplash] = useState(Boolean(placed));
   const [tipMsg, setTipMsg] = useState<string | null>(null);
@@ -123,13 +121,13 @@ function Track() {
     if (!order?.vendor_id) return;
     let alive = true;
     const loadStallContent = async () => {
-      const [vendorResult, dealResult] = await Promise.all([
-        supabase.from("vendors").select("stall_name,lat,lng,mobile,default_prep_minutes").eq("id", order.vendor_id).maybeSingle(),
-        supabase.from("menu_items").select("id,name,photo_url,unit,price,mrp").eq("vendor_id", order.vendor_id).eq("in_stock", true).gte("price", 49).order("price").limit(8),
-      ]);
+      const vendorResult = await supabase
+        .from("vendors")
+        .select("stall_name,lat,lng,default_prep_minutes")
+        .eq("id", order.vendor_id)
+        .maybeSingle();
       if (!alive) return;
       if (vendorResult.data) setVendor(vendorResult.data);
-      setDeals((dealResult.data ?? []) as typeof deals);
     };
     void loadStallContent();
     return () => { alive = false; };
@@ -242,8 +240,12 @@ function Track() {
   const cancellable = ["ORDER_PLACED", "PREPARING"].includes(order.status);
   const live = !["DELIVERED", "CANCELLED"].includes(order.status);
   const etaMinutes = eta == null ? null : Math.max(0, Math.round(eta));
-  const isOnTheWay = order.status === "OUT_FOR_DELIVERY";
-  const trackingStatus = isOnTheWay ? "Out for delivery" : "Order getting packed!";
+  const arrivalWindow = formatArrivalWindow(
+    etaMinutes,
+    order.status === "OUT_FOR_DELIVERY" ? 0 : vendor?.default_prep_minutes ?? 0,
+  );
+  const displayedDistance =
+    distanceKm == null ? Number(order.distance_km) : distanceKm;
   const vendorPoint = vendor && hasCoordinates(vendor.lat, vendor.lng)
     ? { lat: Number(vendor.lat), lng: Number(vendor.lng) }
     : null;
@@ -257,7 +259,7 @@ function Track() {
   if (live) {
     return (
       <Shell>
-        <div className="fixed inset-0 z-[50] overflow-hidden bg-muted">
+        <div className="fixed inset-0 z-[50] overflow-hidden bg-[#FAF7F2]">
           {vendorPoint && destinationPoint ? (
             <LiveMap
               from={vendorPoint}
@@ -267,139 +269,120 @@ function Track() {
                 setEta(minutes);
                 setDistanceKm(km);
               }}
-              className="absolute inset-0 h-full w-full !rounded-none"
+              className="absolute inset-x-0 top-0 z-0 mx-auto h-[58dvh] w-full max-w-[520px] overflow-hidden !rounded-none"
             />
           ) : (
-            <div className="absolute inset-0 grid place-items-center px-6 text-center text-sm font-semibold text-muted-foreground">Live map is unavailable. Your latest order status is shown below.</div>
+            <div className="absolute inset-x-0 top-0 z-0 mx-auto grid h-[58dvh] w-full max-w-[520px] place-items-center bg-[#F0F2EE] px-6 text-center text-sm font-semibold text-muted-foreground">Live map is unavailable. Your latest order status is shown below.</div>
           )}
 
-          <motion.header initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 mx-auto flex max-w-[480px] items-center gap-3 rounded-xl border border-border bg-white/95 p-3 shadow-xl backdrop-blur">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-soft text-primary"><ShoppingBasket className="h-5 w-5" /></span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-black text-foreground">{etaMinutes == null ? STATUS_LABEL[order.status] ?? order.status : `Arrives ${formatArrivalWindow(etaMinutes, isOnTheWay ? 0 : vendor?.default_prep_minutes)}`}</p>
-              <p className="truncate text-[11px] font-medium text-muted-foreground">{isOnTheWay ? "Your order is out for delivery" : "Your order is getting packed"}</p>
-            </div>
-            <button type="button" onClick={() => setShowJourney((visible) => !visible)} aria-expanded={showJourney} className="shrink-0 rounded-lg border border-primary px-3 py-2 text-[10px] font-black text-primary">TRACK ORDER</button>
+          <motion.header
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="absolute inset-x-0 top-0 z-20 mx-auto flex h-[max(4.5rem,calc(4rem+env(safe-area-inset-top)))] w-full max-w-[520px] items-center justify-center bg-white/90 px-5 pt-[env(safe-area-inset-top)] backdrop-blur-sm"
+          >
+            <Link
+              to="/orders"
+              aria-label="Back to orders"
+              className="absolute bottom-2 left-5 grid h-10 w-10 place-items-center rounded-full text-[#28312B]"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+            <h1 className="text-base font-extrabold text-[#28312B]">Track Your Order</h1>
           </motion.header>
 
-          <motion.section initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} id="tracking-status" className="absolute inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-10 mx-auto max-h-[58dvh] max-w-[480px] space-y-3 overflow-y-auto rounded-2xl border border-[#EBECEF] bg-white p-4 shadow-2xl">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-wide text-primary">{vendor?.stall_name ?? "ThelaWala"}</p>
-                <h1 className="mt-1 text-lg font-black text-foreground">{placed ? "Order placed successfully" : trackingStatus}</h1>
-                <p className="mt-0.5 text-xs text-muted-foreground">{isOnTheWay ? "Your order is on the way." : "Your food is being packed at the stall."}</p>
-              </div>
-              {etaMinutes != null ? <span className="flex shrink-0 items-center gap-1 rounded-lg bg-brand-soft px-2.5 py-2 text-xs font-black text-primary"><Clock3 className="h-3.5 w-3.5" />{etaMinutes} min</span> : null}
-            </div>
-
-            <div className="flex items-center gap-3 border-y border-[#EBECEF] py-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-muted text-primary"><Bike className="h-5 w-5" /></span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-black text-foreground">{vendor?.stall_name ?? "Your food stall"}</p>
-                <p className="text-[10px] text-muted-foreground">Order #{order.code} · {order.address_line}</p>
-              </div>
-              {vendor?.mobile ? <a href={`tel:${vendor.mobile}`} aria-label={`Call ${vendor.stall_name}`} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground"><PhoneCall className="h-4 w-4" /></a> : null}
-              {order.partner_id ? (
-                <button type="button" onClick={() => setChatOpen((open) => !open)} aria-label={chatOpen ? "Close delivery chat" : "Message delivery partner"} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border text-primary"><MessageCircle className="h-4 w-4" /></button>
+          <motion.div
+            initial={{ y: 16, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="absolute inset-x-3 bottom-[calc(45dvh-1.75rem)] z-20 mx-auto flex min-h-[76px] max-w-[480px] items-center gap-2 rounded-full bg-[#FF5A1F] px-3 py-2 text-white shadow-lg"
+          >
+            <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-white/80 bg-white/20 text-sm font-extrabold">
+              {rider?.profile_photo_url || rider?.photo_url ? (
+                <img
+                  src={rider.profile_photo_url || rider.photo_url || ""}
+                  alt={rider.name}
+                  className="h-full w-full object-cover"
+                />
               ) : (
-                <Link to="/support" search={{ order: order.id }} aria-label="Message support about this order" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border text-primary"><MessageCircle className="h-4 w-4" /></Link>
+                rider?.name.slice(0, 1).toUpperCase() ?? "D"
               )}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-extrabold">
+                {rider?.name ?? "Finding your rider"}
+              </p>
+              <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-white/90">
+                <Star className="h-3 w-3 fill-current" />
+                {riderRating == null ? "New rider" : `${riderRating.toFixed(1)}/5.0`}
+              </p>
             </div>
+            {order.partner_id ? (
+              <button
+                type="button"
+                onClick={() => setChatOpen((open) => !open)}
+                aria-label={chatOpen ? "Close delivery chat" : "Chat with delivery partner"}
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-[#FF5A1F]"
+              >
+                <MessageCircle className="h-4 w-4" />
+              </button>
+            ) : (
+              <Link
+                to="/support"
+                search={{ order: order.id }}
+                aria-label="Chat with order support"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-[#FF5A1F]"
+              >
+                <MessageCircle className="h-4 w-4" />
+              </Link>
+            )}
+            {rider?.mobile ? (
+              <a
+                href={`tel:${rider.mobile}`}
+                aria-label={`Call ${rider.name}`}
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-[#FF5A1F]"
+              >
+                <PhoneCall className="h-4 w-4" />
+              </a>
+            ) : null}
+          </motion.div>
 
-            {rider ? (
-              <div className="flex items-center gap-2 rounded-2xl bg-[#FAF7F2] p-3">
-                <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-[#E8F5EC] text-sm font-extrabold text-[#16803C]">
-                  {rider.profile_photo_url || rider.photo_url ? (
-                    <img
-                      src={rider.profile_photo_url || rider.photo_url || ""}
-                      alt={rider.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    rider.name.slice(0, 1).toUpperCase()
-                  )}
+          <motion.section
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            id="tracking-status"
+            className="absolute inset-x-0 bottom-0 z-10 mx-auto h-[45dvh] max-h-[400px] w-full max-w-[520px] overflow-y-auto rounded-t-[2rem] bg-white px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-14 shadow-[0_-12px_32px_rgba(31,41,55,0.08)]"
+          >
+            <ol aria-label="Delivery details" className="relative">
+              <span
+                aria-hidden="true"
+                className="absolute left-[17px] top-9 bottom-9 border-l-2 border-dotted border-[#D7DCD7]"
+              />
+              <li className="relative flex gap-4 pb-8">
+                <span className="z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#FFF0E9] text-[#FF5A1F] ring-4 ring-white">
+                  <Clock3 className="h-4 w-4" />
                 </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-extrabold">{rider.name}</p>
-                  <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px] font-bold">
-                    <span className="rounded-full bg-white px-2 py-0.5 text-muted-foreground">Delivery partner</span>
-                    <span className="inline-flex items-center gap-0.5 text-[#8A6420]">
-                      <Star className="h-3 w-3 fill-current" />
-                      {riderRating == null ? "New" : `${riderRating.toFixed(1)} / 5`}
-                    </span>
-                  </div>
+                <div className="min-w-0 pt-0.5">
+                  <p className="text-xs font-semibold text-[#818982]">Delivery time</p>
+                  <p className="mt-1 text-sm font-extrabold text-[#28312B]">{arrivalWindow}</p>
+                  <p className="mt-1 text-xs font-medium text-[#8A918B]">
+                    Distance from you: {Number.isFinite(displayedDistance) ? `${displayedDistance.toFixed(1)} km` : "Calculating…"}
+                  </p>
                 </div>
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white text-primary" aria-label="Delivery by bike">
-                  <Bike className="h-4 w-4" />
+              </li>
+              <li className="relative flex gap-4">
+                <span className="z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#EAF5EC] text-[#25834A] ring-4 ring-white">
+                  <MapPin className="h-4 w-4" />
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setChatOpen((open) => !open)}
-                  aria-label="Chat with delivery partner"
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#E8F5EC] text-[#16803C]"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                </button>
-                {rider.mobile ? (
-                  <a
-                    href={`tel:${rider.mobile}`}
-                    aria-label={`Call ${rider.name}`}
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-white"
-                  >
-                    <PhoneCall className="h-4 w-4" />
-                  </a>
-                ) : null}
+                <div className="min-w-0 pt-0.5">
+                  <p className="text-xs font-semibold text-[#818982]">Delivery address</p>
+                  <p className="mt-1 text-sm font-bold leading-5 text-[#28312B]">{order.address_line}</p>
+                </div>
+              </li>
+            </ol>
+            {chatOpen && order.partner_id ? (
+              <div className="mt-5">
+                <OrderChat orderId={order.id} role="CUSTOMER" senderId={user?.id} />
               </div>
             ) : null}
-
-            <div className="flex items-start gap-3 rounded-2xl border border-[#E5EAE5] bg-white p-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#E8F5EC] text-[#16803C]">
-                <Home className="h-4 w-4" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-extrabold uppercase tracking-wide text-muted-foreground">Delivery address</p>
-                <p className="mt-0.5 line-clamp-2 text-xs font-semibold">{order.address_line}</p>
-              </div>
-              <span className="shrink-0 text-right">
-                <span className="block text-[10px] font-semibold text-muted-foreground">Distance from you</span>
-                <span className="mt-0.5 block text-xs font-extrabold">
-                  {distanceKm == null ? `${Number(order.distance_km).toFixed(1)} km` : `${distanceKm.toFixed(1)} km`}
-                </span>
-              </span>
-            </div>
-
-            {showJourney ? (
-              <ol className="grid grid-cols-4 gap-1" aria-label="Order progress">
-                {["Preparing", "Picked up", "On the way", "Delivered"].map((label, index) => {
-                  const current = stepIndex >= [1, 2, 5, 6][index]!;
-                  return <li key={label} className={`rounded-xl px-1 py-2 text-center text-[9px] font-bold ${current ? "bg-brand-soft text-primary" : "bg-muted text-muted-foreground"}`}><span className="mx-auto mb-1 block h-1.5 w-1.5 rounded-full bg-current" />{label}</li>;
-                })}
-              </ol>
-            ) : null}
-
-            {chatOpen && order.partner_id ? <OrderChat orderId={order.id} role="CUSTOMER" senderId={user?.id} /> : null}
-
-            {deals.length > 0 ? (
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <h2 className="text-sm font-black text-[#111827]">Deals from ₹49</h2>
-                  <span className="text-[10px] font-semibold text-[#6B7280]">From this stall</span>
-                </div>
-                <div className="flex snap-x gap-2 overflow-x-auto pb-1">
-                  {deals.map((deal) => (
-                    <article key={deal.id} className="w-28 shrink-0 snap-start overflow-hidden rounded-lg border border-[#EBECEF] bg-white">
-                      <img src={deal.photo_url ?? "/food/food-tiffin.jpg"} alt={deal.name} className="aspect-square w-full object-cover" />
-                      <div className="p-2">
-                        <p className="truncate text-[11px] font-bold text-[#111827]">{deal.name}</p>
-                        <p className="text-xs font-black text-primary">{inr(Number(deal.price))}</p>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {cancellable ? <button type="button" onClick={() => setCancelOpen(true)} className="w-full border-t border-[#EBECEF] pt-2 text-left text-[11px] font-bold text-destructive">Cancel order</button> : null}
           </motion.section>
 
           {cancelOpen ? (
