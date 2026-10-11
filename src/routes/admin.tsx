@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { HandCoins, IndianRupee, Megaphone, ReceiptText, RotateCcw, SlidersHorizontal, Users } from "lucide-react";
+import { HandCoins, IndianRupee, Megaphone, PackageCheck, ReceiptText, RotateCcw, SlidersHorizontal, Users } from "lucide-react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { SupportQueue } from "@/components/SupportQueue";
 import { PayoutQueue, LiveOrders, CustomerManager } from "@/components/AdminPanels";
@@ -17,6 +17,7 @@ import { LiveDispatchBoard } from "@/components/admin/LiveDispatchBoard";
 import { AdminSettlement } from "@/components/admin/AdminSettlement";
 import { AdminRefunds } from "@/components/admin/AdminRefunds";
 import { AdminAuthBranding } from "@/components/AdminAuthBranding";
+import { AdminSoundbox } from "@/components/AdminSoundbox";
 import { supabase } from "@/integrations/supabase/client";
 import { listCoupons, type Coupon } from "@/lib/coupons";
 import { inr, slabsOf, type Settings } from "@/lib/fees";
@@ -38,7 +39,7 @@ export const Route = createFileRoute("/admin")({
   component: Admin,
 });
 
-type Tab = "orders" | "settle" | "refunds" | "money" | "people" | "market" | "settings";
+type Tab = "orders" | "settle" | "refunds" | "money" | "people" | "market" | "soundbox" | "settings";
 
 const TABS: { key: Tab; label: string; Icon: typeof ReceiptText }[] = [
   { key: "orders", label: "Orders", Icon: ReceiptText },
@@ -47,6 +48,7 @@ const TABS: { key: Tab; label: string; Icon: typeof ReceiptText }[] = [
   { key: "money", label: "Money", Icon: IndianRupee },
   { key: "people", label: "Verification Requests", Icon: Users },
   { key: "market", label: "Marketing", Icon: Megaphone },
+  { key: "soundbox", label: "Hardware", Icon: PackageCheck },
   { key: "settings", label: "Settings", Icon: SlidersHorizontal },
 ];
 
@@ -204,6 +206,8 @@ function Admin() {
             {studio ? <PageStudio /> : <MarketingManager />}
           </>
         ) : null}
+
+        {tab === "soundbox" ? <AdminSoundbox /> : null}
 
         {tab === "settings" && s ? (
           <>

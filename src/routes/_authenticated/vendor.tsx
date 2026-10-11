@@ -20,6 +20,7 @@ import { usePageLayout } from "@/lib/pageLayout";
 import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 import { confirmOnboardingPayment, onboardingFee, startOnboardingPayment } from "@/lib/onboarding.functions";
 import { loadCashfreeSdk } from "@/lib/checkout";
+import { VendorSoundbox } from "@/components/VendorSoundbox";
 
 export const Route = createFileRoute("/_authenticated/vendor")({
   head: () => ({
@@ -60,7 +61,7 @@ const EMPTY_DISH = {
 
 function VendorPortal() {
   const { user, loading } = useSession();
-  const [vendor, setVendor] = useState<{ id: string; stall_name: string; status: string; is_open: boolean; fssai_number: string | null; rejection_reason: string | null } | null>(null);
+  const [vendor, setVendor] = useState<{ id: string; stall_name: string; status: string; is_open: boolean; address: string | null; fssai_number: string | null; rejection_reason: string | null } | null>(null);
   const vLayout = usePageLayout("vendor", "dashboard");
   const [orders, setOrders] = useState<Order[]>([]);
   const [orderItems, setOrderItems] = useState<OrderItemName[]>([]);
@@ -87,7 +88,7 @@ function VendorPortal() {
   const [dishOpen, setDishOpen] = useState(false);
   const [slip, setSlip] = useState<Order | null>(null);
   const [today, setToday] = useState({ orders: 0, sales: 0, earning: 0, rating: 0 });
-  const [portalTab, setPortalTab] = useState<"live" | "accounts">("live");
+  const [portalTab, setPortalTab] = useState<"live" | "accounts" | "soundbox">("live");
 
   const [statusFilter, setStatusFilter] = useState<StatusValue>("ALL");
   const [dateFilter, setDateFilter] = useState<DateRange>("ALL");
@@ -120,7 +121,7 @@ function VendorPortal() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("vendors").select("id,stall_name,status,is_open,fssai_number,rejection_reason").eq("owner_id", user.id).maybeSingle()
+    supabase.from("vendors").select("id,stall_name,status,is_open,address,fssai_number,rejection_reason").eq("owner_id", user.id).maybeSingle()
       .then(({ data }) => setVendor(data));
     supabase.from("categories").select("id,name,emoji").order("sort_order").then(({ data }) => setCats(data ?? []));
   }, [user?.id]);
@@ -406,7 +407,7 @@ function VendorPortal() {
           bank_proof_url: bankUrl,
           terms_accepted_at: new Date().toISOString(),
           status: "PENDING",
-        }).select("id,stall_name,status,is_open,fssai_number,rejection_reason").single();
+        }).select("id,stall_name,status,is_open,address,fssai_number,rejection_reason").single();
         if (error) throw error;
         setVendor(data);
         toast.success("Stall application submitted! The admin team will review it within a day.");
@@ -570,6 +571,8 @@ function VendorPortal() {
       <PortalHeader title={vendor.stall_name} subtitle="Live on ThelaWala" />
       <div className="space-y-3 p-4">
         <PortalTabs active={portalTab} onChange={setPortalTab} />
+        {portalTab === "soundbox" ? <VendorSoundbox vendor={vendor} /> : null}
+        <div className={portalTab === "soundbox" ? "hidden" : "contents"}>
         {portalTab === "live" && pending > 0 ? (
           <div className="animate-pulse rounded-2xl bg-destructive px-3 py-2.5 text-center text-sm font-black text-destructive-foreground">
             🔔 {pending} new order{pending > 1 ? "s" : ""} waiting — accept or reject below
@@ -649,7 +652,7 @@ function VendorPortal() {
                 .from("vendors")
                 .update({ fssai_number: fssaiDraft.trim() })
                 .eq("id", vendor.id)
-                .select("id,stall_name,status,is_open,fssai_number,rejection_reason")
+                .select("id,stall_name,status,is_open,address,fssai_number,rejection_reason")
                 .single();
               setFssaiSaving(false);
               if (error || !data) {
@@ -948,6 +951,7 @@ function VendorPortal() {
           ))}
           {items.length === 0 ? <p className="mt-2 text-xs text-muted-foreground">No dishes added yet.</p> : null}
         </section>
+        </div>
       </div>
 
       {slip ? <OrderSlip order={slip} onClose={() => setSlip(null)} /> : null}

@@ -190,14 +190,15 @@ export function PortalTabs<T extends string>({
   const tabs = [
     ["live", "Live Orders & Trips"],
     ["accounts", "Payouts & Accounts"],
+    ["soundbox", "Soundbox Hardware"],
   ] as const;
   return (
-    <div className="sticky top-[72px] z-20 -mx-1 grid grid-cols-2 gap-1 rounded-xl border border-border bg-white p-1 shadow-sm">
+    <div className="sticky top-[72px] z-20 -mx-1 grid grid-cols-3 gap-1 rounded-xl border border-border bg-white p-1 shadow-sm">
       {tabs.map(([key, label]) => (
         <button
           key={key}
           onClick={() => onChange(key as T)}
-          className={`rounded-lg px-2 py-2.5 text-[11px] font-black transition-colors ${active === key ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+          className={`rounded-lg px-1.5 py-2.5 text-[10px] font-black transition-colors sm:px-2 sm:text-[11px] ${active === key ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
         >
           {label}
         </button>
