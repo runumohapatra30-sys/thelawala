@@ -96,16 +96,9 @@ export function PremiumHome({
 
   return (
     <>
-      <LiveHomeHeader address={address} balance={balance} query={query} onQueryChange={onQueryChange} voiceSearch={voiceSearch} onInternalRoute={onInternalRoute} />
+      <LiveHomeHeader address={address} balance={balance} query={query} onQueryChange={onQueryChange} voiceSearch={voiceSearch} onInternalRoute={onInternalRoute} categories={categories} activeCategoryId={activeCategoryId} onCategoryChange={onCategoryChange} />
 
-      <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 py-3">
-        <button type="button" onClick={() => onCategoryChange(null)} className={`shrink-0 rounded-full border px-3.5 py-2 text-xs font-extrabold transition ${activeCategoryId === null ? "border-foreground bg-foreground text-background shadow-sm" : "border-border bg-card text-muted-foreground"}`}>All stalls</button>
-        {categories.map((category) => (
-          <button key={category.id} type="button" onClick={() => onCategoryChange(category.id)} className={`shrink-0 rounded-full border px-3.5 py-2 text-xs font-extrabold transition ${activeCategoryId === category.id ? "border-foreground bg-foreground text-background shadow-sm" : "border-border bg-card text-muted-foreground"}`}>{category.emoji ? `${category.emoji} ` : ""}{category.name}</button>
-        ))}
-      </div>
-
-      <section className="px-4 pb-2">
+      <section className="px-4 pb-2 pt-3">
         <div className="grid grid-cols-2 gap-3">
           <LocalSpotlight vendors={vendors} items={spotlightItems} onVendor={onVendor} />
 
