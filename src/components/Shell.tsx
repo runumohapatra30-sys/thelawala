@@ -6,6 +6,7 @@ import { GUEST_PROFILE_EVENT, LoginModal, OPEN_LOGIN_EVENT } from "@/components/
 import { useSession } from "@/lib/session";
 import { useCart } from "@/lib/cart";
 import { useAuthBranding } from "@/lib/authBranding";
+import { toast } from "sonner";
 
 const NAV = [
   { to: "/", label: "Home", Icon: House },
@@ -115,8 +116,13 @@ export function LogoutButton({ className = "" }: { className?: string }) {
   return (
     <button
       onClick={async () => {
-        await supabase.auth.signOut();
-        navigate({ to: "/login", replace: true });
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          toast.error(`Could not sign out: ${error.message}`);
+          return;
+        }
+        window.localStorage.removeItem("thelawala_onboarding_completed");
+        navigate({ to: "/", replace: true });
       }}
       className={`press shrink-0 rounded-full bg-card/80 px-3 py-1.5 text-[11px] font-bold text-primary ${className}`}
     >

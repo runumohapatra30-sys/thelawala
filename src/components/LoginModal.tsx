@@ -15,7 +15,13 @@ type LoginModalProps = {
   onClose: () => void;
 };
 
-export function GoogleButton({ className = "" }: { className?: string }) {
+export function GoogleButton({
+  className = "",
+  iconOnly = false,
+}: {
+  className?: string;
+  iconOnly?: boolean;
+}) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   async function signIn() {
@@ -39,8 +45,11 @@ export function GoogleButton({ className = "" }: { className?: string }) {
       <button
         type="button"
         disabled={busy}
+        aria-label={
+          iconOnly ? (busy ? "Opening Google sign-in" : "Continue with Google") : undefined
+        }
         onClick={signIn}
-        className={`press flex w-full items-center justify-center gap-3 rounded-full border border-border bg-card py-3.5 text-sm font-black text-foreground shadow-sm disabled:opacity-50 ${className}`}
+        className={`press flex ${iconOnly ? "h-16 w-16 rounded-full p-0" : "w-full gap-3 rounded-full py-3.5"} items-center justify-center border border-border bg-card text-sm font-black text-foreground shadow-sm disabled:opacity-50 ${className}`}
       >
         <svg viewBox="0 0 48 48" className="h-5 w-5" aria-hidden>
           <path
@@ -60,7 +69,13 @@ export function GoogleButton({ className = "" }: { className?: string }) {
             d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"
           />
         </svg>
-        {busy ? "Opening Google…" : "Continue with Google"}
+        {iconOnly ? (
+          <span className="sr-only">{busy ? "Opening Google…" : "Continue with Google"}</span>
+        ) : busy ? (
+          "Opening Google…"
+        ) : (
+          "Continue with Google"
+        )}
       </button>
       {msg ? <p className="mt-2 text-center text-xs text-destructive">{msg}</p> : null}
     </>

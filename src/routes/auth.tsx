@@ -81,7 +81,7 @@ export function AuthPage() {
               to="/"
               className="press rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-[#242424]"
             >
-              Skip login ›
+              Back
             </Link>
           </div>
           <div className="relative z-10">
@@ -113,10 +113,11 @@ export function AuthPage() {
         <div id="auth-options" className="mt-5 w-full rounded-3xl bg-white p-5 shadow-sm">
           <p className="text-sm font-black">Welcome to {branding.brandTitle}</p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Continue with your Google account — no OTP needed.
+            Sign in or create your account with Google — no password or OTP needed.
           </p>
-          <div className="mt-4">
-            <GoogleButton />
+          <div className="mt-5 flex flex-col items-center gap-2">
+            <GoogleButton iconOnly className="border-2 border-[#FF5A1F] shadow-[0_8px_20px_rgba(255,90,31,0.16)]" />
+            <span className="text-[11px] font-bold text-muted-foreground">Continue with Google</span>
           </div>
 
           <div className="mt-3 grid grid-cols-2 gap-2">

@@ -6,6 +6,7 @@ import { inr } from "@/lib/fees";
 import { useSession } from "@/lib/session";
 import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 import { ChevronRight, Gift, Headphones, Heart, MapPin, MessageSquareText, Pencil, ShieldCheck, ShoppingBag, Wallet } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -196,8 +197,13 @@ function Profile() {
 
         <button
           onClick={async () => {
-            await supabase.auth.signOut();
-            navigate({ to: "/" });
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+              toast.error(`Could not sign out: ${error.message}`);
+              return;
+            }
+            window.localStorage.removeItem("thelawala_onboarding_completed");
+            navigate({ to: "/", replace: true });
           }}
           className="press w-full rounded-xl border border-border py-3 text-sm font-bold"
         >

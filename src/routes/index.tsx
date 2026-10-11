@@ -24,6 +24,7 @@ import { ArrowRight, Bike, Gift, Heart, MapPin, Plus, Search, ShoppingBag, Utens
 import { StreetFoodExperience, type CuratedFoodDeal, type StreetFoodCategory, type StreetFoodItem, type StreetFoodVendor } from "@/components/StreetFoodExperience";
 import { PremiumHome } from "@/components/PremiumHome";
 import { OnboardingScreen } from "@/components/OnboardingScreen";
+import { WelcomeFoodScreen } from "@/components/WelcomeFoodScreen";
 import { HomeMarketingModules } from "@/components/HomeMarketingModules";
 import { HomeFeatureModals } from "@/components/HomeFeatureModals";
 import { homeBannersQuery } from "@/lib/homeBanners";
@@ -66,29 +67,45 @@ const PRODUCT_TINTS = ["bg-[#E5F0E6]", "bg-[#F7F0E2]", "bg-[#FFF5C9]", "bg-[#E8E
 const routeSlug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 function HomeEntry() {
-  const navigate = useNavigate();
-  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
+  const [hasSession, setHasSession] = useState<boolean | null>(null);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
-    setOnboardingComplete(
-      window.localStorage.getItem("thelawala_onboarding_completed") === "true",
-    );
+    let alive = true;
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!alive) return;
+      if (event === "SIGNED_OUT") {
+        window.localStorage.removeItem("thelawala_onboarding_completed");
+        setShowWelcome(false);
+      }
+      if (session) setHasSession(true);
+      else setHasSession(false);
+    });
+
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (alive) setHasSession(Boolean(session));
+    });
+
+    return () => {
+      alive = false;
+      subscription.subscription.unsubscribe();
+    };
   }, []);
 
-  if (onboardingComplete === null) {
+  if (hasSession === null) {
     return <div className="fixed inset-0 bg-[#FAFAFA]" aria-hidden="true" />;
   }
-  if (!onboardingComplete) {
+  if (hasSession) return <Home />;
+  if (!showWelcome) {
     return (
       <OnboardingScreen
         onComplete={() => {
-          setOnboardingComplete(true);
-          void navigate({ to: "/", replace: true });
+          setShowWelcome(true);
         }}
       />
     );
   }
-  return <Home />;
+  return <WelcomeFoodScreen />;
 }
 
 function Home() {
