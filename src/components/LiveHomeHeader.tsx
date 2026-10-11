@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Bell, ChevronDown, MapPin, Search, Wallet } from "lucide-react";
+import { Bell, ChevronDown, MapPin, Search, SlidersHorizontal, Wallet } from "lucide-react";
 import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { DynamicBanners } from "@/components/DynamicBanners";
@@ -8,6 +8,7 @@ import { useHomeBanners } from "@/lib/homeBanners";
 import type { DynamicBanner } from "@/lib/dynamicBanners";
 import type { StreetFoodCategory } from "@/components/StreetFoodExperience";
 import { inr } from "@/lib/fees";
+import { foodImage } from "@/lib/foodImage";
 import { ThelaLogo } from "@/components/Shell";
 
 const suggestions = ["Khandagiri Dahi Bara", "Gupchup & Chaat", "Egg Chicken Roll", "Evening Hot Pakoda"];
@@ -21,6 +22,7 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
   const rows = useHomeBanners();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [suggestion, setSuggestion] = useState(0);
   const reduceMotion = useReducedMotion();
   const active = rows.find((row) => row.id === activeId) ?? rows[0];
@@ -47,10 +49,6 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
     const timer = window.setInterval(() => setSuggestion((value) => (value + 1) % suggestions.length), 2800);
     return () => window.clearInterval(timer);
   }, [query, reduceMotion]);
-
-  const pill = (isActive: boolean) => `shrink-0 rounded-full border px-3.5 py-2 text-xs font-extrabold transition ${isActive
-    ? "border-[#5B9BD5] bg-[#5B9BD5] text-white shadow-sm"
-    : hasBg ? "border-white/30 bg-white/15 text-white backdrop-blur-sm" : "border-border bg-card text-muted-foreground"}`;
 
   return <header data-collapsed={collapsed} style={style} className="home-live-header sticky top-0 z-50 border-b border-border shadow-card transition-colors duration-500">
     {hasBg && <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
@@ -84,7 +82,7 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
       ) : null}
       <div className="mb-3 flex min-w-0 items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className={`truncate text-sm font-extrabold ${hasBg ? "text-white drop-shadow" : "text-foreground"}`}>{displayName ? `Good to see you, ${displayName.split(" ")[0]}` : "Your Local Food, Delivered Fast"}</p>
+          <p className={`truncate text-sm font-extrabold ${hasBg ? "text-white drop-shadow" : "text-foreground"}`}>{displayName ? `Welcome Back, ${displayName.split(" ")[0]}` : "Welcome Back"}</p>
           <Button asChild variant="ghost" className={`mt-1 h-auto min-w-0 max-w-full p-0 text-xs font-bold hover:bg-transparent ${hasBg ? "text-white" : "text-primary"}`}><Link to="/cart" title={address ?? "Choose delivery location"} aria-label="Choose delivery location"><MapPin className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{address ?? "Choose delivery location"}</span><ChevronDown className="h-3 w-3 shrink-0" /></Link></Button>
         </div>
       </div>
@@ -94,14 +92,44 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
           {!query && <AnimatePresence mode="wait"><motion.span key={suggestion} initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -12, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="absolute inset-x-0 truncate text-xs text-muted-foreground">Search “{suggestions[suggestion]}”</motion.span></AnimatePresence>}
           <input value={query} onChange={(event) => onQueryChange(event.target.value)} aria-label="Search food and stalls" className="absolute inset-0 w-full bg-transparent text-sm text-foreground outline-none" />
         </span>
-        <span className="ml-2 shrink-0 border-l border-border pl-2">{voiceSearch}</span>
+        <button type="button" aria-label="Filter food by category" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((open) => !open)} className={`ml-2 grid h-8 w-8 shrink-0 place-items-center rounded-full border-l border-border pl-2 text-primary ${filtersOpen ? "bg-brand-soft" : ""}`}>
+          <SlidersHorizontal className="h-4 w-4" />
+        </button>
+        <span className="ml-1 shrink-0 border-l border-border pl-2">{voiceSearch}</span>
       </label>
-      {!collapsed && <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4">
-        <button type="button" onClick={() => onCategoryChange(null)} className={pill(activeCategoryId === null)}>All stalls</button>
-        {categories.map((category) => (
-          <button key={category.id} type="button" onClick={() => onCategoryChange(category.id)} className={pill(activeCategoryId === category.id)}>{category.emoji ? `${category.emoji} ` : ""}{category.name}</button>
-        ))}
-      </div>}
+      {filtersOpen && !collapsed ? (
+        <div className="mt-2 rounded-2xl border border-border bg-card p-3 shadow-card">
+          <p className="mb-2 text-[11px] font-extrabold text-muted-foreground">Filter by category</p>
+          <div className="no-scrollbar flex gap-2 overflow-x-auto">
+            <button type="button" onClick={() => onCategoryChange(null)} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${activeCategoryId === null ? "border-primary bg-primary text-white" : "border-border bg-white text-foreground"}`}>All food</button>
+            {categories.map((category) => (
+              <button key={category.id} type="button" onClick={() => onCategoryChange(category.id)} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${activeCategoryId === category.id ? "border-primary bg-primary text-white" : "border-border bg-white text-foreground"}`}>{category.emoji ? `${category.emoji} ` : ""}{category.name}</button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {!collapsed && (
+        <section className="mt-3">
+          <h2 className={`mb-2 text-xs font-black ${hasBg ? "text-white" : "text-foreground"}`}>Explore Categories</h2>
+          <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
+            <button type="button" onClick={() => onCategoryChange(null)} className="w-[68px] shrink-0 text-center">
+              <span className={`mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full border-2 bg-white shadow-sm ${activeCategoryId === null ? "border-primary" : "border-white"}`}>
+                <img src="/food/food-thali.jpg" alt="" className="h-full w-full object-cover" />
+              </span>
+              <span className="mt-1 block truncate text-[10px] font-bold">All food</span>
+            </button>
+            {categories.map((category) => (
+              <button key={category.id} type="button" onClick={() => onCategoryChange(category.id)} className="w-[68px] shrink-0 text-center">
+                <span className={`relative mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full border-2 bg-white shadow-sm ${activeCategoryId === category.id ? "border-primary" : "border-white"}`}>
+                  <img src={foodImage(category.name)} alt="" className="h-full w-full object-cover" />
+                  {category.emoji ? <span className="absolute bottom-0 right-0 grid h-5 w-5 place-items-center rounded-full bg-white text-[10px]">{category.emoji}</span> : null}
+                </span>
+                <span className="mt-1 block truncate text-[10px] font-bold">{category.name}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
     <motion.div initial={false} animate={{ height: collapsed ? 0 : "auto", opacity: collapsed ? 0 : 1 }} transition={{ duration: reduceMotion ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] }} className="relative overflow-hidden" inert={collapsed}>
       <DynamicBanners rows={rows} onActive={onActive} onInternalRoute={onInternalRoute} overlayOnly={hasBg} />

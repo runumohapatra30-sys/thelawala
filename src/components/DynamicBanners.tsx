@@ -49,7 +49,7 @@ export function DynamicBanners({ rows, onActive, onInternalRoute, overlayOnly = 
     onFocusCapture={() => setFocused(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}>
     <div ref={emblaRef} className="overflow-hidden"><div className="flex touch-pan-y">
       {rows.map((row, index) => <div key={row.id} role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${rows.length}`} className="min-w-0 shrink-0 basis-full px-4">
-        <Button variant="ghost" tabIndex={index === selected ? 0 : -1} onClick={() => open(row)} aria-label={row.title || `Promotion ${index + 1}`} className="relative block h-auto w-full overflow-hidden rounded-lg p-0 hover:bg-transparent">
+        <Button variant="ghost" tabIndex={index === selected ? 0 : -1} onClick={() => open(row)} aria-label={row.title || `Promotion ${index + 1}`} className="relative block h-auto w-full overflow-hidden rounded-3xl p-0 shadow-sm hover:bg-transparent">
           {overlayOnly ? <span className="flex min-h-[104px] flex-col items-center justify-center gap-1.5 px-6 py-3 text-center whitespace-normal">
             {row.badge && <span className="rounded bg-primary px-2 py-1 text-[10px] font-bold text-primary-foreground">{row.badge}</span>}
             {row.title && <span className="text-[26px] font-black uppercase leading-none tracking-wide text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]">{row.title}</span>}
@@ -63,6 +63,7 @@ export function DynamicBanners({ rows, onActive, onInternalRoute, overlayOnly = 
             {row.title && <span className="text-lg font-extrabold leading-tight text-foreground">{row.title}</span>}
             {row.subtitle && <span className="text-xs text-muted-foreground">{row.subtitle}</span>}
           </span>}
+          {row.target_route && !overlayOnly ? <span className="absolute right-3 top-3 rounded-full bg-primary px-4 py-2 text-[11px] font-extrabold text-primary-foreground shadow-sm">Grab Voucher</span> : null}
         </Button>
       </div>)}
     </div></div>

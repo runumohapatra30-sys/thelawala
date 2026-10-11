@@ -584,14 +584,14 @@ function Cart() {
     await new Promise((resolve) => setTimeout(resolve, Math.max(0, 2000 - (performance.now() - startedAt))));
     setPlacementStage("placed");
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    await navigate({ to: "/orders/$id", params: { id: order.id } });
+    await navigate({ to: "/orders/$id", params: { id: order.id }, search: { placed: 1 } });
   }
 
   return (
     <Shell>
       {checkoutStep === "cart" ? (
         <>
-      <header className="sticky top-0 z-30 bg-card px-4 pb-3 pt-4 shadow-card">
+      <header className="sticky top-0 z-30 border-b border-border bg-background px-4 pb-3 pt-4">
         <div className="flex items-center gap-3">
           <Link to="/" aria-label="Back to home" className="press grid h-10 w-10 place-items-center rounded-full border border-border">
             <ArrowLeft className="h-5 w-5" />
@@ -602,6 +602,15 @@ function Cart() {
           </div>
             <span className="shrink-0 rounded-full bg-brand-soft px-3 py-2 text-xs font-black text-primary">{inr(savings)} saved!</span>
         </div>
+        <ol aria-label="Checkout progress" className="mt-4 grid grid-cols-3 gap-2">
+          {(["Menu", "Cart", "Checkout"] as const).map((step, index) => (
+            <li key={step} className={`flex items-center gap-2 text-[11px] font-extrabold ${index <= 1 ? "text-primary" : "text-muted-foreground"}`}>
+              <span className={`grid h-6 w-6 place-items-center rounded-full text-[10px] ${index === 1 ? "bg-primary text-white" : index === 0 ? "bg-brand-soft text-primary" : "bg-muted text-muted-foreground"}`}>{index === 0 ? "✓" : index + 1}</span>
+              {step}
+              {index < 2 ? <span className="h-px flex-1 bg-border" /> : null}
+            </li>
+          ))}
+        </ol>
       </header>
       <div className="space-y-3 bg-muted/45 p-3 pb-48">
         <div className="card-soft rise-in grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-3">
@@ -626,34 +635,35 @@ function Cart() {
           </div>
           <div className="mt-3 space-y-3">
             {lines.map((l) => (
-              <div key={l.itemId} className="flex items-center gap-3">
+              <div key={l.itemId} className="flex items-center gap-3 border-b border-border/70 pb-3 last:border-0 last:pb-0">
                 <img
                   src={l.photo ?? "/food/food-tiffin.jpg"}
                   alt={l.name}
-                  className="h-14 w-14 rounded-lg bg-muted object-contain p-1"
+                  className="h-16 w-16 shrink-0 rounded-2xl bg-muted object-cover"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{l.name}</p>
-                  <p className="text-xs text-muted-foreground">{l.unit}</p>
+                  <p className="truncate text-sm font-extrabold">{l.name}</p>
+                  <p className="truncate text-[11px] font-medium text-muted-foreground">{vendor?.stall_name ?? "Local stall"} · {l.unit || "Street food"}</p>
+                  <p className="mt-1 text-xs font-bold text-primary">{inr(l.price)} <span className="font-medium text-muted-foreground">each</span></p>
                 </div>
-                <div className="flex h-9 items-center gap-3 rounded-lg border border-primary bg-card px-2 text-primary shadow-card">
+                <div className="flex h-9 items-center gap-2 rounded-full border border-border bg-muted px-1.5 text-foreground">
                   <button
                     aria-label="Remove one"
                     onClick={() => cart.remove(l.itemId)}
-                    className="px-1 font-bold"
+                    className="grid h-7 w-7 place-items-center rounded-full bg-white font-bold text-primary shadow-sm"
                   >
                     −
                   </button>
-                  <span className="text-xs font-bold">{l.qty}</span>
+                  <span className="min-w-3 text-center text-xs font-bold">{l.qty}</span>
                   <button
                     aria-label="Add one"
                     onClick={() => cart.add(l)}
-                    className="px-1 font-bold"
+                    className="grid h-7 w-7 place-items-center rounded-full bg-primary font-bold text-white"
                   >
                     +
                   </button>
                 </div>
-                <p className="w-14 text-right text-sm font-bold">{inr(l.price * l.qty)}</p>
+                <p className="min-w-14 text-right text-sm font-extrabold">{inr(l.price * l.qty)}</p>
               </div>
             ))}
           </div>
@@ -663,7 +673,7 @@ function Cart() {
           <section className="py-2">
             <div className="mb-3 flex items-end justify-between">
               <div>
-                <h2 className="font-display text-2xl text-primary">Did you forget?</h2>
+                <h2 className="text-base font-extrabold text-foreground">Popular with your order</h2>
                 <p className="text-[11px] font-semibold text-muted-foreground">
                   Popular add-ons from {vendor?.stall_name}
                 </p>
@@ -673,7 +683,7 @@ function Cart() {
               {suggested.map((item) => (
                 <article
                   key={item.id}
-                  className="w-36 shrink-0 snap-start rounded-2xl bg-card p-2 shadow-card"
+                  className="w-36 shrink-0 snap-start rounded-3xl border border-border bg-card p-2 shadow-sm"
                 >
                   <div className="product-tile relative aspect-square">
                     <img
@@ -1025,14 +1035,25 @@ function Cart() {
         </>
       ) : (
         <>
-          <header className="sticky top-0 z-30 flex items-center gap-3 bg-card px-4 py-4 shadow-card">
-            <button type="button" onClick={() => setCheckoutStep("cart")} aria-label="Back to your cart" className="press grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border">
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div className="min-w-0 flex-1">
-              <h1 className="truncate text-lg font-black">Pay on Delivery &amp; UPI</h1>
-              <p className="text-[11px] text-muted-foreground">Choose how you&apos;d like to pay</p>
+          <header className="sticky top-0 z-30 bg-background px-4 py-4">
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => setCheckoutStep("cart")} aria-label="Back to your cart" className="press grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border">
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <div className="min-w-0 flex-1">
+                <h1 className="truncate text-lg font-black">Pay on Delivery &amp; UPI</h1>
+                <p className="text-[11px] text-muted-foreground">Choose how you&apos;d like to pay</p>
+              </div>
             </div>
+            <ol aria-label="Checkout progress" className="mt-4 grid grid-cols-3 gap-2">
+              {(["Menu", "Cart", "Checkout"] as const).map((step, index) => (
+                <li key={step} className={`flex items-center gap-2 text-[11px] font-extrabold ${index < 2 ? "text-primary" : "text-muted-foreground"}`}>
+                  <span className={`grid h-6 w-6 place-items-center rounded-full text-[10px] ${index < 2 ? "bg-brand-soft text-primary" : "bg-primary text-white"}`}>{index < 2 ? "✓" : index + 1}</span>
+                  {step}
+                  {index < 2 ? <span className="h-px flex-1 bg-border" /> : null}
+                </li>
+              ))}
+            </ol>
           </header>
           <main className="space-y-3 bg-muted/45 p-3 pb-44">
             <section className="card-soft space-y-3 p-4">

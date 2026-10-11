@@ -106,7 +106,7 @@ export function PremiumHome({
         <div className="grid grid-cols-2 gap-3">
           <LocalSpotlight vendors={vendors} items={spotlightItems} onVendor={onVendor} />
 
-          <div className="flex min-h-[252px] flex-col rounded-3xl border border-border bg-card p-3 shadow-card">
+          <div className="flex min-h-[252px] flex-col rounded-3xl border border-border bg-card p-3 shadow-sm">
             <div className="mb-2 flex items-center justify-between gap-1"><span className="text-xs font-black text-foreground">Best value</span><Link to="/categories" className="text-[10px] font-black text-primary">See all ›</Link></div>
             <div className="flex flex-1 flex-col justify-between gap-2">
               {valueItems.map((item) => {
@@ -125,7 +125,7 @@ export function PremiumHome({
       </section>
 
       {featured.length ? (
-        <section className="mx-4 my-3 rounded-3xl border border-border bg-card p-4 shadow-card">
+        <section className="mx-4 my-3 rounded-3xl border border-border bg-card p-4 shadow-sm">
           <div className="mb-3 flex items-end justify-between gap-2"><span><span className="block text-sm font-black text-foreground">Freshly picked near you</span><span className="text-[11px] font-semibold text-muted-foreground">Live prices from local stalls</span></span><button type="button" onClick={onViewDeals} className="text-[11px] font-black text-primary">View deals</button></div>
           <div className="grid grid-cols-2 gap-3">
             {featured.map(({ deal, item }) => {
@@ -133,7 +133,7 @@ export function PremiumHome({
               const offer = Number(deal.offer_price);
               const original = Math.max(Number(deal.original_price), customerPrice(item.mrp));
               return (
-                <article key={deal.id} className="min-w-0 rounded-2xl border border-border p-2.5">
+                <article key={deal.id} className="min-w-0 rounded-3xl border border-border bg-white p-2.5 shadow-sm">
                   <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-brand-soft"><img src={deal.image_url ?? item.photo_url ?? foodImage(item.name)} alt={item.name} className="h-full w-full object-cover" />{offer < original ? <span className="absolute left-2 top-2 rounded-md bg-success px-1.5 py-0.5 text-[9px] font-black text-success-foreground">SAVE {inr(original - offer)}</span> : null}</div>
                   <button type="button" onClick={() => onVendor(item.vendor_id)} className="mt-2 block w-full truncate text-left text-[9px] font-bold text-muted-foreground">{vendors.find((vendor) => vendor.id === item.vendor_id)?.stall_name ?? "Local stall"}</button>
                   <h2 className="truncate text-xs font-extrabold text-foreground">{item.name}</h2>

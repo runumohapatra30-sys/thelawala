@@ -70,7 +70,7 @@ function Track() {
   const [eta, setEta] = useState<number | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const [showJourney, setShowJourney] = useState(false);
+  const [showJourney, setShowJourney] = useState(true);
   const [reason, setReason] = useState(REASONS[0]!);
   const [splash, setSplash] = useState(Boolean(placed));
   const [tipMsg, setTipMsg] = useState<string | null>(null);
@@ -272,9 +272,9 @@ function Track() {
 
             {showJourney ? (
               <ol className="grid grid-cols-5 gap-1" aria-label="Order progress">
-                {["Order placed", "Preparing", "Picked up", "On the way", "Delivered"].map((label, index) => {
-                  const current = order.status === "DELIVERED" || (index < 2 ? stepIndex >= index : isOnTheWay && index < 4);
-                  return <li key={label} className={`rounded-md px-1 py-2 text-center text-[9px] font-bold ${current ? "bg-brand-soft text-primary" : "bg-muted text-muted-foreground"}`}><span className="mx-auto mb-1 block h-1.5 w-1.5 rounded-full bg-current" />{label}</li>;
+                {["Preparing", "Picked up", "On the way", "Delivered"].map((label, index) => {
+                  const current = stepIndex >= [1, 2, 5, 6][index]!;
+                  return <li key={label} className={`rounded-xl px-1 py-2 text-center text-[9px] font-bold ${current ? "bg-brand-soft text-primary" : "bg-muted text-muted-foreground"}`}><span className="mx-auto mb-1 block h-1.5 w-1.5 rounded-full bg-current" />{label}</li>;
                 })}
               </ol>
             ) : null}
@@ -334,15 +334,27 @@ function Track() {
       ) : null}
 
       {splash ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-primary text-primary-foreground">
-          <div className="animate-pulse text-center">
-            <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-white/20">
-              <svg viewBox="0 0 24 24" className="h-10 w-10" fill="none" stroke="currentColor" strokeWidth="2.4">
-                <path d="M4 12.5l5 5L20 7" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+        <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-[#FAF7F2] px-5 py-8 text-foreground">
+          <div className="relative w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-sm">
+            <span className="absolute left-[14%] top-7 h-2 w-2 rounded-full bg-[#FF5A1F]" />
+            <span className="absolute right-[17%] top-12 h-2.5 w-2.5 rounded-full bg-[#FFC857]" />
+            <span className="absolute left-[22%] top-24 h-1.5 w-1.5 rounded-full bg-[#75B798]" />
+            <span className="absolute right-[23%] top-28 h-2 w-2 rounded-full bg-[#FF8B5E]" />
+            <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-[#E8F5EC] text-[#16803C]">
+              <Check className="h-10 w-10" strokeWidth={3} />
             </div>
-            <p className="mt-4 text-lg font-extrabold">Order placed successfully</p>
-            <p className="text-xs opacity-90">Order #{order.code} · {vendor?.stall_name ?? "Your local stall"}</p>
+            <p className="mt-5 text-xl font-extrabold">Order placed successfully</p>
+            <p className="mt-1 text-sm text-muted-foreground">Your local favourite is on its way.</p>
+            <p className="mt-4 inline-flex rounded-full bg-[#FFF0E9] px-4 py-2 text-xs font-extrabold text-primary">Order #{order.code}</p>
+            <div className="mt-4 rounded-2xl bg-[#FAF7F2] p-3 text-left">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-muted-foreground">Estimated arrival</p>
+              <p className="mt-1 text-sm font-bold">{eta == null ? "Calculating your live route…" : `About ${Math.max(1, Math.round(eta))} minutes`}</p>
+            </div>
+            <div className="mt-3 rounded-2xl border border-border p-3 text-left">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-muted-foreground">Delivering to</p>
+              <p className="mt-1 text-sm font-bold">{order.address_line}</p>
+            </div>
+            <button type="button" onClick={() => setSplash(false)} className="mt-4 w-full rounded-2xl bg-primary px-4 py-3 text-sm font-extrabold text-white">Track your order</button>
           </div>
         </div>
       ) : null}

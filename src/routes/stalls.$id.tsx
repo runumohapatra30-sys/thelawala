@@ -366,11 +366,11 @@ function ItemRow({
             onClick={(event) => event.stopPropagation()}
             className="relative max-h-[92dvh] w-full max-w-[460px] overflow-y-auto rounded-t-3xl bg-card shadow-2xl sm:rounded-3xl"
           >
-            <div className="relative aspect-[4/3] max-h-72 overflow-hidden bg-brand-soft">
+            <div className="relative flex h-64 items-center justify-center bg-[#FAF7F2]">
               <img
                 src={i.photo_url || foodImage(i.name)}
                 alt={i.name}
-                className="h-full w-full object-cover"
+                className="h-52 w-52 rounded-full object-cover shadow-lg ring-4 ring-white"
               />
               <button
                 type="button"
@@ -381,15 +381,15 @@ function ItemRow({
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="space-y-3 px-5 pb-5 pt-4">
+            <div className="relative -mt-7 space-y-3 rounded-t-3xl bg-card px-5 pb-5 pt-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-muted-foreground">{stallName}</p>
-                  <h2 id={`item-${i.id}-title`} className="mt-1 text-xl font-black text-foreground">
+                  <h2 id={`item-${i.id}-title`} className="mt-1 text-2xl font-black text-foreground">
                     {i.name}
                   </h2>
                 </div>
-                <p className="shrink-0 text-lg font-black text-primary">
+                <p className="shrink-0 text-xl font-black text-primary">
                   {inr(price)}{" "}
                   {price < listPrice ? (
                     <span className="block text-xs font-medium text-muted-foreground line-through">
@@ -401,8 +401,8 @@ function ItemRow({
               <p className="text-sm leading-relaxed text-muted-foreground">
                 {i.details || "This stall has not added a description for this item."}
               </p>
-              <div className="flex items-center justify-between gap-3 border-y border-border py-3">
-                <span className="text-xs font-semibold text-muted-foreground">
+              <div className="flex items-center gap-2 border-y border-border py-3">
+                <span className="rounded-full bg-brand-soft px-3 py-1.5 text-xs font-extrabold text-primary">
                   {i.unit || "Portion"}
                 </span>
                 <span
@@ -451,9 +451,9 @@ function ItemRow({
                 type="button"
                 disabled={!available}
                 onClick={addItem}
-                className="min-h-12 rounded-xl bg-primary px-3 text-sm font-black text-primary-foreground disabled:opacity-50"
+                className="min-h-12 rounded-2xl border border-primary bg-white px-3 text-sm font-black text-primary disabled:opacity-50"
               >
-                Add to cart
+                Add To Cart
               </button>
               <button
                 type="button"
@@ -464,9 +464,9 @@ function ItemRow({
                     void navigate({ to: "/cart" });
                   }
                 }}
-                className="min-h-12 rounded-xl bg-[#0F4C3A] px-3 text-sm font-black text-white disabled:opacity-50"
+                className="min-h-12 rounded-2xl bg-primary px-3 text-sm font-black text-primary-foreground disabled:opacity-50"
               >
-                Buy now
+                Buy Now
               </button>
             </div>
           </section>

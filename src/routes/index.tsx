@@ -369,12 +369,12 @@ function Home() {
             const off = vendorOffer[i.vendor_id] ?? 0;
             const offerPrice = off > 0 ? Math.round(shownPrice * (100 - off)) / 100 : shownPrice;
             return (
-              <div key={i.id} style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }} className="press rise-in overflow-visible rounded-2xl bg-white p-2 shadow-card hover:-translate-y-0.5">
-                <div className={`product-tile relative aspect-square overflow-visible ${PRODUCT_TINTS[idx % PRODUCT_TINTS.length]}`}>
+              <div key={i.id} style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }} className="press rise-in overflow-visible rounded-3xl border border-border bg-white p-2.5 shadow-sm hover:-translate-y-0.5">
+                <div className={`product-tile relative aspect-square overflow-visible rounded-3xl ${PRODUCT_TINTS[idx % PRODUCT_TINTS.length]}`}>
                   <img
                     src={i.photo_url ?? foodImage(i.name)}
                     alt={i.name}
-                    className="h-full w-full rounded-2xl object-contain p-2"
+                    className="h-full w-full rounded-3xl object-cover"
                   />
                   {off > 0 ? (
                     <span className="absolute left-2 top-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-extrabold text-primary-foreground shadow-md">
@@ -405,7 +405,7 @@ function Home() {
                     <button
                       onClick={() => add(i)}
                       aria-label={`Add ${i.name}`}
-                      className="press absolute -bottom-3 right-2 z-20 grid h-8 w-8 place-items-center rounded-full border border-primary bg-white text-primary shadow-sm"
+                      className="press absolute -bottom-3 right-2 z-20 grid h-9 w-9 place-items-center rounded-full bg-primary text-white shadow-sm"
                     >
                       <Plus className="h-4 w-4" strokeWidth={2.4} />
                     </button>
@@ -498,7 +498,7 @@ function Home() {
         )}
         {vendors.length > 0 ? (
           <section className="px-5 pt-2">
-            <h2 className="font-display text-2xl text-primary">All stalls</h2>
+              <h2 className="font-display text-2xl text-foreground">All stalls</h2>
             <p className="mt-0.5 text-xs font-medium text-muted-foreground">Discover local stalls near you</p>
             <div className="mt-3 flex snap-x gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {vendors.map((v) => (

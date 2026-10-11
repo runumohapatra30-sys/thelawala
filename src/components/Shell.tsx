@@ -45,7 +45,7 @@ export function Shell({ children, hideNavigation = false }: { children: ReactNod
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto min-h-screen w-full max-w-[520px] bg-background pb-36 shadow-[0_0_48px_color-mix(in_oklab,var(--color-primary)_10%,transparent)]">
+      <div className="mx-auto min-h-screen w-full max-w-[520px] bg-background pb-36 shadow-[0_0_48px_color-mix(in_oklab,var(--color-foreground)_8%,transparent)]">
         {children}
       </div>
       {!hideNavigation ? <nav className="fixed inset-x-0 bottom-3 z-40 mx-auto grid w-[calc(100%-24px)] max-w-[480px] grid-cols-5 items-end rounded-full border border-border bg-card/95 px-2 py-2 shadow-[0_18px_45px_-20px_color-mix(in_oklab,var(--color-primary)_35%,transparent)] backdrop-blur-xl">
@@ -135,7 +135,7 @@ export function LoginButton({
 
 export function PortalHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <header className="brand-header sticky top-0 z-30 rounded-b-[2.25rem] px-4 pb-5 pt-4 shadow-[0_18px_34px_-24px_color-mix(in_oklab,var(--color-primary)_45%,transparent)]">
+    <header className="sticky top-0 z-30 border-b border-border bg-background px-4 pb-4 pt-4">
       <div className="flex items-center gap-3">
         <Link
           to="/"
