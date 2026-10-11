@@ -19,7 +19,7 @@ export const fetchHomeBanners = createServerFn({ method: "GET" }).handler(async 
   const { data, error } = await client.from("app_dynamic_banners")
     .select("id,media_type,media_url,media_path,target_route,height_px,aspect_ratio,border_radius,is_active,display_order,banner_format,grid_image_urls,title,subtitle,badge,theme_color,starts_at,ends_at")
     .eq("is_active", true).order("display_order").order("created_at");
-  if (error) throw new Error("Promotions could not load. Please try again.");
+  if (error) return [];
   return (data ?? []).map((row) => ({ ...row,
     media_type: row.media_type === "video" ? "video" : "image",
     banner_format: row.banner_format === "SLIM" || row.banner_format === "4_GRID" ? row.banner_format : "HERO",
