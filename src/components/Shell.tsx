@@ -1,21 +1,24 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { CircleUserRound, Grid2X2, House, Play, RotateCcw } from "lucide-react";
+import { CircleUserRound, Grid2X2, House, ReceiptText, ShoppingCart } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { GUEST_PROFILE_EVENT, LoginModal, OPEN_LOGIN_EVENT } from "@/components/LoginModal";
 import { useSession } from "@/lib/session";
+import { useCart } from "@/lib/cart";
 
 const NAV = [
-  { to: "/", label: "Today", Icon: House },
-  { to: "/categories", label: "Aisles", Icon: Grid2X2 },
-  { to: "/", label: "Finds", Icon: Play },
-  { to: "/orders", label: "Reorder", Icon: RotateCcw },
+  { to: "/", label: "Home", Icon: House },
+  { to: "/categories", label: "Explore", Icon: Grid2X2 },
+  { to: "/cart", label: "Cart", Icon: ShoppingCart },
+  { to: "/orders", label: "Orders", Icon: ReceiptText },
   { to: "/profile", label: "Profile", Icon: CircleUserRound },
 ];
 
 export function Shell({ children, hideNavigation = false }: { children: ReactNode; hideNavigation?: boolean }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { user } = useSession();
+  const cartLines = useCart();
+  const cartCount = cartLines.reduce((total, line) => total + line.qty, 0);
   const [loginOpen, setLoginOpen] = useState(false);
   const [guestProfile, setGuestProfile] = useState(() => ({
     name: typeof window === "undefined" ? "" : localStorage.getItem("thelawala.guest_name") || "",
@@ -48,11 +51,9 @@ export function Shell({ children, hideNavigation = false }: { children: ReactNod
       {!hideNavigation ? <nav className="fixed inset-x-0 bottom-3 z-40 mx-auto grid w-[calc(100%-24px)] max-w-[480px] grid-cols-5 items-end rounded-full border border-border bg-card/95 px-2 py-2 shadow-[0_18px_45px_-20px_color-mix(in_oklab,var(--color-primary)_35%,transparent)] backdrop-blur-xl">
         {NAV.map((n) => {
           const active =
-            n.label === "Today"
+            n.label === "Home"
               ? path === "/"
-              : n.label === "Finds"
-                ? false
-                : path.startsWith(n.to);
+              : path.startsWith(n.to);
           return (
             <Link
               key={n.label}
@@ -66,7 +67,7 @@ export function Shell({ children, hideNavigation = false }: { children: ReactNod
               className="press flex min-w-0 flex-col items-center gap-1"
             >
               <span
-                className={`grid h-10 w-12 place-items-center rounded-full transition-all ${n.label === "Finds" ? "-mt-5 h-12 w-12 border-4 border-background bg-[url('/food/food-roll.jpg')] bg-cover bg-center text-primary-foreground shadow-[0_10px_22px_-10px_color-mix(in_oklab,var(--color-primary)_85%,transparent)]" : active ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                className={`relative grid h-10 w-12 place-items-center rounded-full transition-all ${active ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
               >
                 {n.label === "Profile" && user?.user_metadata?.["avatar_url"] ? (
                   <img
@@ -77,10 +78,15 @@ export function Shell({ children, hideNavigation = false }: { children: ReactNod
                 ) : (
                   <n.Icon className="h-5 w-5" strokeWidth={2} />
                 )}
+                {n.label === "Cart" && cartCount > 0 ? (
+                  <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#5B9BD5] px-1 text-[9px] font-black text-white">
+                    {cartCount > 99 ? "99+" : cartCount}
+                  </span>
+                ) : null}
               </span>
               <span
                 className={`truncate text-[9px] font-extrabold uppercase ${
-                  active || n.label === "Finds" ? "text-foreground" : "text-muted-foreground"
+                  active ? "text-primary" : "text-muted-foreground"
                 }`}
               >
                 {n.label === "Profile" && displayName ? displayName : n.label}

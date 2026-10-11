@@ -37,6 +37,8 @@ type Props = {
   onRemove: (itemId: string) => void;
   onViewDeals: () => void;
   onInternalRoute: (route: string) => void;
+  displayName?: string | null | undefined;
+  avatarUrl?: string | null | undefined;
 };
 
 export function PremiumHome({
@@ -58,6 +60,8 @@ export function PremiumHome({
   onRemove,
   onViewDeals,
   onInternalRoute,
+  displayName,
+  avatarUrl,
 }: Props) {
   const reduceMotion = useReducedMotion();
   const [suggestionIndex, setSuggestionIndex] = useState(0);
@@ -96,7 +100,7 @@ export function PremiumHome({
 
   return (
     <>
-      <LiveHomeHeader address={address} balance={balance} query={query} onQueryChange={onQueryChange} voiceSearch={voiceSearch} onInternalRoute={onInternalRoute} categories={categories} activeCategoryId={activeCategoryId} onCategoryChange={onCategoryChange} />
+      <LiveHomeHeader address={address} balance={balance} displayName={displayName} avatarUrl={avatarUrl} query={query} onQueryChange={onQueryChange} voiceSearch={voiceSearch} onInternalRoute={onInternalRoute} categories={categories} activeCategoryId={activeCategoryId} onCategoryChange={onCategoryChange} />
 
       <section className="px-4 pb-2 pt-3">
         <div className="grid grid-cols-2 gap-3">
@@ -145,7 +149,7 @@ export function PremiumHome({
         <motion.div initial={reduceMotion ? false : { y: 28, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="fixed inset-x-0 bottom-[98px] z-40 mx-auto w-full max-w-[480px] px-3">
           <Link to="/cart" className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-primary/20 bg-primary px-3 py-2.5 text-primary-foreground shadow-[0_18px_38px_-16px_var(--color-primary)]">
             <span className="flex -space-x-2">{lines.slice(0, 3).map((line) => <img key={line.itemId} src={line.photo ?? "/food/food-tiffin.jpg"} alt="" className="h-8 w-8 rounded-full border-2 border-primary-foreground object-cover" />)}</span>
-            <span className="min-w-0"><span className="block text-[10px] font-black uppercase">{lines.reduce((total, line) => total + line.qty, 0)} items in cart</span><span className="block truncate text-[10px] font-semibold opacity-75">Ready in about 15 minutes</span></span>
+            <span className="min-w-0"><span className="block text-[10px] font-black uppercase">{lines.reduce((total, line) => total + line.qty, 0)} items in cart</span><span className="block truncate text-[10px] font-semibold opacity-75">From your local stall</span></span>
             <span className="flex items-center gap-1 rounded-xl bg-card px-3 py-2 text-[10px] font-black text-primary"><ShoppingBag className="h-3.5 w-3.5" /> View</span>
           </Link>
         </motion.div>

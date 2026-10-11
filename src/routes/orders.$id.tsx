@@ -20,7 +20,7 @@ export const Route = createFileRoute("/orders/$id")({
       { title: "Track your order — ThelaWala" },
       { name: "description", content: "Live map tracking, delivery OTP, rider details and bill for your ThelaWala order." },
       { property: "og:title", content: "Track your order — ThelaWala" },
-      { property: "og:description", content: "Watch your street food arrive in 15 minutes." },
+      { property: "og:description", content: "Follow your order status and delivery route in real time." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -41,7 +41,7 @@ type Order = {
   id: string; code: string; status: string; grand_total: number; food_total: number;
   delivery_fee: number; platform_fee: number; handling_fee: number; packing_fee: number;
   surge_fee: number; penalty_fee: number; distance_km: number; delivery_otp: string;
-  drop_lat: number; drop_lng: number; vendor_id: string; partner_id: string | null;
+  drop_lat: number | null; drop_lng: number | null; vendor_id: string; partner_id: string | null;
   payment_mode: string; address_line: string; proof_photo_url: string | null; created_at: string;
   payment_status: string; wallet_paid: number; cancel_reason: string | null; tip_amount: number;
   cancel_otp: string | null;
@@ -49,13 +49,22 @@ type Order = {
 
 const TIPS = [20, 30, 50];
 
+function hasCoordinates(lat: number | null | undefined, lng: number | null | undefined) {
+  if (lat == null || lng == null) return false;
+  const latitude = Number(lat);
+  const longitude = Number(lng);
+  return Number.isFinite(latitude) && Number.isFinite(longitude) &&
+    Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180 &&
+    (latitude !== 0 || longitude !== 0);
+}
+
 function Track() {
   const { id } = Route.useParams();
   const { user } = useSession();
   const { placed } = Route.useSearch();
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<{ id: string; name: string; qty: number; price: number; photo_url: string | null }[]>([]);
-  const [vendor, setVendor] = useState<{ stall_name: string; lat: number; lng: number; mobile: string | null } | null>(null);
+  const [vendor, setVendor] = useState<{ stall_name: string; lat: number | null; lng: number | null; mobile: string | null } | null>(null);
   const [deals, setDeals] = useState<{ id: string; name: string; photo_url: string | null; unit: string | null; price: number; mrp: number }[]>([]);
   const [rider, setRider] = useState<{ name: string; mobile: string | null; lat: number | null; lng: number | null } | null>(null);
   const [eta, setEta] = useState<number | null>(null);
@@ -199,64 +208,73 @@ function Track() {
   const stepIndex = FLOW.indexOf(order.status);
   const cancellable = ["ORDER_PLACED", "PREPARING"].includes(order.status);
   const live = !["DELIVERED", "CANCELLED"].includes(order.status);
-  const etaMinutes = eta ? Math.max(5, Math.round(eta)) : 11;
+  const etaMinutes = eta == null ? null : Math.max(0, Math.round(eta));
   const isOnTheWay = order.status === "OUT_FOR_DELIVERY";
   const trackingStatus = isOnTheWay ? "Out for delivery" : "Order getting packed!";
+  const vendorPoint = vendor && hasCoordinates(vendor.lat, vendor.lng)
+    ? { lat: Number(vendor.lat), lng: Number(vendor.lng) }
+    : null;
+  const destinationPoint = hasCoordinates(order.drop_lat, order.drop_lng)
+    ? { lat: Number(order.drop_lat), lng: Number(order.drop_lng) }
+    : null;
+  const riderPoint = rider && hasCoordinates(rider.lat, rider.lng)
+    ? { lat: Number(rider.lat), lng: Number(rider.lng) }
+    : null;
 
   if (live) {
     return (
       <Shell>
-        <div className="fixed inset-0 z-[50] overflow-hidden bg-[#EBECEF]">
-          {vendor ? (
+        <div className="fixed inset-0 z-[50] overflow-hidden bg-muted">
+          {vendorPoint && destinationPoint ? (
             <LiveMap
-              from={{ lat: Number(vendor.lat), lng: Number(vendor.lng) }}
-              to={{ lat: Number(order.drop_lat), lng: Number(order.drop_lng) }}
-              rider={rider?.lat != null && rider.lng != null ? { lat: Number(rider.lat), lng: Number(rider.lng) } : null}
+              from={vendorPoint}
+              to={destinationPoint}
+              rider={riderPoint}
               onEta={(minutes) => setEta(minutes)}
               className="absolute inset-0 h-full w-full !rounded-none"
             />
           ) : (
-            <div className="absolute inset-0 grid place-items-center text-sm font-semibold text-muted-foreground">Loading your stall and delivery map…</div>
+            <div className="absolute inset-0 grid place-items-center px-6 text-center text-sm font-semibold text-muted-foreground">Live map is unavailable. Your latest order status is shown below.</div>
           )}
 
-          <motion.header initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 mx-auto flex max-w-[480px] items-center gap-3 rounded-xl border border-[#EBECEF] bg-white/95 p-3 shadow-xl backdrop-blur">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#E8F5E9] text-[#0C831F]"><ShoppingBasket className="h-5 w-5" /></span>
+          <motion.header initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 mx-auto flex max-w-[480px] items-center gap-3 rounded-xl border border-border bg-white/95 p-3 shadow-xl backdrop-blur">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-soft text-primary"><ShoppingBasket className="h-5 w-5" /></span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-black text-[#111827]">Arriving in {etaMinutes} mins</p>
-              <p className="truncate text-[11px] font-medium text-[#6B7280]">{isOnTheWay ? "Your order is out for delivery" : "Your order is getting packed"}</p>
+              <p className="truncate text-sm font-black text-foreground">{etaMinutes == null ? STATUS_LABEL[order.status] ?? order.status : `Arriving in ${etaMinutes} mins`}</p>
+              <p className="truncate text-[11px] font-medium text-muted-foreground">{isOnTheWay ? "Your order is out for delivery" : "Your order is getting packed"}</p>
             </div>
-            <button type="button" onClick={() => setShowJourney((visible) => !visible)} aria-expanded={showJourney} className="shrink-0 rounded-lg border border-[#0052FF] px-3 py-2 text-[10px] font-black text-[#0052FF]">TRACK ORDER</button>
+            <button type="button" onClick={() => setShowJourney((visible) => !visible)} aria-expanded={showJourney} className="shrink-0 rounded-lg border border-primary px-3 py-2 text-[10px] font-black text-primary">TRACK ORDER</button>
           </motion.header>
 
           <motion.section initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} id="tracking-status" className="absolute inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-10 mx-auto max-h-[58dvh] max-w-[480px] space-y-3 overflow-y-auto rounded-2xl border border-[#EBECEF] bg-white p-4 shadow-2xl">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-wide text-[#0C831F]">{vendor?.stall_name ?? "ThelaWala"}</p>
-                <h1 className="mt-1 text-lg font-black text-[#111827]">{trackingStatus}</h1>
-                <p className="mt-0.5 text-xs text-[#6B7280]">{isOnTheWay ? "Your order is on the way." : "Your food is being packed at the stall."}</p>
+                <p className="text-[10px] font-black uppercase tracking-wide text-primary">{vendor?.stall_name ?? "ThelaWala"}</p>
+                <h1 className="mt-1 text-lg font-black text-foreground">{placed ? "Order placed successfully" : trackingStatus}</h1>
+                <p className="mt-0.5 text-xs text-muted-foreground">{isOnTheWay ? "Your order is on the way." : "Your food is being packed at the stall."}</p>
               </div>
-              <span className="flex shrink-0 items-center gap-1 rounded-lg bg-[#E8F5E9] px-2.5 py-2 text-xs font-black text-[#0C831F]"><Clock3 className="h-3.5 w-3.5" />{etaMinutes} min</span>
+              {etaMinutes != null ? <span className="flex shrink-0 items-center gap-1 rounded-lg bg-brand-soft px-2.5 py-2 text-xs font-black text-primary"><Clock3 className="h-3.5 w-3.5" />{etaMinutes} min</span> : null}
             </div>
 
             <div className="flex items-center gap-3 border-y border-[#EBECEF] py-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#F8F9FA] text-[#0C831F]"><Bike className="h-5 w-5" /></span>
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-muted text-primary"><Bike className="h-5 w-5" /></span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-black text-[#111827]">{vendor?.stall_name ?? "Your food stall"}</p>
-                <p className="text-[10px] text-[#6B7280]">Order #{order.code} · Bhubaneswar</p>
+                <p className="truncate text-xs font-black text-foreground">{vendor?.stall_name ?? "Your food stall"}</p>
+                <p className="text-[10px] text-muted-foreground">Order #{order.code} · {order.address_line}</p>
               </div>
-              {vendor?.mobile ? <a href={`tel:${vendor.mobile}`} aria-label={`Call ${vendor.stall_name}`} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#0C831F] text-white"><PhoneCall className="h-4 w-4" /></a> : null}
+              {vendor?.mobile ? <a href={`tel:${vendor.mobile}`} aria-label={`Call ${vendor.stall_name}`} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground"><PhoneCall className="h-4 w-4" /></a> : null}
               {order.partner_id ? (
-                <button type="button" onClick={() => setChatOpen((open) => !open)} aria-label={chatOpen ? "Close delivery chat" : "Message delivery partner"} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#EBECEF] text-[#0C831F]"><MessageCircle className="h-4 w-4" /></button>
+                <button type="button" onClick={() => setChatOpen((open) => !open)} aria-label={chatOpen ? "Close delivery chat" : "Message delivery partner"} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border text-primary"><MessageCircle className="h-4 w-4" /></button>
               ) : (
-                <Link to="/support" search={{ order: order.id }} aria-label="Message support about this order" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#EBECEF] text-[#0C831F]"><MessageCircle className="h-4 w-4" /></Link>
+                <Link to="/support" search={{ order: order.id }} aria-label="Message support about this order" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border text-primary"><MessageCircle className="h-4 w-4" /></Link>
               )}
             </div>
 
             {showJourney ? (
-              <ol className="grid grid-cols-4 gap-1" aria-label="Order progress">
-                {["Order placed", "Getting packed", "Out for delivery", "Delivered"].map((label, index) => {
-                  const current = isOnTheWay ? index < 3 : index < 2;
-                  return <li key={label} className={`rounded-md px-1.5 py-2 text-center text-[9px] font-bold ${current ? "bg-[#E8F5E9] text-[#0C831F]" : "bg-[#F8F9FA] text-[#6B7280]"}`}><span className="mx-auto mb-1 block h-1.5 w-1.5 rounded-full bg-current" />{label}</li>;
+              <ol className="grid grid-cols-5 gap-1" aria-label="Order progress">
+                {["Order placed", "Preparing", "Picked up", "On the way", "Delivered"].map((label, index) => {
+                  const current = order.status === "DELIVERED" || (index < 2 ? stepIndex >= index : isOnTheWay && index < 4);
+                  return <li key={label} className={`rounded-md px-1 py-2 text-center text-[9px] font-bold ${current ? "bg-brand-soft text-primary" : "bg-muted text-muted-foreground"}`}><span className="mx-auto mb-1 block h-1.5 w-1.5 rounded-full bg-current" />{label}</li>;
                 })}
               </ol>
             ) : null}
@@ -275,7 +293,7 @@ function Track() {
                       <img src={deal.photo_url ?? "/food/food-tiffin.jpg"} alt={deal.name} className="aspect-square w-full object-cover" />
                       <div className="p-2">
                         <p className="truncate text-[11px] font-bold text-[#111827]">{deal.name}</p>
-                        <p className="text-xs font-black text-[#0C831F]">{inr(Number(deal.price))}</p>
+                        <p className="text-xs font-black text-primary">{inr(Number(deal.price))}</p>
                       </div>
                     </article>
                   ))}
@@ -323,8 +341,8 @@ function Track() {
                 <path d="M4 12.5l5 5L20 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <p className="mt-4 text-lg font-extrabold">Order placed!</p>
-            <p className="text-xs opacity-90">Your thela is getting it ready</p>
+            <p className="mt-4 text-lg font-extrabold">Order placed successfully</p>
+            <p className="text-xs opacity-90">Order #{order.code} · {vendor?.stall_name ?? "Your local stall"}</p>
           </div>
         </div>
       ) : null}

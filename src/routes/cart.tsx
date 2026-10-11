@@ -600,7 +600,7 @@ function Cart() {
             <h1 className="truncate text-lg font-black">Your Cart</h1>
             <p className="truncate text-[11px] text-muted-foreground">{vendor?.stall_name ?? "ThelaWala"} · {lines.reduce((sum, line) => sum + line.qty, 0)} items</p>
           </div>
-            <span className="shrink-0 rounded-full bg-[#E8F5E9] px-3 py-2 text-xs font-black text-[#0C831F]">{inr(savings)} saved!</span>
+            <span className="shrink-0 rounded-full bg-brand-soft px-3 py-2 text-xs font-black text-primary">{inr(savings)} saved!</span>
         </div>
       </header>
       <div className="space-y-3 bg-muted/45 p-3 pb-48">
@@ -621,7 +621,7 @@ function Cart() {
 
         <div className="card-soft rise-in p-4">
           <div className="flex items-center justify-between border-b border-dashed border-border pb-3">
-            <p className="text-base font-black">15 mins <span className="ml-1 rounded-full bg-brand px-2 py-1 text-[10px] text-primary">⚡ Superfast</span></p>
+            <p className="text-base font-black">Your local order</p>
             <span className="text-xs text-muted-foreground">{lines.reduce((sum, line) => sum + line.qty, 0)} items</span>
           </div>
           <div className="mt-3 space-y-3">
@@ -696,7 +696,7 @@ function Cart() {
                           mrp: Number(item.mrp),
                         })
                       }
-                      className="press absolute bottom-2 right-2 grid h-9 w-9 place-items-center rounded-full bg-[#0052FF] text-white shadow-card"
+                      className="press absolute bottom-2 right-2 grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground shadow-card"
                     >
                       <Plus className="h-5 w-5" strokeWidth={2.4} />
                     </button>
@@ -1007,16 +1007,16 @@ function Cart() {
 
       <div className="fixed inset-x-0 bottom-[92px] z-40 mx-auto w-full max-w-[520px]">
         <div className="border-t border-border bg-white p-3 shadow-[0_-10px_30px_rgba(17,24,39,0.1)]">
-          <button type="button" onClick={() => setCheckoutStep("payment")} className="mb-2 flex w-full items-center gap-3 rounded-lg border border-[#EBECEF] bg-[#F8F9FA] px-3 py-2.5 text-left">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#E8F5E9] text-[#0C831F]"><Banknote className="h-5 w-5" /></span>
+          <button type="button" onClick={() => setCheckoutStep("payment")} className="mb-2 flex w-full items-center gap-3 rounded-lg border border-border bg-muted px-3 py-2.5 text-left">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-soft text-primary"><Banknote className="h-5 w-5" /></span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-xs font-black">{payment === "COD" ? "Cash/Pay on Delivery" : onlineMethod === "UPI" ? "UPI payment" : "Credit or debit card"}</span>
               <span className="block truncate text-[10px] text-muted-foreground">{payment === "COD" ? "Pay cash at the time of delivery." : `Pay securely with ${settings?.payment_gateway ?? "online payment"}.`}</span>
             </span>
-            <span className="flex shrink-0 items-center gap-0.5 text-[11px] font-black text-[#0C831F]">Change <ChevronRight className="h-3.5 w-3.5" /></span>
+            <span className="flex shrink-0 items-center gap-0.5 text-[11px] font-black text-primary">Change <ChevronRight className="h-3.5 w-3.5" /></span>
           </button>
           {blockedReason ? <p className="px-1 pb-2 text-[11px] font-bold text-destructive">{blockedReason}</p> : null}
-          <button disabled={busy || !!blockedReason || !hasLocation} onClick={() => void place()} className="press flex w-full items-center justify-between gap-3 rounded-xl bg-[#0052FF] px-4 py-4 text-left text-white shadow-md disabled:opacity-50">
+          <button disabled={busy || !!blockedReason || !hasLocation} onClick={() => void place()} className="press flex w-full items-center justify-between gap-3 rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-md disabled:opacity-50">
             <span className="flex items-center gap-2"><ChevronsRight className="h-5 w-5" /><span className="text-sm font-black">{busy ? "Placing your order…" : payment === "COD" ? "Place Cash Order" : `Pay with ${onlineMethod}`}</span></span>
             <span className="shrink-0 text-base font-black">{bill ? inr(payable) : "—"}</span>
           </button>
@@ -1044,10 +1044,6 @@ function Cart() {
                   {form.landmark ? <p className="truncate text-[11px] text-muted-foreground">{form.landmark}</p> : null}
                 </div>
                 <button type="button" onClick={() => { setCheckoutStep("cart"); setTimeout(() => document.getElementById("delivery-details")?.scrollIntoView({ behavior: "smooth" }), 0); }} className="text-xs font-black text-primary">Edit</button>
-              </div>
-              <div className="flex items-center justify-between border-t border-border pt-3">
-                <span className="text-xs font-semibold text-muted-foreground">Delivery estimate</span>
-                <span className="rounded-full bg-brand px-3 py-1.5 text-xs font-black text-brand-foreground">10–15 mins</span>
               </div>
             </section>
 
@@ -1120,24 +1116,24 @@ function Cart() {
             {placementStage === "placing" ? (
               <motion.div initial={{ y: 10, scale: 0.97 }} animate={{ y: 0, scale: 1 }} className="w-full max-w-sm">
                 <div className="relative mx-auto grid h-40 w-40 place-items-center rounded-full">
-                  <motion.span animate={{ rotate: 360 }} transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }} className="absolute inset-0 rounded-full border-[5px] border-[#EBECEF] border-t-[#0052FF]" />
-                  <motion.span animate={{ scale: [1, 1.55], opacity: [0.55, 0] }} transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut" }} className="absolute h-16 w-16 rounded-full border-2 border-[#0052FF]" />
-                  <span className="relative z-10 grid h-16 w-16 place-items-center rounded-full bg-white text-[#111827]">
+                  <motion.span animate={{ rotate: 360 }} transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }} className="absolute inset-0 rounded-full border-[5px] border-border border-t-primary" />
+                  <motion.span animate={{ scale: [1, 1.55], opacity: [0.55, 0] }} transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut" }} className="absolute h-16 w-16 rounded-full border-2 border-primary" />
+                  <span className="relative z-10 grid h-16 w-16 place-items-center rounded-full bg-white text-foreground">
                     <MapPin className="h-9 w-9" strokeWidth={2.5} />
                   </span>
                 </div>
-                <p className="mt-7 text-sm font-bold text-[#111827]">Placing order to</p>
-                <h2 className="mt-1 text-2xl font-black text-[#0052FF]">Bhubaneswar</h2>
-                <p className="mt-2 text-sm leading-relaxed text-[#6B7280]">{[form.line, form.landmark, form.pincode].filter(Boolean).join(", ")}</p>
+                <p className="mt-7 text-sm font-bold text-foreground">Placing order to</p>
+                <h2 className="mt-1 text-2xl font-black text-primary">Bhubaneswar</h2>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{[form.line, form.landmark, form.pincode].filter(Boolean).join(", ")}</p>
               </motion.div>
             ) : (
               <motion.div initial={{ y: 18, scale: 0.82 }} animate={{ y: 0, scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }} className="w-full max-w-sm">
-                <motion.span initial={{ scale: 0.6 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 320, damping: 18 }} className="mx-auto grid h-28 w-28 place-items-center rounded-full bg-[#0052FF] text-white shadow-[0_18px_50px_rgba(0,82,255,0.25)]">
+                <motion.span initial={{ scale: 0.6 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 320, damping: 18 }} className="mx-auto grid h-28 w-28 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_18px_50px_rgba(10,77,60,0.25)]">
                   <Check className="h-14 w-14" strokeWidth={3} />
                 </motion.span>
-                <p className="mt-7 text-sm font-semibold text-[#111827]">Order placed for</p>
-                <h2 className="mt-1 text-2xl font-black text-[#0052FF]">Bhubaneswar</h2>
-                <p className="mt-2 text-sm leading-relaxed text-[#6B7280]">{[form.line, form.landmark, form.pincode].filter(Boolean).join(", ")}</p>
+                <p className="mt-7 text-sm font-semibold text-foreground">Order placed for</p>
+                <h2 className="mt-1 text-2xl font-black text-primary">Bhubaneswar</h2>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{[form.line, form.landmark, form.pincode].filter(Boolean).join(", ")}</p>
               </motion.div>
             )}
           </motion.div>

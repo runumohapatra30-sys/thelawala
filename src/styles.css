@@ -11,7 +11,7 @@
  * classes (e.g. --color-primary -> bg-primary, text-primary).
  *
  * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
+ * Brand palette values are kept as exact hex tokens to match the approved identity.
  *
  * To add a new semantic color:
  * 1. Add the variable to :root (light value) and .dark (dark value)
@@ -65,6 +65,10 @@
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-brand-soft: var(--brand-soft);
+  --color-sky: var(--sky);
+  --color-cyan: var(--cyan);
+  --color-leaf: var(--leaf);
+  --color-olive: var(--olive);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-festive-header-foreground: var(--festive-header-foreground);
@@ -76,49 +80,53 @@
 
 :root {
   --radius: 0.85rem;
-  --home-theme: #e6f0ea;
-  --background: #f4f7f5;
-  --foreground: #173126;
+  --home-theme: #F8F9FA;
+  --background: #FFFFFF;
+  --foreground: #1E232A;
   --card: #ffffff;
-  --card-foreground: #173126;
+  --card-foreground: #1E232A;
   --popover: #ffffff;
-  --popover-foreground: #173126;
-  --primary: #0f5132;
+  --popover-foreground: #1E232A;
+  --primary: #0A4D3C;
   --primary-foreground: #ffffff;
-  --brand: #e6f0ea;
-  --brand-foreground: #173126;
-  --brand-soft: #eef4f0;
-  --success: #0f5132;
+  --brand: #0F4C3A;
+  --brand-foreground: #ffffff;
+  --brand-soft: #EAF2EE;
+  --success: #0A4D3C;
   --success-foreground: #ffffff;
   --festive-header-foreground: #ffffff;
-  --secondary: #f1f4f2;
-  --secondary-foreground: #173126;
-  --muted: #eef2f0;
-  --muted-foreground: #64706a;
-  --accent: #e5edf0;
-  --accent-foreground: #173126;
+  --secondary: #F8F9FA;
+  --secondary-foreground: #1E232A;
+  --muted: #F8F9FA;
+  --muted-foreground: #718096;
+  --accent: #EAF2EE;
+  --accent-foreground: #1E232A;
   --destructive: #b54a3f;
   --destructive-foreground: #fffdf7;
-  --border: #e5e6dc;
-  --input: #dfe4da;
-  --ring: #00472f;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #0A4D3C;
+  --sky: #5B9BD5;
+  --cyan: #4A90E2;
+  --leaf: #689F38;
+  --olive: #558B2F;
   --tile: #ffffff;
-  --coupon: #fff6d9;
-  --coupon-strong: #f1dfae;
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+  --coupon: #EAF3FA;
+  --coupon-strong: #D5E8F6;
+  --chart-1: #0A4D3C;
+  --chart-2: #5B9BD5;
+  --chart-3: #689F38;
+  --chart-4: #4A90E2;
+  --chart-5: #558B2F;
   --sidebar: #ffffff;
-  --sidebar-foreground: #173126;
-  --sidebar-primary: #00472f;
+  --sidebar-foreground: #1E232A;
+  --sidebar-primary: #0A4D3C;
   --sidebar-primary-foreground: #fffdf7;
-  --sidebar-accent: #e8eee3;
-  --sidebar-accent-foreground: #173126;
-  --sidebar-border: #e5e6dc;
-  --sidebar-ring: #00472f;
-  --shadow-soft: 0 8px 24px rgba(15, 81, 50, 0.06);
+  --sidebar-accent: #EAF2EE;
+  --sidebar-accent-foreground: #1E232A;
+  --sidebar-border: #E2E8F0;
+  --sidebar-ring: #0A4D3C;
+  --shadow-soft: 0 8px 24px rgba(10, 77, 60, 0.07);
 }
 
 
@@ -528,8 +536,8 @@
   --card-foreground: oklch(0.96 0.01 95);
   --popover: oklch(0.22 0.03 160);
   --popover-foreground: oklch(0.96 0.01 95);
-  --primary: oklch(0.85 0.16 92);
-  --primary-foreground: oklch(0.2 0.03 160);
+  --primary: #0A4D3C;
+  --primary-foreground: #FFFFFF;
   --secondary: oklch(0.27 0.03 160);
   --secondary-foreground: oklch(0.96 0.01 95);
   --muted: oklch(0.27 0.03 160);
@@ -538,8 +546,12 @@
   --accent-foreground: oklch(0.96 0.01 95);
   --border: oklch(1 0 0 / 11%);
   --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.85 0.16 92);
-  --brand-soft: oklch(0.32 0.05 96.5);
+  --ring: #5B9BD5;
+  --brand: #0F4C3A;
+  --brand-foreground: #FFFFFF;
+  --brand-soft: #27463B;
+  --success: #689F38;
+  --success-foreground: #FFFFFF;
   --sage: oklch(0.27 0.035 150);
   background: var(--background);
   color: var(--foreground);

@@ -34,9 +34,9 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "ThelaWala — Local Thela, super fast delivery in Bhubaneswar" },
-      { name: "description", content: "Order bhata dali, dahi bara, rolls, chaat, biryani, momo and chai from Bhubaneswar street stalls, delivered in 15 minutes." },
+      { name: "description", content: "Order bhata dali, dahi bara, rolls, chaat, biryani, momo and chai from local Bhubaneswar street stalls." },
       { property: "og:title", content: "ThelaWala — Local Thela | Super Fast Delivery" },
-      { property: "og:description", content: "Hot food from your nearest thela, delivered in 15 minutes across Bhubaneswar." },
+      { property: "og:description", content: "Your local food, delivered fast across Bhubaneswar." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -437,6 +437,8 @@ function Home() {
       <PremiumHome
         address={address}
         balance={balance}
+        displayName={String(user?.user_metadata?.["full_name"] ?? user?.user_metadata?.["name"] ?? "") || null}
+        avatarUrl={String(user?.user_metadata?.["avatar_url"] ?? "") || null}
         categories={cats}
         vendors={vendors}
         items={shown}
@@ -496,8 +498,8 @@ function Home() {
         )}
         {vendors.length > 0 ? (
           <section className="px-5 pt-2">
-            <h2 className="font-display text-2xl text-primary">Your stalls</h2>
-            <p className="mt-0.5 text-xs font-medium text-muted-foreground">Tap a stall to see only their food</p>
+            <h2 className="font-display text-2xl text-primary">All stalls</h2>
+            <p className="mt-0.5 text-xs font-medium text-muted-foreground">Discover local stalls near you</p>
             <div className="mt-3 flex snap-x gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {vendors.map((v) => (
                 <button

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, ChevronRight, Timer } from "lucide-react";
+import { Bike, ChevronRight } from "lucide-react";
 import { STATUS_LABEL } from "@/lib/fees";
 
 export function ActiveOrderTracker({ userId }: { userId?: string }) {
@@ -52,10 +52,6 @@ export function ActiveOrderTracker({ userId }: { userId?: string }) {
                 {order.vendors?.stall_name || "Street Stall"}
               </p>
               <div className="mt-0.5 flex items-center gap-2">
-                <span className="flex items-center gap-1 text-[11px] font-bold">
-                  <Timer className="h-3 w-3" /> 10-15 mins
-                </span>
-                <span className="h-1 w-1 rounded-full bg-white/40" />
                 <span className="text-[11px] font-bold uppercase tracking-tight">
                   {STATUS_LABEL[order.status] || order.status}
                 </span>

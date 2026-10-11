@@ -11,7 +11,7 @@ import {
 import { FestiveSections, type PickItem } from "@/components/FestiveSections";
 import { AdminFestivePhotos } from "@/components/AdminFestivePhotos";
 import {
-  BRAND_YELLOW,
+  BRAND_FOREST,
   THEME_PRESETS,
   THEME_TOKENS,
   activeThemeColor,
@@ -346,7 +346,7 @@ export function ThemeController() {
     setBusy(true);
     const payload = {
       theme_token: cfg.theme_token ?? "DEFAULT_YELLOW",
-      current_bg_color: cfg.current_bg_color || BRAND_YELLOW,
+      current_bg_color: cfg.current_bg_color || BRAND_FOREST,
       temporary_bg_color: cfg.temporary_bg_color || null,
       is_temporary_active: cfg.is_temporary_active,
       temporary_expires_at: cfg.temporary_expires_at || null,
@@ -386,7 +386,7 @@ export function ThemeController() {
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-bold">Home colour &amp; festive banner</p>
         <button
-          onClick={() => setCfg({ ...cfg, current_bg_color: BRAND_YELLOW, temporary_bg_color: null, is_temporary_active: false, temporary_expires_at: null, header_height_px: 220, header_bg_image_url: null, festive_style_active: false })}
+          onClick={() => setCfg({ ...cfg, current_bg_color: BRAND_FOREST, temporary_bg_color: null, is_temporary_active: false, temporary_expires_at: null, header_height_px: 220, header_bg_image_url: null, festive_style_active: false })}
           className="rounded-full border border-border px-3 py-1 text-[11px] font-bold text-muted-foreground"
         >
           Reset default
@@ -412,7 +412,7 @@ export function ThemeController() {
           className={`rounded-xl p-3 ${isDefaultLook ? "brand-header text-brand-foreground" : look.wrapper}`}
         >
           <p className="text-[9px] font-black uppercase tracking-[0.18em] opacity-80">Thaleewala · Delivering in</p>
-          <p className="text-xl font-extrabold">15–20 minutes</p>
+          <p className="text-xl font-extrabold">Local taste · Trusted service</p>
           <p className="truncate text-[10px] font-semibold opacity-80">HOME · Bhubaneswar</p>
           <div className="mt-3 rounded-xl bg-card px-3 py-2 text-[11px] font-semibold text-card-foreground shadow-lg">⌕ Search “dahi bara”</div>
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -480,7 +480,7 @@ export function ThemeController() {
       </div>
       <label className="block">
         <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">Custom colour</span>
-        <input type="color" value={cfg.current_bg_color || BRAND_YELLOW} onChange={(e) => setCfg({ ...cfg, current_bg_color: e.target.value })} className="h-10 w-full rounded-xl border border-border" />
+        <input type="color" value={cfg.current_bg_color || BRAND_FOREST} onChange={(e) => setCfg({ ...cfg, current_bg_color: e.target.value })} className="h-10 w-full rounded-xl border border-border" />
       </label>
 
       <button

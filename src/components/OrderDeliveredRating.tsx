@@ -3,9 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import riderArt from "@/assets/rating-rider.png";
 
-/** Bright ThelaWala-yellow thank-you and rating card shown once an order is delivered. */
+/** Thank-you and rating card shown once an order is delivered. */
 export function OrderDeliveredRating({
-  orderId, userId, vendorId, partnerId, riderName, stallName, deliveredAt, onDone,
+  orderId,
+  userId,
+  vendorId,
+  partnerId,
+  riderName,
+  stallName,
+  deliveredAt,
+  onDone,
 }: {
   orderId: string;
   userId: string | undefined;
@@ -26,7 +33,10 @@ export function OrderDeliveredRating({
     : "just now";
 
   async function submit() {
-    if (!userId || !stars) { toast.error("Please pick a star rating."); return; }
+    if (!userId || !stars) {
+      toast.error("Please pick a star rating.");
+      return;
+    }
     setBusy(true);
     const { error } = await supabase.from("order_ratings").insert({
       order_id: orderId,
@@ -38,15 +48,18 @@ export function OrderDeliveredRating({
       review: review.trim() || null,
     });
     setBusy(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Thanks for rating!");
     onDone();
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#FACC15]">
-      <div className="mx-auto flex min-h-full w-full max-w-[480px] flex-col px-4 pb-6 pt-8 text-neutral-900">
-        <div className="mx-auto rounded-full bg-white/70 px-4 py-1.5 text-xs font-black">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#F8F9FA]">
+      <div className="mx-auto flex min-h-full w-full max-w-[480px] flex-col px-4 pb-6 pt-8 text-foreground">
+        <div className="mx-auto rounded-full bg-brand-soft px-4 py-1.5 text-xs font-black text-primary">
           ✓ Delivered at {time} · {stallName}
         </div>
 
@@ -65,10 +78,8 @@ export function OrderDeliveredRating({
         </p>
 
         <div className="mt-4 rounded-3xl bg-white p-4 shadow-lg">
-          <p className="text-center text-sm font-black">
-            How would you rate your delivery?
-          </p>
-          <p className="mt-0.5 text-center text-[11px] font-semibold text-neutral-500">
+          <p className="text-center text-sm font-black">How would you rate your delivery?</p>
+          <p className="mt-0.5 text-center text-[11px] font-semibold text-muted-foreground">
             by your hunger saviour {riderName}
           </p>
 
@@ -82,17 +93,20 @@ export function OrderDeliveredRating({
             onChange={(e) => setReview(e.target.value)}
             rows={2}
             placeholder="Tell us anything else (optional)"
-            className="mt-3 w-full rounded-2xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-amber-500"
+            className="mt-3 w-full rounded-2xl border border-border px-3 py-2 text-sm outline-none focus:border-primary"
           />
 
           <button
             onClick={submit}
             disabled={busy}
-            className="press mt-3 w-full rounded-2xl bg-amber-500 py-3 text-sm font-black text-white disabled:opacity-50"
+            className="press mt-3 w-full rounded-2xl bg-primary py-3 text-sm font-black text-primary-foreground disabled:opacity-50"
           >
             {busy ? "Saving…" : "Submit rating"}
           </button>
-          <button onClick={onDone} className="mt-2 w-full py-2 text-xs font-bold text-neutral-500">
+          <button
+            onClick={onDone}
+            className="mt-2 w-full py-2 text-xs font-bold text-muted-foreground"
+          >
             Maybe later
           </button>
         </div>
@@ -106,8 +120,15 @@ function Stars({ value, onChange }: { value: number; onChange: (n: number) => vo
     <div className="mt-2 flex justify-center gap-1.5">
       {[1, 2, 3, 4, 5].map((n) => (
         <button key={n} onClick={() => onChange(n)} aria-label={`${n} star`} className="press">
-          <svg viewBox="0 0 24 24" className={`h-9 w-9 ${n <= value ? "fill-amber-400 stroke-amber-500" : "fill-neutral-100 stroke-neutral-300"}`} strokeWidth="1.5">
-            <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9L12 3.5z" strokeLinejoin="round" />
+          <svg
+            viewBox="0 0 24 24"
+            className={`h-9 w-9 ${n <= value ? "fill-[#5B9BD5] stroke-[#4A90E2]" : "fill-muted stroke-border"}`}
+            strokeWidth="1.5"
+          >
+            <path
+              d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9L12 3.5z"
+              strokeLinejoin="round"
+            />
           </svg>
         </button>
       ))}

@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ChevronDown, MapPin, QrCode, Search, Wallet, Zap } from "lucide-react";
+import { Bell, ChevronDown, MapPin, Search, Wallet } from "lucide-react";
 import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { DynamicBanners } from "@/components/DynamicBanners";
@@ -8,11 +8,13 @@ import { useHomeBanners } from "@/lib/homeBanners";
 import type { DynamicBanner } from "@/lib/dynamicBanners";
 import type { StreetFoodCategory } from "@/components/StreetFoodExperience";
 import { inr } from "@/lib/fees";
+import { ThelaLogo } from "@/components/Shell";
 
 const suggestions = ["Khandagiri Dahi Bara", "Gupchup & Chaat", "Egg Chicken Roll", "Evening Hot Pakoda"];
 
-export function LiveHomeHeader({ address, balance, query, onQueryChange, voiceSearch, onInternalRoute, categories, activeCategoryId, onCategoryChange }: {
+export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query, onQueryChange, voiceSearch, onInternalRoute, categories, activeCategoryId, onCategoryChange }: {
   address: string | null; balance: number; query: string; onQueryChange: (query: string) => void;
+  displayName?: string | null | undefined; avatarUrl?: string | null | undefined;
   voiceSearch: ReactNode; onInternalRoute: (route: string) => void;
   categories: StreetFoodCategory[]; activeCategoryId: string | null; onCategoryChange: (categoryId: string | null) => void;
 }) {
@@ -47,7 +49,7 @@ export function LiveHomeHeader({ address, balance, query, onQueryChange, voiceSe
   }, [query, reduceMotion]);
 
   const pill = (isActive: boolean) => `shrink-0 rounded-full border px-3.5 py-2 text-xs font-extrabold transition ${isActive
-    ? "border-foreground bg-foreground text-background shadow-sm"
+    ? "border-[#5B9BD5] bg-[#5B9BD5] text-white shadow-sm"
     : hasBg ? "border-white/30 bg-white/15 text-white backdrop-blur-sm" : "border-border bg-card text-muted-foreground"}`;
 
   return <header data-collapsed={collapsed} style={style} className="home-live-header sticky top-0 z-50 border-b border-border shadow-card transition-colors duration-500">
@@ -62,23 +64,31 @@ export function LiveHomeHeader({ address, balance, query, onQueryChange, voiceSe
       <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-background" />
     </div>}
     <div className={`relative px-4 transition-all duration-500 ${collapsed ? "pb-2 pt-2" : "pb-3 pt-4"}`}>
-      <motion.div initial={false} animate={{ height: collapsed ? 0 : 26, opacity: collapsed ? 0 : 1 }} transition={{ duration: reduceMotion ? 0 : 0.35 }} className="overflow-hidden">
-        <p className={`text-xl font-black leading-none ${hasBg ? "text-white drop-shadow" : "text-primary"}`}>ThelaWala<span className="text-destructive">.</span></p>
-      </motion.div>
+      {!collapsed ? (
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <Link to="/" className="flex min-w-0 items-center gap-2.5" aria-label="ThelaWala home">
+            <ThelaLogo className="h-10 w-10 shrink-0" />
+            <span className="min-w-0">
+              <span className={`block text-lg font-black leading-tight ${hasBg ? "text-white drop-shadow" : "text-primary"}`}>ThelaWala</span>
+              <span className={`block truncate text-[9px] font-extrabold uppercase tracking-[0.1em] ${hasBg ? "text-white/85" : "text-muted-foreground"}`}>Local taste. Trusted service.</span>
+            </span>
+          </Link>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <Button asChild size="icon" variant="outline"><Link to="/notifications" aria-label="Notifications" title="Notifications"><Bell /></Link></Button>
+            <Button asChild size="icon" variant="outline"><Link to="/wallet" aria-label={`Wallet balance ${inr(balance)}`} title={`Wallet ${inr(balance)}`}><Wallet /></Link></Button>
+            <Link to="/profile" aria-label="Your profile" className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full border border-border bg-card text-primary">
+              {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : <span className="text-xs font-black">{displayName?.slice(0, 1).toUpperCase() || "TW"}</span>}
+            </Link>
+          </div>
+        </div>
+      ) : null}
       <div className="mb-3 flex min-w-0 items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="flex shrink-0 items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs font-extrabold text-primary-foreground"><Zap className="h-3 w-3 fill-current" />15 minutes</span>
-            <Button asChild variant="ghost" className={`h-auto min-w-0 p-0 text-xs font-bold hover:bg-transparent ${hasBg ? "text-white" : ""}`}><Link to="/cart" title={address ?? "Choose delivery location"} aria-label="Choose delivery location"><MapPin className="h-3 w-3" /><span className="truncate">Bhubaneswar</span><ChevronDown className="h-3 w-3" /></Link></Button>
-          </div>
-          {!collapsed && <p className={`mt-1 max-w-[260px] truncate text-[10px] font-medium ${hasBg ? "text-white/85" : "text-muted-foreground"}`}>{address ?? "Fresh from your neighbourhood thela"}</p>}
-        </div>
-        <div className="flex shrink-0 gap-1.5">
-          <Button asChild size="icon" variant="outline"><Link to="/categories" aria-label="Browse categories" title="Browse categories"><QrCode /></Link></Button>
-          <Button asChild size="icon"><Link to="/wallet" aria-label={`Wallet balance ${inr(balance)}`} title={`Wallet ${inr(balance)}`}><Wallet /></Link></Button>
+          <p className={`truncate text-sm font-extrabold ${hasBg ? "text-white drop-shadow" : "text-foreground"}`}>{displayName ? `Good to see you, ${displayName.split(" ")[0]}` : "Your Local Food, Delivered Fast"}</p>
+          <Button asChild variant="ghost" className={`mt-1 h-auto min-w-0 max-w-full p-0 text-xs font-bold hover:bg-transparent ${hasBg ? "text-white" : "text-primary"}`}><Link to="/cart" title={address ?? "Choose delivery location"} aria-label="Choose delivery location"><MapPin className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{address ?? "Choose delivery location"}</span><ChevronDown className="h-3 w-3 shrink-0" /></Link></Button>
         </div>
       </div>
-      <label className="flex h-11 min-w-0 items-center rounded-lg border border-border bg-card px-3.5 shadow-card focus-within:ring-2 focus-within:ring-primary/20">
+      <label className="flex h-12 min-w-0 items-center rounded-2xl border border-border bg-card px-3.5 shadow-card focus-within:ring-2 focus-within:ring-primary/20">
         <Search className="mr-2 h-4 w-4 shrink-0 text-primary" />
         <span className="relative h-5 min-w-0 flex-1 overflow-hidden">
           {!query && <AnimatePresence mode="wait"><motion.span key={suggestion} initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -12, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="absolute inset-x-0 truncate text-xs text-muted-foreground">Search “{suggestions[suggestion]}”</motion.span></AnimatePresence>}

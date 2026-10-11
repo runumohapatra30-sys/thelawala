@@ -69,14 +69,14 @@ export function LiveMap({ from, to, rider, fromKind = "stall", onEta, className 
         const route = await fetchRoute(rider ?? from, to);
         if (cancelled) return;
         L.polyline(route.coords, {
-          color: "#BFDBFE",
+          color: "#D5E8F6",
           weight: 10,
           opacity: 0.8,
           lineCap: "round",
           lineJoin: "round",
         }).addTo(map);
         const line = L.polyline(route.coords, {
-          color: "#0052FF",
+          color: "#5B9BD5",
           weight: 5,
           opacity: 0.98,
           dashArray: "8 10",

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export const BRAND_YELLOW = "#FACC15";
+export const BRAND_FOREST = "#0A4D3C";
 
 export type ThemeToken = "SKY_BLUE" | "WARM_OCHRE" | "DEFAULT_YELLOW";
 
@@ -30,23 +30,23 @@ export const THEME_TOKENS: {
   {
     token: "SKY_BLUE",
     label: "Sky Blue",
-    wrapper: "bg-gradient-to-b from-sky-400 via-sky-200 to-sky-100 text-sky-950",
-    card: "bg-sky-200/90 text-sky-900 border border-sky-300",
-    swatch: "linear-gradient(180deg,#38bdf8,#e0f2fe)",
+    wrapper: "bg-gradient-to-b from-[#5B9BD5] via-[#D5E8F6] to-[#F8F9FA] text-[#1E232A]",
+    card: "bg-[#D5E8F6] text-[#1E232A] border border-[#5B9BD5]",
+    swatch: "linear-gradient(180deg,#5B9BD5,#D5E8F6)",
   },
   {
     token: "WARM_OCHRE",
-    label: "Ganesh Ochre",
-    wrapper: "bg-gradient-to-b from-[#6D281D] via-[#991B1B] to-[#B91C1C] text-white",
-    card: "bg-[#FEF3C7] text-[#78350F] border border-amber-200",
-    swatch: "linear-gradient(180deg,#6D281D,#B91C1C)",
+    label: "Leaf Green",
+    wrapper: "bg-gradient-to-b from-[#0F4C3A] via-[#558B2F] to-[#689F38] text-white",
+    card: "bg-white/90 text-[#1E232A] border border-[#E2E8F0]",
+    swatch: "linear-gradient(180deg,#0F4C3A,#689F38)",
   },
   {
     token: "DEFAULT_YELLOW",
-    label: "Default Yellow",
+    label: "Forest Green",
     wrapper: "text-brand-foreground",
     card: "bg-card/85 text-foreground border border-card/60",
-    swatch: BRAND_YELLOW,
+    swatch: BRAND_FOREST,
   },
 ];
 
@@ -55,10 +55,10 @@ export function themeStyle(token: ThemeToken | null | undefined) {
 }
 
 export const THEME_PRESETS: { label: string; color: string }[] = [
-  { label: "Brand Yellow", color: BRAND_YELLOW },
-  { label: "Festive Orange", color: "#FB923C" },
-  { label: "Crimson Red", color: "#DC2626" },
-  { label: "Royal Blue", color: "#2563EB" },
+  { label: "Forest Green", color: BRAND_FOREST },
+  { label: "Sky Blue", color: "#5B9BD5" },
+  { label: "Leaf Green", color: "#689F38" },
+  { label: "Dark Emerald", color: "#0F4C3A" },
 ];
 
 export async function loadThemeConfig(): Promise<ThemeConfig | null> {
@@ -73,11 +73,11 @@ export async function loadThemeConfig(): Promise<ThemeConfig | null> {
 
 /** Colour that should be showing right now, honouring a temporary override window. */
 export function activeThemeColor(cfg: ThemeConfig | null): string {
-  if (!cfg) return BRAND_YELLOW;
+  if (!cfg) return BRAND_FOREST;
   const notExpired =
     !cfg.temporary_expires_at || new Date(cfg.temporary_expires_at).getTime() > Date.now();
   if (cfg.is_temporary_active && cfg.temporary_bg_color && notExpired) return cfg.temporary_bg_color;
-  return cfg.current_bg_color || BRAND_YELLOW;
+  return cfg.current_bg_color || BRAND_FOREST;
 }
 
 /** Live top-bar colour: realtime on admin changes and auto-reverts when the override expires. */

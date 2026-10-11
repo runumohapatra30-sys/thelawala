@@ -59,7 +59,7 @@ export const askSupportBot = createServerFn({ method: "POST" })
     const result = streamText({
       model: gateway("google/gemini-3.8-flash"),
       system: [
-        "You are ThelaWala Care, the support assistant of ThelaWala, a 15-minute street food delivery app in Bhubaneswar.",
+        "You are ThelaWala Care, the support assistant of ThelaWala, a local street-food ordering app in Bhubaneswar.",
         "Answer only about this customer's order, delivery, bill, refund and cancellation. Be warm, short (max 4 sentences), plain English or Odia if the customer writes Odia.",
         "Never invent order facts: use only the order details given below. Never reveal the pickup OTP; the delivery OTP may be shared with this customer only.",
         `Ticket ${ticket.code} · category ${ticket.category}.`,

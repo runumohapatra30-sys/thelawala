@@ -15,7 +15,7 @@ export const Route = createFileRoute("/categories")({
       { title: "All categories — ThelaWala" },
       { name: "description", content: "Browse every ThelaWala category: bhata dali, dahi bara, rolls, chaat, biryani, chicken pakoda, momo and chai." },
       { property: "og:title", content: "All categories — ThelaWala" },
-      { property: "og:description", content: "Pick a category and order from your nearest thela in 15 minutes." },
+      { property: "og:description", content: "Pick a category and discover street food from local stalls." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
