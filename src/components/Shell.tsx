@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { GUEST_PROFILE_EVENT, LoginModal, OPEN_LOGIN_EVENT } from "@/components/LoginModal";
 import { useSession } from "@/lib/session";
 import { useCart } from "@/lib/cart";
+import { useAuthBranding } from "@/lib/authBranding";
 
 const NAV = [
   { to: "/", label: "Home", Icon: House },
@@ -18,6 +19,7 @@ const NAV = [
 export function Shell({ children, hideNavigation = false }: { children: ReactNode; hideNavigation?: boolean }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { user } = useSession();
+  const branding = useAuthBranding();
   const cartLines = useCart();
   const cartCount = cartLines.reduce((total, line) => total + line.qty, 0);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -75,6 +77,13 @@ export function Shell({ children, hideNavigation = false }: { children: ReactNod
                     src={String(user.user_metadata["avatar_url"])}
                     alt=""
                     className="h-full w-full rounded-full object-cover"
+                  />
+                ) : n.label === "Home" && branding.appLogoUrl ? (
+                  <img
+                    src={branding.appLogoUrl}
+                    alt=""
+                    onError={(event) => { event.currentTarget.style.display = "none"; }}
+                    className="h-6 w-6 object-contain"
                   />
                 ) : (
                   <n.Icon className="h-5 w-5" strokeWidth={2} />
@@ -135,6 +144,7 @@ export function LoginButton({
 }
 
 export function PortalHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  const branding = useAuthBranding();
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background px-4 pb-4 pt-4">
       <div className="flex items-center gap-3">
@@ -156,6 +166,14 @@ export function PortalHeader({ title, subtitle }: { title: string; subtitle?: st
           <h1 className="truncate font-display text-3xl leading-none">{title}</h1>
           {subtitle ? <p className="truncate text-xs font-medium opacity-80">{subtitle}</p> : null}
         </div>
+        {branding.appLogoUrl ? (
+          <img
+            src={branding.appLogoUrl}
+            alt=""
+            onError={(event) => { event.currentTarget.style.display = "none"; }}
+            className="h-8 w-8 shrink-0 object-contain"
+          />
+        ) : null}
         <LogoutButton />
       </div>
     </header>

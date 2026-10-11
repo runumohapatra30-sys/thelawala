@@ -370,13 +370,13 @@
 
 .tw-rider-marker {
   display: grid;
-  width: 50px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   place-items: center;
-  border: 3px solid #fff;
-  border-radius: 999px;
-  background: #fff;
-  box-shadow: 0 4px 14px rgba(36, 42, 37, 0.25);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   transition: transform 180ms ease-out;
 }
 

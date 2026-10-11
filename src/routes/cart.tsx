@@ -12,7 +12,7 @@ import { payInAppWithCashfree } from "@/lib/checkout";
 import { codRestrictionUntil } from "@/lib/codPolicy";
 import { useSession } from "@/lib/session";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Banknote, Bike, BellOff, Check, ChevronRight, ChevronsRight, CircleDollarSign, CreditCard, DoorOpen, MapPin, Phone, PhoneOff, Plus, ShieldCheck, ShoppingCart, Smartphone, Tag } from "lucide-react";
+import { ArrowLeft, Banknote, Bike, BellOff, ChevronRight, ChevronsRight, CircleDollarSign, CreditCard, DoorOpen, MapPin, Phone, PhoneOff, Plus, ShieldCheck, ShoppingCart, Smartphone, Tag } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/cart")({
@@ -35,7 +35,7 @@ export const Route = createFileRoute("/cart")({
 
 const otp = () => String(Math.floor(100000 + Math.random() * 900000));
 const pin4 = () => String(Math.floor(Math.random() * 10000)).padStart(4, "0");
-type PlacementStage = "idle" | "placing" | "placed";
+type PlacementStage = "idle" | "placing";
 
 function Cart() {
   const navigate = useNavigate();
@@ -527,9 +527,7 @@ function Cart() {
       return setErr(`Add ${inr(lockedOffer.promotionalMinimum! - regularSubtotal)} more in regular menu items to keep the ₹1 offer.`);
     }
 
-    let placementStartedAt: number | null = null;
     const startPlacement = () => {
-      placementStartedAt = performance.now();
       setPlacementStage("placing");
     };
     setBusy(true);
@@ -677,14 +675,14 @@ function Cart() {
       }
     }
 
-    cart.clear();
-
     setBusy(false);
-    const startedAt = placementStartedAt ?? performance.now();
-    await new Promise((resolve) => setTimeout(resolve, Math.max(0, 2000 - (performance.now() - startedAt))));
-    setPlacementStage("placed");
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    await navigate({ to: "/orders/$id", params: { id: order.id }, search: { placed: 1 } });
+    await navigate({
+      to: "/orders/$id",
+      params: { id: order.id },
+      search: { placed: 1 },
+      replace: true,
+    });
+    cart.clear();
   }
 
   return (
@@ -1262,8 +1260,7 @@ function Cart() {
             className="fixed inset-0 z-[100] grid place-items-center bg-white px-6 text-center"
             aria-live="assertive"
           >
-            {placementStage === "placing" ? (
-              <motion.div initial={{ y: 10, scale: 0.97 }} animate={{ y: 0, scale: 1 }} className="w-full max-w-sm">
+            <motion.div initial={{ y: 10, scale: 0.97 }} animate={{ y: 0, scale: 1 }} className="w-full max-w-sm">
                 <div className="relative mx-auto grid h-40 w-40 place-items-center rounded-full">
                   <motion.span animate={{ rotate: 360 }} transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }} className="absolute inset-0 rounded-full border-[5px] border-border border-t-primary" />
                   <motion.span animate={{ scale: [1, 1.55], opacity: [0.55, 0] }} transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut" }} className="absolute h-16 w-16 rounded-full border-2 border-primary" />
@@ -1274,17 +1271,7 @@ function Cart() {
                 <p className="mt-7 text-sm font-bold text-foreground">Placing order to</p>
                 <h2 className="mt-1 text-2xl font-black text-primary">Bhubaneswar</h2>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{[form.line, form.landmark, form.pincode].filter(Boolean).join(", ")}</p>
-              </motion.div>
-            ) : (
-              <motion.div initial={{ y: 18, scale: 0.82 }} animate={{ y: 0, scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 20 }} className="w-full max-w-sm">
-                <motion.span initial={{ scale: 0.6 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 320, damping: 18 }} className="mx-auto grid h-28 w-28 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_18px_50px_rgba(10,77,60,0.25)]">
-                  <Check className="h-14 w-14" strokeWidth={3} />
-                </motion.span>
-                <p className="mt-7 text-sm font-semibold text-foreground">Order placed for</p>
-                <h2 className="mt-1 text-2xl font-black text-primary">Bhubaneswar</h2>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{[form.line, form.landmark, form.pincode].filter(Boolean).join(", ")}</p>
-              </motion.div>
-            )}
+            </motion.div>
           </motion.div>
         ) : null}
       </AnimatePresence>

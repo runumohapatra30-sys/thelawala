@@ -9,12 +9,16 @@ export type AuthBranding = {
   loginHeroImage: string;
   logoUrl: string;
   brandTitle: string;
+  appLogoUrl: string;
+  stallLogos: Record<string, string>;
 };
 
 export const DEFAULT_AUTH_BRANDING: AuthBranding = {
   loginHeroImage: DEFAULT_LOGIN_HERO,
   logoUrl: "",
   brandTitle: DEFAULT_BRAND_TITLE,
+  appLogoUrl: "",
+  stallLogos: {},
 };
 
 function parseBranding(value: unknown): AuthBranding {
@@ -22,6 +26,15 @@ function parseBranding(value: unknown): AuthBranding {
     return DEFAULT_AUTH_BRANDING;
   }
   const config = value as Record<string, unknown>;
+  const rawStallLogos = config["stallLogos"];
+  const stallLogos =
+    typeof rawStallLogos === "object" && rawStallLogos !== null && !Array.isArray(rawStallLogos)
+      ? Object.fromEntries(
+          Object.entries(rawStallLogos).filter(
+            (entry): entry is [string, string] => typeof entry[1] === "string",
+          ),
+        )
+      : {};
   return {
     loginHeroImage:
       typeof config["loginHeroImage"] === "string" &&
@@ -34,6 +47,8 @@ function parseBranding(value: unknown): AuthBranding {
       config["brandTitle"].trim()
         ? config["brandTitle"].trim()
         : DEFAULT_BRAND_TITLE,
+    appLogoUrl: typeof config["appLogoUrl"] === "string" ? config["appLogoUrl"] : "",
+    stallLogos,
   };
 }
 
@@ -61,7 +76,7 @@ export async function saveAuthBranding(branding: AuthBranding) {
   if (error) throw error;
 }
 
-export async function uploadAuthBrandingImage(file: File, kind: "hero" | "logo") {
+export async function uploadAuthBrandingImage(file: File, kind: "hero" | "logo" | "app-logo" | "stall-logo") {
   if (!file.type.startsWith("image/") || file.size > 8 * 1024 * 1024) {
     throw new Error("Choose an image smaller than 8 MB.");
   }
@@ -97,7 +112,7 @@ export function useAuthBranding() {
     };
     pull();
     const channel = supabase
-      .channel("auth-branding")
+      .channel(`auth-branding-${Math.random().toString(36).slice(2, 8)}`)
       .on(
         "postgres_changes",
         {

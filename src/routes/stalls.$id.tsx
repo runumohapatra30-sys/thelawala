@@ -8,6 +8,7 @@ import { customerPrice } from "@/lib/pricing";
 import { foodImage } from "@/lib/foodImage";
 import { ArrowLeft, BadgeCheck, Compass, Phone, Search, Share2, X } from "lucide-react";
 import { toast } from "sonner";
+import { useAuthBranding } from "@/lib/authBranding";
 
 export const Route = createFileRoute("/stalls/$id")({
   head: () => ({
@@ -54,7 +55,6 @@ type Vendor = {
   offer_percent: number | null;
   offer_label: string | null;
   address: string | null;
-  description: string | null;
   default_prep_minutes: number | null;
   mobile: string | null;
   lat: number;
@@ -70,26 +70,47 @@ function StallDetail() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const lines = useCart();
+  const branding = useAuthBranding();
 
   useEffect(() => {
+    let alive = true;
     async function load() {
-      const [vRes, iRes, cRes] = await Promise.all([
-        supabase
-          .from("vendors")
-          .select(
-            "id,stall_name,is_open,photo_url,stall_photos,offer_percent,offer_label,address,zone,open_time,close_time,default_prep_minutes,cuisine_types,status,mobile,lat,lng,description",
-          )
-          .eq("id", id)
-          .maybeSingle(),
-        supabase.from("menu_items").select("*").eq("vendor_id", id).order("created_at"),
+      const columns =
+        "id,stall_name,is_open,photo_url,stall_photos,offer_percent,offer_label,address,zone,open_time,close_time,default_prep_minutes,cuisine_types,status,mobile,lat,lng";
+      const exact = await supabase.from("vendors").select(columns).eq("id", id).maybeSingle();
+      if (exact.error) {
+        console.error("Could not load stall by id:", exact.error);
+      }
+      let match = exact.data;
+      if (!match) {
+        const { data, error } = await supabase.from("vendors").select(columns).eq("status", "APPROVED");
+        if (error) {
+          console.error("Could not resolve stall route fallback:", error);
+        } else {
+          const normalized = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+          match = (data ?? []).find((row) => normalized(row.stall_name) === normalized(decodeURIComponent(id))) ?? null;
+        }
+      }
+      if (!alive) return;
+      if (!match) {
+        setVendor(null);
+        setLoading(false);
+        return;
+      }
+      const [iRes, cRes] = await Promise.all([
+        supabase.from("menu_items").select("*").eq("vendor_id", match.id).order("created_at"),
         supabase.from("categories").select("id,name").order("sort_order"),
       ]);
-      setVendor(vRes.data as unknown as Vendor);
+      if (!alive) return;
+      if (iRes.error) console.error("Could not load stall menu:", iRes.error);
+      if (cRes.error) console.error("Could not load menu categories:", cRes.error);
+      setVendor(match as unknown as Vendor);
       setItems((iRes.data ?? []) as Item[]);
       setCats((cRes.data ?? []) as Category[]);
       setLoading(false);
     }
-    load();
+    void load();
+    return () => { alive = false; };
   }, [id]);
 
   if (loading)
@@ -130,13 +151,14 @@ function StallDetail() {
     }
   };
   const cover = photos[0] ?? foodImage(vendor.stall_name);
+  const stallLogo = branding.stallLogos[vendor.id] || vendor.photo_url || foodImage(vendor.stall_name);
   const mapHref = `https://www.google.com/maps/dir/?api=1&destination=${vendor.lat},${vendor.lng}`;
 
   return (
     <Shell>
       <div className="relative">
         <div className="relative h-56 bg-muted">
-          <img src={cover} alt={`${vendor.stall_name} stall`} className="h-full w-full object-cover" />
+          <img src={cover} alt={`${vendor.stall_name} stall`} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = foodImage(vendor.stall_name); }} className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/5 to-black/15" />
           <Link to="/stalls" aria-label="Back to stalls" className="absolute left-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/90 text-foreground shadow-sm">
             <ArrowLeft className="h-5 w-5" />
@@ -145,7 +167,7 @@ function StallDetail() {
             <Share2 className="h-4 w-4" />
           </button>
           <div className="absolute -bottom-9 left-5 grid h-[76px] w-[76px] place-items-center overflow-hidden rounded-full border-4 border-white bg-white shadow-md">
-            <img src={vendor.photo_url || foodImage(vendor.stall_name)} alt={`${vendor.stall_name} logo`} className="h-full w-full object-cover" />
+            <img src={stallLogo} alt={`${vendor.stall_name} logo`} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = foodImage(vendor.stall_name); }} className="h-full w-full object-cover" />
           </div>
         </div>
         <div className="px-5 pb-5 pt-12">

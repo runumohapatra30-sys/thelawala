@@ -10,6 +10,7 @@ import type { StreetFoodCategory } from "@/components/StreetFoodExperience";
 import { inr } from "@/lib/fees";
 import { foodImage } from "@/lib/foodImage";
 import { ThelaLogo } from "@/components/Shell";
+import { useAuthBranding } from "@/lib/authBranding";
 
 const suggestions = ["Khandagiri Dahi Bara", "Gupchup & Chaat", "Egg Chicken Roll", "Evening Hot Pakoda"];
 
@@ -20,6 +21,7 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
   categories: StreetFoodCategory[]; activeCategoryId: string | null; onCategoryChange: (categoryId: string | null) => void;
 }) {
   const rows = useHomeBanners();
+  const branding = useAuthBranding();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -65,7 +67,14 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
       {!collapsed ? (
         <div className="mb-3 flex items-center justify-between gap-3">
           <Link to="/" className="flex min-w-0 items-center gap-2.5" aria-label="ThelaWala home">
-            <ThelaLogo className="h-10 w-10 shrink-0" />
+            {branding.appLogoUrl ? (
+              <img
+                src={branding.appLogoUrl}
+                alt=""
+                onError={(event) => { event.currentTarget.style.display = "none"; }}
+                className="h-10 w-10 shrink-0 object-contain"
+              />
+            ) : <ThelaLogo className="h-10 w-10 shrink-0" />}
             <span className="min-w-0">
               <span className={`block text-lg font-black leading-tight ${hasBg ? "text-white drop-shadow" : "text-primary"}`}>ThelaWala</span>
               <span className={`block truncate text-[9px] font-extrabold uppercase tracking-[0.1em] ${hasBg ? "text-white/85" : "text-muted-foreground"}`}>Local taste. Trusted service.</span>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ImagePlus, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DEFAULT_AUTH_BRANDING,
   loadAuthBranding,
@@ -16,7 +17,22 @@ export function AdminAuthBranding() {
   const [branding, setBranding] = useState<AuthBranding>(DEFAULT_AUTH_BRANDING);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState<"hero" | "logo" | null>(null);
+  const [uploading, setUploading] = useState<"hero" | "logo" | "app-logo" | "stall-logo" | null>(null);
+  const [stalls, setStalls] = useState<{ id: string; stall_name: string }[]>([]);
+  const [selectedStallId, setSelectedStallId] = useState("");
+
+  useEffect(() => {
+    void supabase.from("vendors").select("id,stall_name").order("stall_name").then(({ data, error }) => {
+      if (error) {
+        toast.error("Could not load stalls for logo settings.");
+        console.error("Could not load stalls for branding settings:", error);
+        return;
+      }
+      const rows = data ?? [];
+      setStalls(rows);
+      setSelectedStallId(rows[0]?.id ?? "");
+    });
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -36,15 +52,19 @@ export function AdminAuthBranding() {
     };
   }, []);
 
-  async function upload(file: File | undefined, kind: "hero" | "logo") {
+  async function upload(file: File | undefined, kind: "hero" | "logo" | "app-logo" | "stall-logo") {
     if (!file) return;
     setUploading(kind);
     try {
       const url = await uploadAuthBrandingImage(file, kind);
-      setBranding((current) => ({
-        ...current,
-        [kind === "hero" ? "loginHeroImage" : "logoUrl"]: url,
-      }));
+      setBranding((current) => {
+        if (kind === "hero") return { ...current, loginHeroImage: url };
+        if (kind === "logo") return { ...current, logoUrl: url };
+        if (kind === "app-logo") return { ...current, appLogoUrl: url };
+        return selectedStallId
+          ? { ...current, stallLogos: { ...current.stallLogos, [selectedStallId]: url } }
+          : current;
+      });
       toast.success("Image uploaded. Save branding to publish it.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not upload image.");
@@ -67,6 +87,16 @@ export function AdminAuthBranding() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function setStallLogo(url: string) {
+    if (!selectedStallId) return;
+    setBranding((current) => {
+      const stallLogos = { ...current.stallLogos };
+      if (url.trim()) stallLogos[selectedStallId] = url;
+      else delete stallLogos[selectedStallId];
+      return { ...current, stallLogos };
+    });
   }
 
   return (
@@ -105,6 +135,65 @@ export function AdminAuthBranding() {
           className="sr-only"
         />
       </label>
+
+      <div className="space-y-2 rounded-xl border border-border p-3">
+        <p className="text-xs font-extrabold">App header logo</p>
+        <input
+          value={branding.appLogoUrl}
+          onChange={(event) => setBranding((current) => ({ ...current, appLogoUrl: event.target.value }))}
+          placeholder="https://… or leave blank for the default mark"
+          className={inputClass}
+        />
+        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 px-3 py-2.5 text-xs font-bold text-primary">
+          <Upload className="h-4 w-4" />
+          {uploading === "app-logo" ? "Uploading app logo…" : "Upload app header logo"}
+          <input
+            type="file"
+            accept="image/*,.svg"
+            disabled={uploading !== null}
+            onChange={(event) => {
+              void upload(event.currentTarget.files?.[0], "app-logo");
+              event.currentTarget.value = "";
+            }}
+            className="sr-only"
+          />
+        </label>
+      </div>
+
+      <div className="space-y-2 rounded-xl border border-border p-3">
+        <p className="text-xs font-extrabold">Stall custom logos</p>
+        <select
+          value={selectedStallId}
+          onChange={(event) => setSelectedStallId(event.target.value)}
+          className={inputClass}
+          disabled={!stalls.length}
+        >
+          {stalls.length
+            ? stalls.map((stall) => <option key={stall.id} value={stall.id}>{stall.stall_name}</option>)
+            : <option value="">No stalls available</option>}
+        </select>
+        <input
+          value={branding.stallLogos[selectedStallId] ?? ""}
+          onChange={(event) => setStallLogo(event.target.value)}
+          placeholder="Stall logo URL"
+          className={inputClass}
+          disabled={!selectedStallId}
+        />
+        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 px-3 py-2.5 text-xs font-bold text-primary">
+          <Upload className="h-4 w-4" />
+          {uploading === "stall-logo" ? "Uploading stall logo…" : "Upload selected stall logo"}
+          <input
+            type="file"
+            accept="image/*,.svg"
+            disabled={uploading !== null || !selectedStallId}
+            onChange={(event) => {
+              void upload(event.currentTarget.files?.[0], "stall-logo");
+              event.currentTarget.value = "";
+            }}
+            className="sr-only"
+          />
+        </label>
+      </div>
 
       <label className="block">
         <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">
