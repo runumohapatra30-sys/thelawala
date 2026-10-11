@@ -11,7 +11,7 @@ import { openInvoice, type InvoiceOrder } from "@/lib/invoice";
 import { OrderDeliveredRating } from "@/components/OrderDeliveredRating";
 import { useSession } from "@/lib/session";
 import { RefundPanel } from "@/components/RefundPanel";
-import { ArrowLeft, Check, Clock3, Home, MapPin, MessageCircle, PackageOpen, PhoneCall, Star } from "lucide-react";
+import { ArrowLeft, Clock3, Home, MapPin, MessageCircle, PackageOpen, PhoneCall, Star, X } from "lucide-react";
 
 export const Route = createFileRoute("/orders/$id")({
   validateSearch: (s: Record<string, unknown>): { placed?: 1 } => (s['placed'] ? { placed: 1 } : {}),
@@ -416,19 +416,54 @@ function Track() {
 
       {splash ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-[#FAF7F2] px-5 py-8 text-foreground">
-          <div className="relative my-auto w-full max-w-sm rounded-[2rem] bg-white p-6 text-center shadow-sm">
-            <span className="absolute left-[12%] top-7 h-2 w-2 rotate-12 rounded-sm bg-[#FF5A1F]" />
-            <span className="absolute right-[15%] top-12 h-2.5 w-2.5 rounded-full bg-[#FFC857]" />
-            <span className="absolute left-[18%] top-24 h-1.5 w-1.5 rounded-full bg-[#75B798]" />
-            <span className="absolute right-[21%] top-28 h-2 w-2 rotate-45 rounded-sm bg-[#FF8B5E]" />
-            <span className="absolute left-[31%] top-4 h-2 w-2 rounded-full bg-[#8CB8E8]" />
-            <span className="absolute right-[34%] top-6 h-1.5 w-1.5 rounded-full bg-[#E7A9C3]" />
-            <div className="mx-auto grid h-[76px] w-[76px] place-items-center rounded-full bg-[#A9D9B9] shadow-sm">
-              <Check className="h-10 w-10 text-white" strokeWidth={3.5} />
-            </div>
+          <div className="relative my-auto w-full max-w-sm rounded-[2rem] bg-white px-6 pb-6 pt-14 text-center shadow-sm">
+            <button
+              type="button"
+              onClick={() => setSplash(false)}
+              aria-label="Close order confirmation"
+              className="absolute left-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-[#F5F4F0] text-[#59615B] transition-colors hover:bg-[#ECEAE4]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <motion.div
+              initial={{ scale: 0.65, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 260, damping: 16 }}
+              className="relative mx-auto grid h-[84px] w-[84px] place-items-center rounded-full bg-[#A9D9B9] shadow-sm"
+            >
+              <span className="absolute -left-4 top-2 h-2 w-2 rotate-12 rounded-sm bg-[#FF5A1F]" />
+              <span className="absolute -right-3 top-3 h-2.5 w-2.5 rounded-full bg-[#FFC857]" />
+              <span className="absolute -left-3 bottom-3 h-1.5 w-1.5 rounded-full bg-[#75B798]" />
+              <span className="absolute -right-4 bottom-2 h-2 w-2 rotate-45 rounded-sm bg-[#FF8B5E]" />
+              <span className="absolute left-1 top-[-13px] h-2 w-2 rounded-full bg-[#8CB8E8]" />
+              <span className="absolute right-1 top-[-11px] h-1.5 w-1.5 rounded-full bg-[#E7A9C3]" />
+              <motion.svg
+                viewBox="0 0 40 40"
+                className="h-11 w-11"
+                fill="none"
+                initial={{ scale: 0.35, rotate: 0 }}
+                animate={{ scale: 1, rotate: 360 }}
+                transition={{
+                  scale: { type: "spring", stiffness: 300, damping: 15, delay: 0.08 },
+                  rotate: { duration: 0.8, ease: "easeOut" },
+                }}
+                aria-hidden="true"
+              >
+                <motion.path
+                  d="m8 21 8 8L32 13"
+                  stroke="white"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 0.45, delay: 0.2, ease: "easeOut" }}
+                />
+              </motion.svg>
+            </motion.div>
             <p className="mt-5 text-2xl font-extrabold tracking-tight">Order placed</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {vendor?.stall_name ? `Preparing your food at ${vendor.stall_name}` : "Preparing your food"}
+              {vendor?.stall_name ? `${vendor.stall_name} is preparing your food` : "Your food is being prepared"}
             </p>
             <p className="mt-4 inline-flex rounded-full bg-[#FFF0E9] px-4 py-2 text-xs font-extrabold text-primary">#{order.code}</p>
             <div className="mt-4 rounded-2xl bg-[#FAF7F2] p-4 text-left">
@@ -454,8 +489,16 @@ function Track() {
                 <span className="mt-1 block text-sm font-bold leading-snug">{order.address_line}</span>
               </span>
             </div>
-            <button type="button" onClick={() => setSplash(false)} className="mt-4 w-full rounded-2xl bg-[#FF5A1F] px-4 py-3.5 text-sm font-extrabold text-white">Track your order</button>
-            <Link to="/" className="mt-3 inline-block text-sm font-bold text-muted-foreground">Back to home</Link>
+            <button
+              type="button"
+              onClick={() => setSplash(false)}
+              className="mt-4 w-full rounded-2xl bg-[#FF5A1F] px-4 py-3.5 text-sm font-extrabold text-white transition-colors hover:bg-[#EE4D17]"
+            >
+              Track your order
+            </button>
+            <Link to="/" className="mt-3 inline-block text-sm font-bold text-muted-foreground">
+              Back to home
+            </Link>
           </div>
         </div>
       ) : null}
