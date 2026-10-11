@@ -13,8 +13,10 @@ export function useHomeBanners() {
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
     const refresh = () => { void queryClient.invalidateQueries({ queryKey: homeBannersQuery.queryKey }); };
-    const channel = supabase.channel("home-live-banner-schedule")
-      .on("postgres_changes", { event: "*", schema: "public", table: "app_dynamic_banners" }, refresh).subscribe();
+    const channel = supabase
+      .channel(`home-live-banner-schedule-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "app_dynamic_banners" }, refresh)
+      .subscribe();
     window.addEventListener("focus", refresh);
     // Also reconcile missed realtime messages after a sleeping/background tab.
     const timer = window.setInterval(refresh, 30_000);
