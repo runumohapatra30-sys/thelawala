@@ -1,14 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { GUEST_PROFILE_EVENT, openLoginModal } from "@/components/LoginModal";
 import type { SavedAddress } from "@/components/AddressBook";
 import { supabase } from "@/integrations/supabase/client";
 import { cart, cartTotals, useCart } from "@/lib/cart";
-import { couponDiscount, findCoupon, listCoupons, type Coupon } from "@/lib/coupons";
+import { couponDiscount, findCoupon, listCoupons, PENDING_HOME_COUPON_KEY, type Coupon } from "@/lib/coupons";
 import { computeBill, haversineKm, inr, type Settings } from "@/lib/fees";
 import { checkoutGate, minimumOrderValue, stallOfferDiscount } from "@/lib/pricing";
 import { payInAppWithCashfree } from "@/lib/checkout";
+import { codRestrictionUntil } from "@/lib/codPolicy";
 import { useSession } from "@/lib/session";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Banknote, Bike, BellOff, Check, ChevronRight, ChevronsRight, CircleDollarSign, CreditCard, DoorOpen, MapPin, Phone, PhoneOff, Plus, ShieldCheck, ShoppingCart, Smartphone, Tag } from "lucide-react";
@@ -39,7 +40,9 @@ type PlacementStage = "idle" | "placing" | "placed";
 function Cart() {
   const navigate = useNavigate();
   const { user } = useSession();
+  const userId = user?.id;
   const lines = useCart();
+  const cartVendorId = lines[0]?.vendorId;
   const { foodTotal, baseTotal, mrpTotal } = cartTotals(lines);
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "payment">("cart");
   const [placementStage, setPlacementStage] = useState<PlacementStage>("idle");
@@ -61,7 +64,10 @@ function Cart() {
     landmark: "",
   });
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [payment, setPayment] = useState<"COD" | "ONLINE">("COD");
+  const [payment, setPayment] = useState<"COD" | "ONLINE" | "SPLIT">("COD");
+  const [codRestriction, setCodRestriction] = useState<number | null>(null);
+  const [codPolicyChecked, setCodPolicyChecked] = useState(false);
+  const [codPolicyError, setCodPolicyError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [walletBalance, setWalletBalance] = useState(0);
@@ -102,6 +108,15 @@ function Cart() {
   }, []);
 
   useEffect(() => {
+    try {
+      const pendingCode = window.localStorage.getItem(PENDING_HOME_COUPON_KEY);
+      if (pendingCode) setCodeInput(pendingCode);
+    } catch {
+      // Continue without a home-modal coupon when browser storage is unavailable.
+    }
+  }, []);
+
+  useEffect(() => {
     const guestName = localStorage.getItem("thelawala.guest_name");
     const guestMobile = localStorage.getItem("thelawala.guest_mobile");
     if (guestName || guestMobile)
@@ -130,17 +145,53 @@ function Cart() {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     supabase
       .from("wallets")
       .select("balance,status")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .maybeSingle()
       .then(({ data }) => setWalletBalance(data?.status === "ACTIVE" ? Number(data.balance) : 0));
-  }, [user?.id]);
+  }, [userId]);
 
   useEffect(() => {
-    const vid = lines[0]?.vendorId;
+    if (!userId) return;
+    let alive = true;
+    setCodPolicyChecked(false);
+    setCodPolicyError(false);
+    setCodRestriction(null);
+    const now = Date.now();
+    void supabase
+      .from("orders")
+      .select("cancelled_at")
+      .eq("user_id", userId)
+      .eq("payment_mode", "COD")
+      .eq("status", "CANCELLED")
+      .eq("cancelled_by", "CUSTOMER")
+      .gte("cancelled_at", new Date(now - 120 * 24 * 60 * 60 * 1000).toISOString())
+      .then(({ data, error }) => {
+        if (!alive) return;
+        if (error) {
+          console.error("Could not check COD cancellation history:", error);
+          setCodPolicyError(true);
+          setPayment("ONLINE");
+        } else {
+          const until = codRestrictionUntil(
+            (data ?? []).map((row) => row.cancelled_at).filter((value): value is string => Boolean(value)),
+            now,
+          );
+          setCodRestriction(until);
+          if (until) setPayment("ONLINE");
+        }
+        setCodPolicyChecked(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    const vid = cartVendorId;
     if (!vid) return;
     supabase
       .from("vendors")
@@ -155,14 +206,14 @@ function Cart() {
       .eq("in_stock", true)
       .limit(12)
       .then(({ data }) => setRecommendations((data ?? []) as typeof recommendations));
-  }, [lines[0]?.vendorId]);
+  }, [cartVendorId]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     supabase
       .from("addresses")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .order("is_default", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(2)
@@ -182,7 +233,7 @@ function Cart() {
         if (!coordsRef.current && Number(first.lat) && Number(first.lng))
           setCoords({ lat: Number(first.lat), lng: Number(first.lng) });
       });
-  }, [user?.id]);
+  }, [userId]);
 
   // The last location the customer used is remembered, so we never ask for it again
   // unless they choose a new address themselves.
@@ -337,6 +388,7 @@ function Cart() {
     : 0;
   const walletUse = bill && useWallet ? Math.min(walletBalance, netTotal) : 0;
   const payable = bill ? Math.round((netTotal - walletUse) * 100) / 100 : 0;
+  const onlineDue = payment === "SPLIT" ? Math.round(payable * 50) / 100 : payable;
   const standardDeliveryFee = bill ? 22 + Math.max(0, bill.distanceKm - 2) * 3.5 : 0;
   const deliverySavings = bill ? Math.max(0, standardDeliveryFee - bill.deliveryFee) : 0;
   const savings = Math.round((Math.max(0, mrpTotal - foodTotal) + stallOff + couponOff + deliverySavings) * 100) / 100;
@@ -350,9 +402,9 @@ function Cart() {
     .filter((item) => !lines.some((line) => line.itemId === item.id))
     .slice(0, 6);
 
-  async function applyCoupon() {
+  const applyCoupon = useCallback(async (code = codeInput) => {
     setCouponMsg(null);
-    const res = await findCoupon(codeInput, foodTotal);
+    const res = await findCoupon(code, foodTotal);
     if (res.error || !res.coupon) {
       setCoupon(null);
       return setCouponMsg(res.error ?? "This coupon code is not valid.");
@@ -361,7 +413,19 @@ function Cart() {
     setCouponMsg(
       `${res.coupon.code} applied · you save ${inr(couponDiscount(res.coupon, foodTotal))}`,
     );
-  }
+  }, [codeInput, foodTotal]);
+
+  useEffect(() => {
+    let pendingCode: string | null = null;
+    try {
+      pendingCode = window.localStorage.getItem(PENDING_HOME_COUPON_KEY);
+      if (pendingCode && pendingCode === codeInput) window.localStorage.removeItem(PENDING_HOME_COUPON_KEY);
+      else pendingCode = null;
+    } catch {
+      // Manual coupon entry remains available when browser storage is unavailable.
+    }
+    if (pendingCode) void applyCoupon(pendingCode);
+  }, [applyCoupon, codeInput]);
 
   if (lines.length === 0) {
     return (
@@ -399,6 +463,10 @@ function Cart() {
       return;
     }
     if (blockedReason) return setErr(blockedReason);
+    if ((payment === "COD" || payment === "SPLIT") && (codPolicyError || !codPolicyChecked || codRestriction)) {
+      setPayment("ONLINE");
+      return setErr("Cash on Delivery is unavailable. Please choose full online payment.");
+    }
     if (!bill || !vendor) return;
     setCheckoutStep("payment");
   }
@@ -419,6 +487,35 @@ function Cart() {
       return setErr("Tap “Use my current location” — every order needs your live location.");
     if (blockedReason) return setErr(blockedReason);
     if (!bill || !vendor) return;
+    if ((payment === "COD" || payment === "SPLIT") && payable > 0) {
+      const checkedAt = Date.now();
+      const { data: cancellations, error: cancellationError } = await supabase
+        .from("orders")
+        .select("cancelled_at")
+        .eq("user_id", user.id)
+        .eq("payment_mode", "COD")
+        .eq("status", "CANCELLED")
+        .eq("cancelled_by", "CUSTOMER")
+        .gte("cancelled_at", new Date(checkedAt - 120 * 24 * 60 * 60 * 1000).toISOString());
+      if (cancellationError) {
+        console.error("Could not verify COD eligibility before checkout:", cancellationError);
+        setPayment("ONLINE");
+        return setErr("We couldn't verify Cash on Delivery eligibility. Please use full online payment.");
+      }
+      const until = codRestrictionUntil(
+        (cancellations ?? []).map((row) => row.cancelled_at).filter((value): value is string => Boolean(value)),
+        checkedAt,
+      );
+      if (until) {
+        setCodRestriction(until);
+        if (payment === "COD") {
+          setPayment("ONLINE");
+          return setErr(`Cash on Delivery is paused until ${new Date(until).toLocaleDateString()}. Please choose split payment or pay online.`);
+        }
+      } else if (payment === "SPLIT") {
+        return setErr("The split payment option is only available while Cash on Delivery is restricted.");
+      }
+    }
 
     const regularSubtotal = lines
       .filter((line) => !line.promotionalMinimum)
@@ -436,7 +533,8 @@ function Cart() {
       setPlacementStage("placing");
     };
     setBusy(true);
-    if (!(payable > 0 && payment === "ONLINE")) startPlacement();
+    const isOnlineCheckout = payment === "ONLINE" || payment === "SPLIT";
+    if (!(payable > 0 && isOnlineCheckout)) startPlacement();
     const { data: sameAddr } = await supabase
       .from("addresses")
       .select("id")
@@ -475,10 +573,10 @@ function Cart() {
 
     // Online payment always happens first, inside the app. No confirmed payment, no order.
     let paidRef: string | null = null;
-    if (payable > 0 && payment === "ONLINE") {
+    if (payable > 0 && isOnlineCheckout) {
       try {
         const res = await payInAppWithCashfree({
-          amount: payable,
+          amount: payment === "SPLIT" ? Math.round(payable * 50) / 100 : payable,
           purpose: "ORDER",
           name: form.full_name,
           email: user.email ?? "",
@@ -525,8 +623,10 @@ function Cart() {
           `KOT: ${lines.map((line) => `${line.qty}x ${line.name}${line.options?.length ? ` (${line.options.join(", ")})` : ""}`).join(", ")}`,
           instructions.trim(),
         ].filter(Boolean).join("\n") || null,
-        payment_mode: payable === 0 ? "WALLET" : payment,
-        payment_status: payable === 0 || paidRef ? "PAID" : "PENDING",
+        payment_mode: payable === 0 ? "WALLET" : payment === "SPLIT" ? "COD" : payment,
+        payment_status: payable === 0 || payment === "ONLINE" && paidRef
+          ? "PAID"
+          : payment === "SPLIT" && paidRef ? "PARTIAL" : "PENDING",
         gateway_reference_id: paidRef,
         pickup_otp: otp(),
         delivery_otp: pin4(),
@@ -922,7 +1022,7 @@ function Cart() {
               </button>
             ) : (
               <button
-                onClick={applyCoupon}
+                onClick={() => void applyCoupon()}
                 className="press shrink-0 rounded-xl bg-primary px-4 text-xs font-black text-primary-foreground"
               >
                 Apply
@@ -1073,8 +1173,30 @@ function Cart() {
                 <h2 className="text-base font-black">Pay on Delivery</h2>
                 <p className="text-xs text-muted-foreground">Pay your delivery partner when your food arrives.</p>
               </div>
-              {settings?.enable_cod !== false ? (
+              {codRestriction ? (
+                <p className="rounded-xl bg-[#FFF0E9] px-3 py-2.5 text-xs font-semibold text-[#9A3412]">
+                  Cash on Delivery is temporarily unavailable until {new Date(codRestriction).toLocaleDateString()}. Choose split payment or full online payment.
+                </p>
+              ) : codPolicyError ? (
+                <p className="rounded-xl bg-[#FFF0E9] px-3 py-2.5 text-xs font-semibold text-[#9A3412]">
+                  We couldn&apos;t confirm Cash on Delivery eligibility. Full online payment is available instead.
+                </p>
+              ) : !codPolicyChecked ? (
+                <p className="rounded-xl bg-muted px-3 py-2.5 text-xs font-medium text-muted-foreground">
+                  Checking Cash on Delivery availability…
+                </p>
+              ) : null}
+              {settings?.enable_cod !== false && codPolicyChecked && !codPolicyError && !codRestriction ? (
                 <PayBtn active={payment === "COD"} onClick={() => setPayment("COD")} label="Cash/Pay on Delivery" hint="Cash at your doorstep" Icon={Banknote} />
+              ) : null}
+              {codRestriction && settings?.enable_cod !== false && settings?.enable_online_payment ? (
+                <PayBtn
+                  active={payment === "SPLIT"}
+                  onClick={() => setPayment("SPLIT")}
+                  label="50% online + 50% on delivery"
+                  hint={`Pay ${inr(Math.round(payable * 50) / 100)} now; the remaining balance is due to your rider.`}
+                  Icon={CircleDollarSign}
+                />
               ) : null}
               {settings?.enable_online_payment ? (
                 <>
@@ -1099,14 +1221,20 @@ function Cart() {
             <section className="card-soft p-4">
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">Order total</span><span className="font-bold">{inr(netTotal)}</span></div>
               {walletUse > 0 ? <div className="mt-2 flex justify-between text-sm"><span className="text-muted-foreground">Wallet balance</span><span className="font-bold text-primary">− {inr(walletUse)}</span></div> : null}
-              <div className="mt-3 flex justify-between border-t border-border pt-3 text-base font-black"><span>To pay</span><span>{inr(payable)}</span></div>
+              {payment === "SPLIT" ? (
+                <>
+                  <div className="mt-2 flex justify-between text-sm"><span className="text-muted-foreground">Pay online now</span><span className="font-bold">{inr(onlineDue)}</span></div>
+                  <div className="mt-2 flex justify-between text-sm"><span className="text-muted-foreground">Due on delivery</span><span className="font-bold">{inr(payable - onlineDue)}</span></div>
+                </>
+              ) : null}
+              <div className="mt-3 flex justify-between border-t border-border pt-3 text-base font-black"><span>{payment === "SPLIT" ? "Total remaining after wallet" : "To pay"}</span><span>{inr(payable)}</span></div>
             </section>
             {err ? <p className="rounded-lg bg-destructive/10 p-3 text-xs font-semibold text-destructive">{err}</p> : null}
           </main>
           <div className="fixed inset-x-0 bottom-[92px] z-40 mx-auto w-full max-w-[520px] p-3">
-            <button type="button" disabled={busy || (payment === "ONLINE" && !settings?.enable_online_payment)} onClick={() => void place()} className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-card disabled:opacity-50">
-              <span><span className="block text-[10px] font-bold opacity-75">{busy ? "SECURELY PROCESSING" : "TOTAL TO PAY"}</span><span className="text-lg font-black">{inr(payable)}</span></span>
-              <span className="flex items-center gap-2 text-sm font-black">{busy ? "Please wait…" : payment === "COD" ? `Pay ${inr(payable)} with Cash` : `Pay ${inr(payable)} with ${onlineMethod}`}<ChevronRight className="h-4 w-4" /></span>
+            <button type="button" disabled={busy || ((payment === "ONLINE" || payment === "SPLIT") && !settings?.enable_online_payment)} onClick={() => void place()} className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-card disabled:opacity-50">
+              <span><span className="block text-[10px] font-bold opacity-75">{busy ? "SECURELY PROCESSING" : payment === "SPLIT" ? "PAY ONLINE NOW" : "TOTAL TO PAY"}</span><span className="text-lg font-black">{inr(onlineDue)}</span></span>
+              <span className="flex items-center gap-2 text-sm font-black">{busy ? "Please wait…" : payment === "COD" ? `Pay ${inr(payable)} with Cash` : payment === "SPLIT" ? `Pay 50% now via ${onlineMethod}` : `Pay ${inr(payable)} with ${onlineMethod}`}<ChevronRight className="h-4 w-4" /></span>
             </button>
           </div>
         </>

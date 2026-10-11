@@ -6,7 +6,7 @@ import { cart, useCart } from "@/lib/cart";
 import { inr } from "@/lib/fees";
 import { customerPrice } from "@/lib/pricing";
 import { foodImage } from "@/lib/foodImage";
-import { Heart, Search, Share2, X } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Compass, Phone, Search, Share2, X } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/stalls/$id")({
@@ -56,6 +56,10 @@ type Vendor = {
   address: string | null;
   description: string | null;
   default_prep_minutes: number | null;
+  mobile: string | null;
+  lat: number;
+  lng: number;
+  status: string;
 };
 
 function StallDetail() {
@@ -64,6 +68,7 @@ function StallDetail() {
   const [items, setItems] = useState<Item[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
   const lines = useCart();
 
   useEffect(() => {
@@ -72,7 +77,7 @@ function StallDetail() {
         supabase
           .from("vendors")
           .select(
-            "id,stall_name,is_open,photo_url,stall_photos,offer_percent,offer_label,address,zone,open_time,close_time,default_prep_minutes,cuisine_types,status",
+            "id,stall_name,is_open,photo_url,stall_photos,offer_percent,offer_label,address,zone,open_time,close_time,default_prep_minutes,cuisine_types,status,mobile,lat,lng,description",
           )
           .eq("id", id)
           .maybeSingle(),
@@ -104,95 +109,85 @@ function StallDetail() {
       </Shell>
     );
 
-  const photos = [vendor.photo_url, ...(vendor.stall_photos ?? [])].filter(Boolean) as string[];
-  const categoriesInUse = cats.filter((c) => items.some((i) => i.category_id === c.id));
-  const uncategorizedItems = items.filter(
-    (i) => !i.category_id || !cats.some((c) => c.id === i.category_id),
+  const photos = [...(vendor.stall_photos ?? []), vendor.photo_url].filter(Boolean) as string[];
+  const categoriesInUse = cats.filter((c) =>
+    items.some((i) => i.category_id === c.id && i.name.toLowerCase().includes(query.toLowerCase())),
   );
+  const uncategorizedItems = items.filter(
+    (i) => (!i.category_id || !cats.some((c) => c.id === i.category_id)) &&
+      i.name.toLowerCase().includes(query.toLowerCase()),
+  );
+  const shareStall = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) await navigator.share({ title: vendor.stall_name, text: `Explore ${vendor.stall_name} on ThelaWala`, url });
+      else {
+        await navigator.clipboard.writeText(url);
+        toast.success("Stall link copied.");
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name !== "AbortError") toast.error("Could not share this stall.");
+    }
+  };
+  const cover = photos[0] ?? foodImage(vendor.stall_name);
+  const mapHref = `https://www.google.com/maps/dir/?api=1&destination=${vendor.lat},${vendor.lng}`;
 
   return (
     <Shell>
       <div className="relative">
-        <header className="sticky top-0 z-30 flex items-center justify-between p-4 bg-transparent">
-          <Link
-            to="/"
-            className="press grid h-10 w-10 place-items-center rounded-full glass-panel text-foreground"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-            >
-              <path d="M15 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+        <div className="relative h-56 bg-muted">
+          <img src={cover} alt={`${vendor.stall_name} stall`} className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/5 to-black/15" />
+          <Link to="/stalls" aria-label="Back to stalls" className="absolute left-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/90 text-foreground shadow-sm">
+            <ArrowLeft className="h-5 w-5" />
           </Link>
-          <div className="flex gap-2">
-            <button className="press grid h-10 w-10 place-items-center rounded-full glass-panel text-foreground">
-              <Share2 className="h-5 w-5" />
-            </button>
-            <button className="press grid h-10 w-10 place-items-center rounded-full glass-panel text-foreground">
-              <Heart className="h-5 w-5" />
-            </button>
+          <button type="button" onClick={() => void shareStall()} aria-label="Share stall" className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/90 text-foreground shadow-sm">
+            <Share2 className="h-4 w-4" />
+          </button>
+          <div className="absolute -bottom-9 left-5 grid h-[76px] w-[76px] place-items-center overflow-hidden rounded-full border-4 border-white bg-white shadow-md">
+            <img src={vendor.photo_url || foodImage(vendor.stall_name)} alt={`${vendor.stall_name} logo`} className="h-full w-full object-cover" />
           </div>
-        </header>
-
-        <div className="px-5 pt-2">
-          <h1 className="font-display text-4xl leading-tight text-primary">{vendor.stall_name}</h1>
-          <p className="mt-1 text-sm font-medium text-muted-foreground">
-            {vendor.address || "Local Favourite"}
-          </p>
-
-          <div className="mt-4 flex flex-wrap items-center gap-2 border-y border-border/50 py-4">
-            <span
-              className={`rounded-full px-3 py-1.5 text-xs font-extrabold ${vendor.is_open ? "bg-brand-soft text-primary" : "bg-muted text-muted-foreground"}`}
-            >
-              {vendor.is_open ? "Open now" : "Currently closed"}
-            </span>
-            {vendor.default_prep_minutes ? (
-              <span className="rounded-full bg-muted px-3 py-1.5 text-xs font-bold text-muted-foreground">
-                About {vendor.default_prep_minutes} min prep
-              </span>
-            ) : null}
-            {Number(vendor.offer_percent ?? 0) > 0 ? (
-              <span className="rounded-full bg-primary px-3 py-1.5 text-xs font-extrabold text-primary-foreground">
-                {vendor.offer_label || `${vendor.offer_percent}% off`}
-              </span>
-            ) : null}
+        </div>
+        <div className="px-5 pb-5 pt-12">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h1 className="truncate text-2xl font-extrabold text-foreground">{vendor.stall_name}</h1>
+                {vendor.status === "APPROVED" ? <BadgeCheck className="h-5 w-5 shrink-0 text-[#25834A]" /> : null}
+              </div>
+              <p className="mt-1 text-sm font-medium text-muted-foreground">{vendor.address || "Local Favourite"}</p>
+            </div>
+            {Number(vendor.offer_percent ?? 0) > 0 ? <span className="shrink-0 rounded-full bg-[#FFF0E9] px-3 py-1.5 text-[10px] font-extrabold text-[#FF5A1F]">{vendor.offer_label || `${vendor.offer_percent}% off`}</span> : null}
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className={`rounded-full px-3 py-1.5 text-xs font-extrabold ${vendor.is_open ? "bg-[#E8F5EC] text-[#16803C]" : "bg-muted text-muted-foreground"}`}>{vendor.is_open ? "Open Now" : "Closed"}</span>
+            {vendor.default_prep_minutes ? <span className="rounded-full bg-muted px-3 py-1.5 text-xs font-bold text-muted-foreground">About {vendor.default_prep_minutes} min prep</span> : null}
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            {vendor.mobile ? <a href={`tel:${vendor.mobile}`} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border text-xs font-bold"><Phone className="h-3.5 w-3.5" />Call</a> : <span />}
+            <a href={mapHref} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border text-xs font-bold"><Compass className="h-3.5 w-3.5" />Directions</a>
+            <button type="button" onClick={() => void shareStall()} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border text-xs font-bold"><Share2 className="h-3.5 w-3.5" />Share</button>
           </div>
         </div>
 
-        {photos.length > 0 && (
-          <div className="mt-6 flex gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {photos.map((p, idx) => (
-              <img
-                key={idx}
-                src={p}
-                className="h-44 w-64 shrink-0 rounded-2xl object-cover shadow-md"
-                alt="Stall"
-              />
-            ))}
-          </div>
-        )}
-
-        <div className="px-5 pt-8 pb-40">
-          <div className="flex items-center justify-between mb-6">
+        <div className="px-4 pb-40">
+          <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="text-xl font-black">Menu</h2>
-            <button className="press grid h-9 w-9 place-items-center rounded-full bg-muted text-muted-foreground">
-              <Search className="h-4 w-4" />
-            </button>
+            <label className="flex min-w-0 items-center gap-2 rounded-full border border-border bg-white px-3 py-2">
+              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search menu" className="w-full min-w-0 bg-transparent text-xs outline-none" />
+            </label>
           </div>
 
           <div className="space-y-10">
             {categoriesInUse.map((cat) => (
-              <div key={cat.id} className="space-y-6">
+              <div key={cat.id} className="space-y-3">
                 <h3 className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">
                   {cat.name}
                 </h3>
-                <div className="space-y-8">
+                <div className="grid grid-cols-2 gap-3">
                   {items
-                    .filter((i) => i.category_id === cat.id)
+                    .filter((i) => i.category_id === cat.id && i.name.toLowerCase().includes(query.toLowerCase()))
                     .map((i) => (
                       <ItemRow
                         key={i.id}
@@ -208,11 +203,11 @@ function StallDetail() {
             ))}
 
             {uncategorizedItems.length > 0 && (
-              <div className="space-y-6">
+              <div className="space-y-3">
                 <h3 className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">
                   More
                 </h3>
-                <div className="space-y-8">
+                <div className="grid grid-cols-2 gap-3">
                   {uncategorizedItems.map((i) => (
                     <ItemRow
                       key={i.id}
@@ -271,8 +266,60 @@ function ItemRow({
 
   return (
     <>
-      <div className="grid grid-cols-[minmax(0,1fr)_120px] gap-4 rounded-2xl border border-border bg-card p-3 shadow-card">
-        <div className="min-w-0">
+      <article className="overflow-hidden rounded-2xl border border-border bg-card p-2.5 shadow-sm">
+        <div className="product-tile relative aspect-square w-full">
+          <button
+            type="button"
+            onClick={() => setDetailsOpen(true)}
+            aria-label={`View ${i.name} details`}
+            className="h-full w-full"
+          >
+            <img
+              src={i.photo_url || foodImage(i.name)}
+              className="h-full w-full object-cover"
+              alt={i.name}
+              loading="lazy"
+            />
+          </button>
+          {!available ? (
+            <div className="absolute inset-0 grid place-items-center rounded-2xl bg-black/50 text-[10px] font-black text-white">
+              {stallOpen ? "SOLD OUT" : "CLOSED"}
+            </div>
+          ) : (
+            <div className="absolute bottom-2 right-2">
+              {line ? (
+                <div className="flex h-9 min-w-[80px] items-center justify-between rounded-full bg-card px-2 text-primary shadow-lg ring-1 ring-primary/20">
+                  <button
+                    type="button"
+                    aria-label={`Remove one ${i.name}`}
+                    onClick={() => cart.remove(i.id)}
+                    className="press px-1 text-lg font-black"
+                  >
+                    −
+                  </button>
+                  <span className="text-sm font-black">{line.qty}</span>
+                  <button
+                    type="button"
+                    aria-label={`Add one ${i.name}`}
+                    onClick={addItem}
+                    className="press px-1 text-lg font-black"
+                  >
+                    +
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={addItem}
+                  className="press h-9 min-w-[72px] rounded-full bg-card text-[12px] font-black text-primary shadow-lg ring-1 ring-primary/30 uppercase"
+                >
+                  Add
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="min-w-0 pt-2">
           <span
             className={`flex h-3.5 w-3.5 items-center justify-center rounded-sm border-2 ${i.food_type === "VEG" ? "border-[#558B2F]" : "border-muted-foreground"}`}
             aria-label={i.food_type === "VEG" ? "Vegetarian" : "Non-vegetarian"}
@@ -298,61 +345,10 @@ function ItemRow({
             <span className="text-xs font-medium text-muted-foreground">{i.unit}</span>
           </p>
           {i.details && (
-            <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{i.details}</p>
+            <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">{i.details}</p>
           )}
         </div>
-        <div className="product-tile relative h-[120px] w-[120px]">
-          <button
-            type="button"
-            onClick={() => setDetailsOpen(true)}
-            aria-label={`View ${i.name} details`}
-            className="h-full w-full"
-          >
-            <img
-              src={i.photo_url || foodImage(i.name)}
-              className="h-full w-full object-cover"
-              alt={i.name}
-            />
-          </button>
-          {!available ? (
-            <div className="absolute inset-0 grid place-items-center rounded-2xl bg-black/50 text-[10px] font-black text-white">
-              {stallOpen ? "SOLD OUT" : "CLOSED"}
-            </div>
-          ) : (
-            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
-              {line ? (
-                <div className="flex h-9 min-w-[80px] items-center justify-between rounded-xl bg-card px-2 text-primary shadow-lg ring-1 ring-primary/20">
-                  <button
-                    type="button"
-                    aria-label={`Remove one ${i.name}`}
-                    onClick={() => cart.remove(i.id)}
-                    className="press px-1 text-lg font-black"
-                  >
-                    −
-                  </button>
-                  <span className="text-sm font-black">{line.qty}</span>
-                  <button
-                    type="button"
-                    aria-label={`Add one ${i.name}`}
-                    onClick={addItem}
-                    className="press px-1 text-lg font-black"
-                  >
-                    +
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={addItem}
-                  className="press h-9 min-w-[84px] rounded-full bg-card text-[13px] font-black text-primary shadow-lg ring-1 ring-primary/30 uppercase"
-                >
-                  Add
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+      </article>
       {detailsOpen ? (
         <div
           className="fixed inset-0 z-[80] flex items-end bg-foreground/55 sm:items-center sm:justify-center sm:p-4"

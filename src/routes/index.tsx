@@ -25,8 +25,11 @@ import { StreetFoodExperience, type CuratedFoodDeal, type StreetFoodCategory, ty
 import { PremiumHome } from "@/components/PremiumHome";
 import { OnboardingScreen } from "@/components/OnboardingScreen";
 import { HomeMarketingModules } from "@/components/HomeMarketingModules";
+import { HomeFeatureModals } from "@/components/HomeFeatureModals";
 import { homeBannersQuery } from "@/lib/homeBanners";
+import { useHomeBanners } from "@/lib/homeBanners";
 import { Button } from "@/components/ui/button";
+import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/")({
   loader: ({ context }) => context.queryClient.ensureQueryData(homeBannersQuery),
@@ -90,6 +93,7 @@ function HomeEntry() {
 
 function Home() {
   const { user } = useSession();
+  const userId = user?.id;
   const navigate = useNavigate();
   const lines = useCart();
   const { count, foodTotal } = cartTotals(lines);
@@ -112,6 +116,9 @@ function Home() {
   const [onlyVeg, setOnlyVeg] = useState(false);
   const [vendorFilter, setVendorFilter] = useState<string | null>(null);
   const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [promotion, setPromotion] = useState<Tables<"app_promotions"> | null>(null);
+  const [rainMode, setRainMode] = useState(false);
+  const activeBanners = useHomeBanners();
   const [promoFocus, setPromoFocus] = useState<string | null>(null);
   const topBarTheme = useTopBarTheme();
   const theme = themeStyle(topBarTheme?.theme_token);
@@ -122,6 +129,16 @@ function Home() {
   useEffect(() => {
     let alive = true;
     activeCampaign().then((value) => { if (alive) setCampaign(value); });
+    void Promise.all([
+      supabase.from("app_promotions").select("*").eq("is_active", true).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("app_dynamic_assets").select("weather_tags").eq("is_enabled", true).eq("is_active", true).maybeSingle(),
+    ]).then(([promotionResult, weatherResult]) => {
+      if (!alive) return;
+      if (promotionResult.error) console.error("Could not load the home promotion:", promotionResult.error);
+      else setPromotion(promotionResult.data);
+      if (weatherResult.error) console.error("Could not load active weather mode:", weatherResult.error);
+      else setRainMode((weatherResult.data?.weather_tags ?? []).some((tag) => /rain|monsoon/i.test(tag)));
+    });
     const loadCatalog = async () => {
       setCatalogLoading(true);
       setCatalogError(null);
@@ -172,14 +189,14 @@ function Home() {
   }, [catalogReload]);
 
   useEffect(() => {
-    if (!user) return;
-    supabase.from("wallets").select("balance,status").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+    if (!userId) return;
+    supabase.from("wallets").select("balance,status").eq("user_id", userId).maybeSingle().then(({ data }) => {
       setBalance(data?.status === "ACTIVE" ? Number(data.balance) : 0);
     });
     supabase
       .from("addresses")
       .select("line,landmark")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .order("is_default", { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -187,9 +204,9 @@ function Home() {
     supabase
       .from("favorites")
       .select("item_id")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .then(({ data }) => setFavs((data ?? []).map((f) => f.item_id).filter(Boolean) as string[]));
-  }, [user?.id]);
+  }, [userId]);
 
   async function toggleFav(itemId: string, vendorId: string) {
     if (!user) return;
@@ -246,6 +263,14 @@ function Home() {
     const parts = path.split("/").filter(Boolean).map((part) => {
       try { return decodeURIComponent(part); } catch { return part; }
     });
+    if (parts[0] === "item" && parts[1]) {
+      const item = items.find((candidate) => candidate.id === parts[1] && candidate.in_stock);
+      if (item) {
+        add(item);
+        void navigate({ to: "/cart" });
+        return;
+      }
+    }
     if (parts[0] === "category" && parts[1]) {
       const wanted = routeSlug(parts[1]);
       const category = cats.find((candidate) => routeSlug(candidate.name) === wanted || routeSlug(candidate.name).includes(wanted));
@@ -485,6 +510,14 @@ function Home() {
       />
 
       <HomeMarketingModules onSearch={(value) => { setQ(value); setActive(null); setVendorFilter(null); }} />
+      <HomeFeatureModals
+        banners={activeBanners}
+        promotion={promotion}
+        campaignTitle={campaign?.title ?? null}
+        rainMode={rainMode}
+        items={items}
+        onRoute={openBannerRoute}
+      />
 
       <main className="flex min-w-0 flex-col gap-4 overflow-x-hidden">
         {topBarTheme?.header_bg_image_url ? (

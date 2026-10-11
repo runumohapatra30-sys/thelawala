@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { CircleUserRound, Grid2X2, House, ReceiptText, ShoppingCart } from "lucide-react";
+import { CircleUserRound, Grid2X2, House, ReceiptText, ShoppingCart, Store } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { GUEST_PROFILE_EVENT, LoginModal, OPEN_LOGIN_EVENT } from "@/components/LoginModal";
@@ -8,6 +8,7 @@ import { useCart } from "@/lib/cart";
 
 const NAV = [
   { to: "/", label: "Home", Icon: House },
+  { to: "/stalls", label: "Stalls", Icon: Store },
   { to: "/categories", label: "Explore", Icon: Grid2X2 },
   { to: "/cart", label: "Cart", Icon: ShoppingCart },
   { to: "/orders", label: "Orders", Icon: ReceiptText },
@@ -48,7 +49,7 @@ export function Shell({ children, hideNavigation = false }: { children: ReactNod
       <div className="mx-auto min-h-screen w-full max-w-[520px] bg-background pb-36 shadow-[0_0_48px_color-mix(in_oklab,var(--color-foreground)_8%,transparent)]">
         {children}
       </div>
-      {!hideNavigation ? <nav className="fixed inset-x-0 bottom-3 z-40 mx-auto grid w-[calc(100%-24px)] max-w-[480px] grid-cols-5 items-end rounded-full border border-border bg-card/95 px-2 py-2 shadow-[0_18px_45px_-20px_color-mix(in_oklab,var(--color-primary)_35%,transparent)] backdrop-blur-xl">
+      {!hideNavigation ? <nav className="fixed inset-x-0 bottom-3 z-40 mx-auto grid w-[calc(100%-24px)] max-w-[480px] grid-cols-6 items-end rounded-full border border-border bg-card/95 px-2 py-2 shadow-[0_18px_45px_-20px_color-mix(in_oklab,var(--color-primary)_35%,transparent)] backdrop-blur-xl">
         {NAV.map((n) => {
           const active =
             n.label === "Home"

@@ -109,7 +109,9 @@ export function AdminBannerStudio() {
       media_url: first?.url ?? editing?.media_url ?? "",
       media_path: first?.path ?? editing?.media_path ?? null,
       target_route: route.trim() || null,
-      height_px: format === "SLIM" ? 80 : 180,
+      height_px: editing?.height_px && (editing.height_px < 320 || editing.height_px > 460)
+        ? editing.height_px
+        : format === "SLIM" ? 90 : format === "4_GRID" ? 180 : 220,
       aspect_ratio: format === "SLIM" ? "4/1" : format === "4_GRID" ? "1/1" : "16/9",
       border_radius: 8, display_order: order, is_active: enabled, banner_format: format,
       grid_image_urls: format === "4_GRID" ? files.length ? files.map((item) => item.url) : editing?.grid_image_urls ?? [] : [],
@@ -191,6 +193,7 @@ export function AdminBannerStudio() {
           <label className="block text-xs font-bold text-muted-foreground">Title<input value={title} maxLength={100} onChange={(e) => setTitle(e.target.value)} className={`${inputCls} mt-1`} /></label>
           <label className="block text-xs font-bold text-muted-foreground">Subtitle<input value={subtitle} maxLength={180} onChange={(e) => setSubtitle(e.target.value)} className={`${inputCls} mt-1`} /></label>
           <label className="block text-xs font-bold text-muted-foreground">Badge<input value={badge} maxLength={40} onChange={(e) => setBadge(e.target.value)} className={`${inputCls} mt-1`} /></label>
+          <p className="-mt-2 text-[10px] leading-relaxed text-muted-foreground">Use “GIFT” or “COUPON” in the badge to show a home modal. For a coupon CTA, use “COUPON: CODE” or “CODE: CODE” as the badge. Banner height remains controlled by its format.</p>
           <div className="flex flex-wrap items-center gap-3"><label className="flex items-center gap-2 text-xs font-bold">Theme color<input type="color" value={color || "#e6f0ea"} onChange={(e) => setColor(e.target.value)} className="h-9 w-12 cursor-pointer rounded border border-border" /></label><Button variant="ghost" onClick={() => setColor("")}>Default</Button></div>
           <div className="grid gap-3 sm:grid-cols-2"><label className="text-xs font-bold">Start (local time)<input type="datetime-local" value={starts} onChange={(e) => setStarts(e.target.value)} className={`${inputCls} mt-1 min-w-0`} /></label><label className="text-xs font-bold">End (local time)<input type="datetime-local" value={ends} onChange={(e) => setEnds(e.target.value)} className={`${inputCls} mt-1 min-w-0`} /></label></div>
           <div className="flex items-center gap-4"><label className="text-xs font-bold">Display order<input type="number" min={0} value={order} onChange={(e) => setOrder(Math.max(0, Number(e.target.value)))} className={`${inputCls} mt-1 max-w-24`} /></label><label className="flex items-center gap-2 text-xs font-bold"><input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />Enabled</label></div>

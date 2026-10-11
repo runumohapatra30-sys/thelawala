@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
+export const PENDING_HOME_COUPON_KEY = "thelawala.pending-home-coupon";
+
 export type Coupon = {
   id: string;
   code: string;

@@ -43,7 +43,7 @@ type Order = {
   delivery_fee: number; tip_amount: number; customer_name: string; customer_mobile: string; address_line: string;
   drop_lat: number; drop_lng: number; vendor_id: string; partner_id: string | null;
   offered_to: string | null; offer_expires_at: string | null; rejected_partner_ids: string[];
-  payment_mode: string; payment_status: string;
+  payment_mode: string; payment_status: string; wallet_paid?: number;
   food_total?: number; base_food_total?: number | null;
   cancel_otp?: string | null; cancel_reason?: string | null;
 };
@@ -537,6 +537,10 @@ function RiderPortal() {
   }
 
   const trip = active;
+  const balanceAfterWallet = Math.max(0, Number(trip?.grand_total ?? 0) - Number(trip?.wallet_paid ?? 0));
+  const splitDue = trip?.payment_mode === "COD" && trip.payment_status === "PARTIAL"
+    ? Math.max(0, balanceAfterWallet - Math.round(balanceAfterWallet * 50) / 100)
+    : balanceAfterWallet;
   const step = !trip ? 0 : trip.status === "OUT_FOR_DELIVERY" ? 2 : 1;
 
   async function acceptOffer() {
@@ -896,16 +900,16 @@ function RiderPortal() {
             >
               {trip.payment_mode === "COD" && trip.payment_status !== "PAID" ? (
                 <>
-                  <p className="text-[11px] font-bold uppercase tracking-wide">Collect cash</p>
-                  <p className="text-2xl font-black">{inr(Number(trip.grand_total))}</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wide">{trip.payment_status === "PARTIAL" ? "Collect remaining balance" : "Collect cash"}</p>
+                  <p className="text-2xl font-black">{inr(splitDue)}</p>
                   <RiderCollectQr
                     orderId={trip.id}
                     orderCode={trip.code ?? trip.id.slice(0, 6).toUpperCase()}
-                    amount={Math.round(Number(trip.grand_total))}
+                    amount={Math.round(splitDue)}
                   />
                   <RiderCodUpiQr
                     orderId={trip.id}
-                    amount={Math.round(Number(trip.grand_total))}
+                    amount={Math.round(splitDue)}
                     onPaid={() => setActive((p) => (p ? { ...p, payment_status: "PAID", payment_mode: "ONLINE" } : p))}
                   />
                 </>
