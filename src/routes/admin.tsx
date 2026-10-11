@@ -16,6 +16,7 @@ import { AdminOrdersSection } from "@/components/admin/AdminOrdersSection";
 import { LiveDispatchBoard } from "@/components/admin/LiveDispatchBoard";
 import { AdminSettlement } from "@/components/admin/AdminSettlement";
 import { AdminRefunds } from "@/components/admin/AdminRefunds";
+import { AdminAuthBranding } from "@/components/AdminAuthBranding";
 import { supabase } from "@/integrations/supabase/client";
 import { listCoupons, type Coupon } from "@/lib/coupons";
 import { inr, slabsOf, type Settings } from "@/lib/fees";
@@ -206,6 +207,7 @@ function Admin() {
 
         {tab === "settings" && s ? (
           <>
+            <AdminAuthBranding />
             <section className="card-soft space-y-2 border border-border p-3">
               <p className="text-sm font-bold">Delivery fee rule</p>
               <div className="grid grid-cols-3 gap-2">

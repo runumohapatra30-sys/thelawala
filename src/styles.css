@@ -340,6 +340,46 @@
   border: 0 !important;
 }
 
+.tw-map-icon {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.tw-map-pin {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 12%;
+  box-shadow: 0 3px 12px rgba(36, 42, 37, 0.22);
+  transform: rotate(-45deg);
+}
+
+.tw-map-pin svg {
+  transform: rotate(45deg);
+}
+
+.tw-map-pin-stall {
+  background: #ff5a1f;
+}
+
+.tw-map-pin-home {
+  background: #16803c;
+}
+
+.tw-rider-marker {
+  display: grid;
+  width: 50px;
+  height: 40px;
+  place-items: center;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(36, 42, 37, 0.25);
+  transition: transform 180ms ease-out;
+}
+
 @utility brand-header {
   background: var(--color-primary);
   color: var(--color-primary-foreground);
