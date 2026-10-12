@@ -12,3 +12,4 @@
 - Keep home-only conversion content isolated from the live catalog UI so campaigns cannot alter ordering behavior.
 - Keep the local-stall slideshow in a dedicated client component fed by the unfiltered approved-stall catalog, so search filters cannot silently exclude stalls from its rotation.
 - Use app_dynamic_banners as the shared source for scheduled home hero copy, media and theme; prime a public server query in the home loader and invalidate it on realtime events so admin edits never affect catalog or ordering logic.
+- Store Soundbox gallery and stock in soundbox_product_settings, not system_settings metadata, so admin uploads and vendor reads share one protected source.

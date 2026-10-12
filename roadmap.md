@@ -1,4 +1,7 @@
 # Roadmap
+- [ ] Match sign-in to the food-photo reference using admin-managed artwork
+- [ ] Repair stale-session Google login recovery and verify sign-in entry
+- [ ] Repair Soundbox image upload and settings persistence
 - [ ] Add collapsing sticky home header and synchronized banner theme
 - [ ] Add live admin banner copy, colors, scheduling and multi-slide editing
 - [ ] Verify carousel rotation, pause, loop, scheduling and live updates

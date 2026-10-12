@@ -17,7 +17,7 @@ export function FestiveContextBanner({ campaign, theme, onFilter }: Props) {
   }, []);
   const campaignOverride = Boolean(campaign?.title.trim());
   const adminThemeOverride = Boolean(theme?.festive_style_active);
-  const adminBackground: CSSProperties | null = adminThemeOverride
+  const adminBackground: CSSProperties | null = adminThemeOverride && theme
     ? theme.header_bg_image_url
       ? {
           backgroundImage: `url("${theme.header_bg_image_url}")`,
@@ -36,7 +36,7 @@ export function FestiveContextBanner({ campaign, theme, onFilter }: Props) {
       ? { background: campaign.theme_bg_color }
       : null;
   const style = campaignBackground ?? adminBackground ?? { background: context.background };
-  const title = campaignOverride ? campaign.title : context.title;
+  const title = campaignOverride && campaign ? campaign.title : context.title;
   const backgroundImage = (campaignBackground ?? adminBackground)?.backgroundImage;
 
   return (

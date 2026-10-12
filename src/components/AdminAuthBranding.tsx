@@ -20,6 +20,22 @@ export function AdminAuthBranding() {
   const [uploading, setUploading] = useState<"hero" | "logo" | "app-logo" | "stall-logo" | null>(null);
   const [stalls, setStalls] = useState<{ id: string; stall_name: string }[]>([]);
   const [selectedStallId, setSelectedStallId] = useState("");
+  const [savedImages, setSavedImages] = useState<{ path: string; name: string }[]>([]);
+
+  useEffect(() => {
+    void Promise.all(["", "auth-branding"].map(async (folder) => {
+      const { data, error } = await supabase.storage.from("banners").list(folder, { limit: 100, sortBy: { column: "created_at", order: "desc" } });
+      if (error) return [];
+      return (data ?? []).filter((file) => file.id && String(file.metadata?.["mimetype"] ?? "").startsWith("image/")).map((file) => ({ path: folder ? `${folder}/${file.name}` : file.name, name: file.name }));
+    })).then((groups) => setSavedImages(groups.flat()));
+  }, []);
+
+  async function chooseSavedImage(path: string) {
+    if (!path) return;
+    const { data, error } = await supabase.storage.from("banners").createSignedUrl(path, 60 * 60 * 24 * 365 * 5);
+    if (error || !data) { toast.error("Could not open the saved image."); return; }
+    setBranding((current) => ({ ...current, loginHeroImage: data.signedUrl }));
+  }
 
   useEffect(() => {
     void supabase.from("vendors").select("id,stall_name").order("stall_name").then(({ data, error }) => {
@@ -108,6 +124,13 @@ export function AdminAuthBranding() {
         </p>
       </div>
 
+      <label className="block">
+        <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">Choose an uploaded food photo</span>
+        <select className={inputClass} defaultValue="" onChange={(event) => void chooseSavedImage(event.target.value)}>
+          <option value="">Select an existing image…</option>
+          {savedImages.map((image) => <option key={image.path} value={image.path}>{image.name}</option>)}
+        </select>
+      </label>
       <label className="block">
         <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">
           Login Hero Image URL
