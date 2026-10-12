@@ -1673,6 +1673,77 @@ export type Database = {
           },
         ]
       }
+      soundbox_hardware_orders: {
+        Row: {
+          created_at: string
+          delivery_address: string
+          id: string
+          owner_id: string
+          payment_plan: string
+          status: string
+          total_amount: number
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_address: string
+          id?: string
+          owner_id: string
+          payment_plan: string
+          status?: string
+          total_amount: number
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          delivery_address?: string
+          id?: string
+          owner_id?: string
+          payment_plan?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "soundbox_hardware_orders_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      soundbox_product_settings: {
+        Row: {
+          back_image_url: string | null
+          front_image_url: string | null
+          id: boolean
+          is_in_stock: boolean
+          packaging_image_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          back_image_url?: string | null
+          front_image_url?: string | null
+          id?: boolean
+          is_in_stock?: boolean
+          packaging_image_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          back_image_url?: string | null
+          front_image_url?: string | null
+          id?: boolean
+          is_in_stock?: boolean
+          packaging_image_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       support_messages: {
         Row: {
           body: string
