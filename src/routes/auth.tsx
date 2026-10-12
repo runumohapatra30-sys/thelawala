@@ -5,6 +5,7 @@ import { GoogleButton } from "@/components/LoginModal";
 import { ThelaLogo } from "@/components/Shell";
 import { useAuthBranding } from "@/lib/authBranding";
 import { ArrowDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -14,7 +15,7 @@ export const Route = createFileRoute("/auth")({
       { property: "og:title", content: "Sign in — ThelaWala" },
       {
         property: "og:description",
-        content: "Fast guest and customer login for Bhubaneswar street food delivery.",
+        content: "Sign in to ThelaWala for local street food delivery in Bhubaneswar.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -67,58 +68,55 @@ export function AuthPage() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2]">
-      <div className="mx-auto flex min-h-screen w-full max-w-[480px] flex-col px-5 pb-8 pt-4">
-        <div className="relative flex min-h-[45vh] flex-col justify-between overflow-hidden rounded-[2rem] bg-[#31352F] p-5 text-white shadow-sm">
+    <div className="min-h-screen bg-brand-soft">
+      <div className="mx-auto flex min-h-screen w-full max-w-[480px] flex-col bg-card">
+        <div className="relative flex min-h-[56vh] flex-col justify-between overflow-hidden bg-foreground p-6 text-primary-foreground">
           <img
             src={branding.loginHeroImage}
             alt=""
             className="absolute inset-0 h-full w-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/10 to-black/70" />
+          <div className="absolute inset-0 bg-gradient-to-b from-foreground/40 via-transparent to-card" />
           <div className="relative z-10 flex justify-end">
             <Link
               to="/"
-              className="press rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-[#242424]"
+              className="press rounded-full bg-card/90 px-3 py-1.5 text-xs font-bold text-card-foreground"
             >
               Back
             </Link>
           </div>
           <div className="relative z-10">
-            <div className="mb-3 grid h-14 w-14 place-items-center overflow-hidden rounded-2xl bg-white p-2 shadow-sm">
+            <div className="mb-3 grid h-14 w-14 place-items-center overflow-hidden rounded-2xl bg-card p-2 shadow-sm">
               {branding.logoUrl ? (
                 <img src={branding.logoUrl} alt="" className="h-full w-full object-contain" />
               ) : (
                 <ThelaLogo className="h-10 w-10" />
               )}
             </div>
-            <h1 className="text-3xl font-black tracking-tight">{branding.brandTitle}</h1>
-            <p className="mt-1 text-sm font-medium text-white/85">
+            <h1 className="text-3xl font-black text-foreground">{branding.brandTitle}</h1>
+            <p className="mt-1 text-sm font-medium text-muted-foreground">
               Local favourites, delivered with care.
             </p>
-            <button
+            <Button
               type="button"
               onClick={() =>
                 document
                   .getElementById("auth-options")
                   ?.scrollIntoView({ behavior: "smooth", block: "center" })
               }
-              className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#FF5A1F] px-5 py-3 text-sm font-extrabold text-white shadow-lg"
+              className="mt-5 h-12 w-full rounded-full text-sm font-extrabold"
             >
               Get Started <ArrowDown className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
         </div>
 
-        <div id="auth-options" className="mt-5 w-full rounded-3xl bg-white p-5 shadow-sm">
-          <p className="text-sm font-black">Welcome to {branding.brandTitle}</p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Sign in or create your account with Google — no password or OTP needed.
-          </p>
+        <div id="auth-options" className="w-full bg-card px-6 pb-6 pt-5">
+          <div className="flex items-center gap-3"><span className="h-px flex-1 bg-border" /><p className="text-xs font-semibold">Sign in with</p><span className="h-px flex-1 bg-border" /></div>
           <div className="mt-5 flex flex-col items-center gap-2">
-            <GoogleButton iconOnly className="border-2 border-[#FF5A1F] shadow-[0_8px_20px_rgba(255,90,31,0.16)]" />
-            <span className="text-[11px] font-bold text-muted-foreground">Continue with Google</span>
+            <GoogleButton className="h-12" />
           </div>
+          <p className="mt-4 text-center text-[11px] leading-relaxed text-muted-foreground">By continuing, you agree to our <Link to="/terms" className="text-primary">Terms & Privacy Policy</Link>.</p>
 
           <div className="mt-3 grid grid-cols-2 gap-2">
             <Link
@@ -143,7 +141,7 @@ export function AuthPage() {
             </Link>
           </div>
         </div>
-        <p className="mt-4 px-4 text-center text-[11px] text-muted-foreground">
+        <p className="mt-auto px-4 pb-6 text-center text-[11px] text-muted-foreground">
           Need help? Call our care team on{" "}
           <a href="tel:9078492360" className="font-bold text-primary">
             9078492360

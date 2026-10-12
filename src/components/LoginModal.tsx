@@ -1,5 +1,8 @@
 import { X } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import { lovable } from "@/integrations/lovable";
 import { useAuthBranding } from "@/lib/authBranding";
 
@@ -23,26 +26,32 @@ export function GoogleButton({
   iconOnly?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
+  const navigate = useNavigate();
   const [msg, setMsg] = useState<string | null>(null);
   async function signIn() {
     setBusy(true);
     setMsg(null);
-    const res = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/auth",
-      extraParams: { prompt: "select_account" },
-    });
-    if (res.error) {
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+      const res = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin + "/auth",
+        extraParams: { prompt: "select_account" },
+      });
+      if (res.error) throw res.error;
+      if (res.redirected) return;
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) throw new Error("Session not established");
+      await navigate({ to: "/auth" });
+    } catch {
+      setMsg("Google sign-in could not finish. Please try again.");
+    } finally {
       setBusy(false);
-      setMsg("Google sign-in failed. Please try again.");
-      return;
     }
-    if (res.redirected) return;
-    setBusy(false);
-    window.location.assign("/auth");
   }
   return (
     <>
-      <button
+      <Button
+        variant="outline"
         type="button"
         disabled={busy}
         aria-label={
@@ -76,7 +85,7 @@ export function GoogleButton({
         ) : (
           "Continue with Google"
         )}
-      </button>
+      </Button>
       {msg ? <p className="mt-2 text-center text-xs text-destructive">{msg}</p> : null}
     </>
   );
