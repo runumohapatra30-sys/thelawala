@@ -62,7 +62,11 @@ export function AuthPage() {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data, error }) => {
+      if (error) {
+        await supabase.auth.signOut({ scope: "local" });
+        return;
+      }
       if (data.session) goAfterLogin();
     });
   }, [navigate]);
@@ -114,7 +118,7 @@ export function AuthPage() {
         <div id="auth-options" className="w-full bg-card px-6 pb-6 pt-5">
           <div className="flex items-center gap-3"><span className="h-px flex-1 bg-border" /><p className="text-xs font-semibold">Sign in with</p><span className="h-px flex-1 bg-border" /></div>
           <div className="mt-5 flex flex-col items-center gap-2">
-            <GoogleButton className="h-12" />
+            <GoogleButton className="h-12" onSuccess={goAfterLogin} />
           </div>
           <p className="mt-4 text-center text-[11px] leading-relaxed text-muted-foreground">By continuing, you agree to our <Link to="/terms" className="text-primary">Terms & Privacy Policy</Link>.</p>
 

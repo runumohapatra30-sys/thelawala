@@ -21,9 +21,11 @@ type LoginModalProps = {
 export function GoogleButton({
   className = "",
   iconOnly = false,
+  onSuccess,
 }: {
   className?: string;
   iconOnly?: boolean;
+  onSuccess?: () => void | Promise<void>;
 }) {
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
@@ -41,7 +43,8 @@ export function GoogleButton({
       if (res.redirected) return;
       const { data, error } = await supabase.auth.getUser();
       if (error || !data.user) throw new Error("Session not established");
-      await navigate({ to: "/auth" });
+      if (onSuccess) await onSuccess();
+      else await navigate({ to: "/auth" });
     } catch {
       setMsg("Google sign-in could not finish. Please try again.");
     } finally {
