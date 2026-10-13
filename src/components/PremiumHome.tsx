@@ -9,6 +9,8 @@ import type { CartLine } from "@/lib/cart";
 import type { CuratedFoodDeal, StreetFoodCategory, StreetFoodItem, StreetFoodVendor } from "@/components/StreetFoodExperience";
 import { LiveHomeHeader } from "@/components/LiveHomeHeader";
 import { LocalSpotlight } from "@/components/LocalSpotlight";
+import { BestValueCarousel } from "@/components/BestValueCarousel";
+import type { DynamicBanner } from "@/lib/dynamicBanners";
 
 const SEARCH_SUGGESTIONS = [
   "Khandagiri Dahi Bara",
@@ -37,6 +39,7 @@ type Props = {
   onRemove: (itemId: string) => void;
   onViewDeals: () => void;
   onInternalRoute: (route: string) => void;
+  bestValuePromo: DynamicBanner | undefined;
   displayName?: string | null | undefined;
   avatarUrl?: string | null | undefined;
 };
@@ -60,11 +63,13 @@ export function PremiumHome({
   onRemove,
   onViewDeals,
   onInternalRoute,
+  bestValuePromo,
   displayName,
   avatarUrl,
 }: Props) {
   const reduceMotion = useReducedMotion();
   const [suggestionIndex, setSuggestionIndex] = useState(0);
+  const [bestValueTheme, setBestValueTheme] = useState<string | null>(null);
 
   useEffect(() => {
     if (query || reduceMotion) return;
@@ -100,27 +105,21 @@ export function PremiumHome({
 
   return (
     <>
-      <LiveHomeHeader address={address} balance={balance} displayName={displayName} avatarUrl={avatarUrl} query={query} onQueryChange={onQueryChange} voiceSearch={voiceSearch} onInternalRoute={onInternalRoute} categories={categories} activeCategoryId={activeCategoryId} onCategoryChange={onCategoryChange} />
+      <LiveHomeHeader address={address} balance={balance} displayName={displayName} avatarUrl={avatarUrl} query={query} onQueryChange={onQueryChange} voiceSearch={voiceSearch} onInternalRoute={onInternalRoute} categories={categories} activeCategoryId={activeCategoryId} onCategoryChange={onCategoryChange} bestValueTheme={bestValueTheme} />
 
       <section className="px-4 pb-2 pt-3">
         <div className="grid grid-cols-2 gap-3">
           <LocalSpotlight vendors={vendors} items={spotlightItems} onVendor={onVendor} />
 
-          <div className="flex min-h-[252px] flex-col rounded-3xl border border-border bg-card p-3 shadow-sm">
-            <div className="mb-2 flex items-center justify-between gap-1"><span className="text-xs font-black text-foreground">Best value</span><Link to="/categories" className="text-[10px] font-black text-primary">See all ›</Link></div>
-            <div className="flex flex-1 flex-col justify-between gap-2">
-              {valueItems.map((item) => {
-                const line = lines.find((candidate) => candidate.itemId === item.id);
-                return (
-                  <div key={item.id} className="flex min-h-[61px] items-center gap-2 rounded-2xl border border-border bg-muted/45 p-1.5">
-                    <img src={item.photo_url ?? foodImage(item.name)} alt={item.name} className="h-10 w-10 shrink-0 rounded-xl bg-brand-soft object-cover" />
-                    <span className="min-w-0 flex-1"><span className="block truncate text-[10px] font-bold text-foreground">{item.name}</span><span className="text-xs font-black text-primary">{inr(customerPrice(item.price))}</span></span>
-                    {line ? <span className="flex items-center gap-1 rounded-lg bg-primary p-1 text-primary-foreground"><button type="button" aria-label={`Remove one ${item.name}`} onClick={() => onRemove(item.id)}><Minus className="h-3 w-3" /></button><span className="min-w-3 text-center text-[10px] font-black">{line.qty}</span><button type="button" aria-label={`Add one ${item.name}`} onClick={() => onAdd(item)}><Plus className="h-3 w-3" /></button></span> : <button type="button" onClick={() => onAdd(item)} className="rounded-lg border border-primary bg-card px-2 py-1 text-[9px] font-black text-primary">ADD</button>}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <BestValueCarousel
+            items={valueItems}
+            lines={lines}
+            promo={bestValuePromo}
+            onAdd={onAdd}
+            onRemove={onRemove}
+            onActiveTheme={setBestValueTheme}
+            onInternalRoute={onInternalRoute}
+          />
         </div>
       </section>
 

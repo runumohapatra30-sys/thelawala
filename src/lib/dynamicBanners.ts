@@ -21,7 +21,7 @@ export type DynamicBanner = {
   ends_at: string | null;
 };
 
-export type BannerFormat = "HERO" | "SLIM" | "4_GRID";
+export type BannerFormat = "HERO" | "SLIM" | "4_GRID" | "BEST_VALUE";
 
 const COLS =
   "id,media_type,media_url,media_path,target_route,height_px,aspect_ratio,border_radius,is_active,display_order,banner_format,grid_image_urls,title,subtitle,badge,theme_color,starts_at,ends_at";
@@ -37,7 +37,9 @@ export async function listDynamicBanners(onlyActive: boolean): Promise<DynamicBa
   if (error) throw new Error("Could not load banners. Please try again.");
   return (data ?? []).map((row) => ({
     ...row,
-    banner_format: row.banner_format === "SLIM" || row.banner_format === "4_GRID" ? row.banner_format : "HERO",
+    banner_format: row.banner_format === "SLIM" || row.banner_format === "4_GRID" || row.banner_format === "BEST_VALUE"
+      ? row.banner_format
+      : "HERO",
     grid_image_urls: Array.isArray(row.grid_image_urls) ? row.grid_image_urls : [],
   })) as DynamicBanner[];
 }
@@ -52,7 +54,13 @@ export async function uploadBannerMedia(file: File) {
     .from("banners")
     .createSignedUrl(path, 60 * 60 * 24 * 365 * 5);
   if (signed.error || !signed.data) {
-    return { error: signed.error?.message ?? "Could not read the uploaded file." };
+    const { error: cleanupError } = await supabase.storage.from("banners").remove([path]);
+    const message = signed.error?.message ?? "Could not read the uploaded file.";
+    return {
+      error: cleanupError
+        ? `${message} The uploaded file could not be cleaned up: ${cleanupError.message}`
+        : message,
+    };
   }
   return { path, url: signed.data.signedUrl };
 }

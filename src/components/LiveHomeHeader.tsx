@@ -14,13 +14,14 @@ import { useAuthBranding } from "@/lib/authBranding";
 
 const suggestions = ["Khandagiri Dahi Bara", "Gupchup & Chaat", "Egg Chicken Roll", "Evening Hot Pakoda"];
 
-export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query, onQueryChange, voiceSearch, onInternalRoute, categories, activeCategoryId, onCategoryChange }: {
+export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query, onQueryChange, voiceSearch, onInternalRoute, categories, activeCategoryId, onCategoryChange, bestValueTheme }: {
   address: string | null; balance: number; query: string; onQueryChange: (query: string) => void;
   displayName?: string | null | undefined; avatarUrl?: string | null | undefined;
   voiceSearch: ReactNode; onInternalRoute: (route: string) => void;
   categories: StreetFoodCategory[]; activeCategoryId: string | null; onCategoryChange: (categoryId: string | null) => void;
+  bestValueTheme: string | null;
 }) {
-  const rows = useHomeBanners();
+  const rows = useHomeBanners().filter((row) => row.banner_format !== "BEST_VALUE");
   const branding = useAuthBranding();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
@@ -29,7 +30,7 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
   const reduceMotion = useReducedMotion();
   const active = rows.find((row) => row.id === activeId) ?? rows[0];
   const onActive = useCallback((row: DynamicBanner | null) => setActiveId(row?.id ?? null), []);
-  const themeColor = active?.theme_color;
+  const themeColor = bestValueTheme ?? active?.theme_color;
   const hasBg = Boolean(active?.media_url);
   const style = themeColor && /^#[0-9a-f]{6}$/i.test(themeColor)
     ? { "--home-theme": themeColor } as CSSProperties : undefined;

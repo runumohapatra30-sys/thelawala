@@ -22,7 +22,9 @@ export const fetchHomeBanners = createServerFn({ method: "GET" }).handler(async 
   if (error) return [];
   return (data ?? []).map((row) => ({ ...row,
     media_type: row.media_type === "video" ? "video" : "image",
-    banner_format: row.banner_format === "SLIM" || row.banner_format === "4_GRID" ? row.banner_format : "HERO",
+    banner_format: row.banner_format === "SLIM" || row.banner_format === "4_GRID" || row.banner_format === "BEST_VALUE"
+      ? row.banner_format
+      : "HERO",
     grid_image_urls: row.grid_image_urls ?? [],
   }));
 });

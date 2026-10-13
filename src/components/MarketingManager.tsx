@@ -11,6 +11,7 @@ import {
 } from "@/lib/marketing";
 import { SmartAssetManager } from "@/components/SmartAssetManager";
 import { AdminBannerStudio } from "@/components/AdminBannerStudio";
+import { AdminBestValuePromo } from "@/components/AdminBestValuePromo";
 import { AdminDynamicLayout } from "@/components/AdminDynamicLayout";
 
 const inputCls =
@@ -34,6 +35,7 @@ export function MarketingManager() {
   return (
     <div className="space-y-3">
       <AdminDynamicLayout />
+      <AdminBestValuePromo stalls={vendors} categories={cats} />
       <AdminBannerStudio />
       <BannerManager vendors={vendors} cats={cats} />
       <CampaignBuilder cats={cats} />

@@ -19,7 +19,8 @@ const ROUTE_PRESETS = [
   { label: "Wallet", value: "/wallet" },
   { label: "Custom link…", value: "__custom" },
 ] as const;
-const FORMATS: { value: BannerFormat; title: string; note: string }[] = [
+type StudioFormat = Exclude<BannerFormat, "BEST_VALUE">;
+const FORMATS: { value: StudioFormat; title: string; note: string }[] = [
   { value: "HERO", title: "Full Hero", note: "Large 16:9 banner" },
   { value: "SLIM", title: "Slim Ribbon", note: "Compact 4:1 strip" },
   { value: "4_GRID", title: "4-Grid", note: "Four square category tiles" },
@@ -32,7 +33,7 @@ function validFile(file: File) {
 
 export function AdminBannerStudio() {
   const [rows, setRows] = useState<DynamicBanner[]>([]);
-  const [format, setFormat] = useState<BannerFormat>("HERO");
+  const [format, setFormat] = useState<StudioFormat>("HERO");
   const [file, setFile] = useState<File | null>(null);
   const [gridFiles, setGridFiles] = useState<(File | null)[]>([null, null, null, null]);
   const [preview, setPreview] = useState<string | null>(null);
@@ -51,7 +52,7 @@ export function AdminBannerStudio() {
   const [enabled, setEnabled] = useState(true);
   const localDate = (date: string | null) => date ? new Date(Date.parse(date) - new Date(date).getTimezoneOffset() * 60000).toISOString().slice(0,16) : "";
   function edit(banner: DynamicBanner) {
-    setEditing(banner); setFormat(banner.banner_format); setTitle(banner.title); setSubtitle(banner.subtitle);
+    setEditing(banner); setFormat(banner.banner_format === "BEST_VALUE" ? "HERO" : banner.banner_format); setTitle(banner.title); setSubtitle(banner.subtitle);
     setBadge(banner.badge); setColor(banner.theme_color ?? ""); setStarts(localDate(banner.starts_at)); setEnds(localDate(banner.ends_at));
     setOrder(banner.display_order); setEnabled(banner.is_active); setRoute(banner.target_route ?? "");
     setCustom(Boolean(banner.target_route && !ROUTE_PRESETS.some((preset) => preset.value === banner.target_route)));
@@ -62,7 +63,7 @@ export function AdminBannerStudio() {
     setEditing(null); setTitle(""); setSubtitle(""); setBadge(""); setColor(""); setStarts(""); setEnds(""); setOrder(rows.length + 1); setEnabled(true);
     setFile(null); setGridFiles([null,null,null,null]); setRoute(""); setCustom(false);
   }
-  const load = () => listDynamicBanners(false).then(setRows).catch(() => toast.error("Could not load banners."));
+  const load = () => listDynamicBanners(false).then((banners) => setRows(banners.filter((banner) => banner.banner_format !== "BEST_VALUE"))).catch(() => toast.error("Could not load banners."));
 
   useEffect(() => { load(); }, []);
   useEffect(() => {
