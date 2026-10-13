@@ -1,6 +1,5 @@
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, type MotionStyle } from "framer-motion";
 import { ArrowRight, Minus, Plus } from "lucide-react";
-import type { CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
 import type { HomeSection } from "@/lib/homeSections";
 import type { PickItem } from "@/components/FestiveSections";
@@ -8,13 +7,13 @@ import { customerPrice } from "@/lib/pricing";
 import { inr } from "@/lib/fees";
 import { foodImage } from "@/lib/foodImage";
 
-export function ProductOfferSection({ section, items, onAdd, onRemove, qtyOf, onFilter }: { section: HomeSection; items: PickItem[]; onAdd: (id: string) => void; onRemove?: (id: string) => void; qtyOf?: (id: string) => number; onFilter: (value: string) => void }) {
+export function ProductOfferSection({ section, items, onAdd, onRemove, qtyOf, onFilter }: { section: HomeSection; items: PickItem[]; onAdd: (id: string) => void; onRemove?: ((id: string) => void) | undefined; qtyOf?: ((id: string) => number) | undefined; onFilter: (value: string) => void }) {
   const reduced = useReducedMotion();
   const config = section.cards[0];
   const design = config?.offer_design ?? "SAVINGS_RAIL";
   const picks = config?.auto_items ? items.filter((item) => item.in_stock) : section.item_ids.map((id) => items.find((item) => item.id === id)).filter((item): item is PickItem => Boolean(item));
   if (!picks.length) return null;
-  const style = { ...(section.bg_color && /^#[0-9a-f]{6}$/i.test(section.bg_color) ? { "--offer-color": section.bg_color } : {}), ...(section.bg_image_url ? { "--offer-art": `url(${JSON.stringify(section.bg_image_url)})` } : {}) } as CSSProperties;
+  const style = { ...(section.bg_color && /^#[0-9a-f]{6}$/i.test(section.bg_color) ? { "--offer-color": section.bg_color } : {}), ...(section.bg_image_url ? { "--offer-art": `url(${JSON.stringify(section.bg_image_url)})` } : {}) } as MotionStyle;
   const grid = design === "PRODUCT_GRID";
   return <motion.section aria-label={section.title} style={style} className={`product-offer product-offer--${design.toLowerCase()} min-w-0 py-5`} initial={reduced ? false : { opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
     <header className="px-4 text-center"><h2 className="text-xl font-black uppercase leading-tight text-primary">{section.title}</h2>{section.subtitle ? <p className="mt-1 text-xs text-muted-foreground">{section.subtitle}</p> : null}</header>
