@@ -343,6 +343,7 @@ function Home() {
         items={items}
         onFilter={(v) => { setQ(v); setActive(null); setVendorFilter(null); }}
         onAdd={(id) => { const it = items.find((x) => x.id === id); if (it) add(it); }}
+        onRemove={(id) => cart.remove(id)}
         qtyOf={(id) => lines.find((l) => l.itemId === id)?.qty ?? 0}
       />
     ),

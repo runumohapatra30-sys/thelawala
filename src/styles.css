@@ -4,6 +4,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+.product-offer { --offer-color: var(--primary); --offer-art: none; background: var(--card); }
+.offer-product-art { background-color: var(--offer-color); background-image: var(--offer-art); background-size: cover; background-position: center; }
+.product-offer--product_grid .offer-product-art { aspect-ratio: 1; }
+.product-offer--compact_rail .offer-product-art { aspect-ratio: 1; }
+.product-offer--spotlight .offer-product-art { aspect-ratio: 4 / 3; }
+.offer-footer { background: color-mix(in oklab, var(--offer-color) 10%, var(--card)); }
+body:has([aria-modal="true"], [role="dialog"], [class*="fixed inset-0"][class*="bg-"]) .customer-bottom-nav { display: none; }
+
 /*
  * Design system definition.
  *
