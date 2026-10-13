@@ -6,6 +6,8 @@
 
 .product-offer { --offer-color: var(--primary); --offer-art: none; background: var(--card); }
 .offer-product-art { background-color: var(--offer-color); background-image: var(--offer-art); background-size: cover; background-position: center; }
+.offer-product-art::before { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, color-mix(in oklab, var(--foreground) 65%, transparent), transparent 65%); }
+.offer-product-art img { position: relative; z-index: 1; }
 .product-offer--product_grid .offer-product-art { aspect-ratio: 1; }
 .product-offer--compact_rail .offer-product-art { aspect-ratio: 1; }
 .product-offer--spotlight .offer-product-art { aspect-ratio: 4 / 3; }
