@@ -1,4 +1,6 @@
 # Roadmap
+- [x] Add four admin-editable live product offer designs with custom headline, background and automatic items
+- [x] Hide customer bottom navigation during checkout and open dialogs
 - [ ] Match sign-in to the food-photo reference using admin-managed artwork
 - [ ] Repair stale-session Google login recovery and verify sign-in entry
 - [ ] Repair Soundbox image upload and settings persistence
