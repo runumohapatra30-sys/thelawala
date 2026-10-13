@@ -2,6 +2,7 @@ import { useHomeSections, type HomeSection } from "@/lib/homeSections";
 import { customerPrice } from "@/lib/pricing";
 import { inr } from "@/lib/fees";
 import { foodImage } from "@/lib/foodImage";
+import { ProductOfferSection } from "@/components/ProductOfferSection";
 
 export type PickItem = {
   id: string;
@@ -16,6 +17,7 @@ type Props = {
   items: PickItem[];
   onFilter: (value: string) => void;
   onAdd: (itemId: string) => void;
+  onRemove?: (itemId: string) => void;
   qtyOf?: (itemId: string) => number;
   /** Pass sections directly for the admin preview; otherwise the live published ones are used. */
   sections?: HomeSection[];
@@ -28,7 +30,9 @@ export function FestiveSections(props: Props) {
   return (
     <>
       {rows.map((s) =>
-        s.section_type === "FESTIVE_GRID_4" ? (
+        s.cards[0]?.offer_design ? (
+          <ProductOfferSection key={s.id} section={s} items={props.items} onFilter={props.onFilter} onAdd={props.onAdd} onRemove={props.onRemove} qtyOf={props.qtyOf} />
+        ) : s.section_type === "FESTIVE_GRID_4" ? (
           <FestiveGrid key={s.id} section={s} onFilter={props.onFilter} />
         ) : (
           <FestivePicks key={s.id} section={s} {...props} />

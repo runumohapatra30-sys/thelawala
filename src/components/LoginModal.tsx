@@ -2,6 +2,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { X } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { useAuthBranding } from "@/lib/authBranding";
 
 export const OPEN_LOGIN_EVENT = "thelawala:open-login";
 export const GUEST_PROFILE_EVENT = "thelawala:guest-profile";
@@ -86,9 +88,10 @@ export function GoogleButton({
 }: {
   className?: string;
   iconOnly?: boolean;
-  onSuccess?: () => void;
+  onSuccess?: () => void | Promise<void>;
 }) {
   const [busy, setBusy] = useState(false);
+  const navigate = useNavigate();
   const [msg, setMsg] = useState<string | null>(null);
   async function signIn() {
     setBusy(true);
@@ -121,7 +124,7 @@ export function GoogleButton({
               }
               await persistOnboarding();
               setBusy(false);
-              onSuccess?.();
+              await onSuccess?.();
             } catch (error) {
               setBusy(false);
               setMsg(error instanceof Error ? error.message : "Google sign-in failed. Please try again.");
@@ -150,7 +153,8 @@ export function GoogleButton({
   }
   return (
     <>
-      <button
+      <Button
+        variant="outline"
         type="button"
         disabled={busy}
         aria-label={
@@ -184,7 +188,7 @@ export function GoogleButton({
         ) : (
           "Continue with Google"
         )}
-      </button>
+      </Button>
       {msg ? <p className="mt-2 text-center text-xs text-destructive">{msg}</p> : null}
     </>
   );
@@ -275,6 +279,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
 }
 
 function LoginBrandHeader() {
+  const branding = useAuthBranding();
   return (
     <>
       <div className="mb-3 flex items-center gap-2">

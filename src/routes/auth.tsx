@@ -17,7 +17,7 @@ export const Route = createFileRoute("/auth")({
       { property: "og:title", content: "Sign in — ThelaWala" },
       {
         property: "og:description",
-        content: "Fast guest and customer login for Bhubaneswar street food delivery.",
+        content: "Sign in to ThelaWala for local street food delivery in Bhubaneswar.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -205,7 +205,7 @@ export function AuthPage() {
             )}
             <label className="flex cursor-pointer items-start gap-2.5 pt-1 text-xs leading-5 text-[#75665C]">
               <input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} className="mt-0.5 h-4 w-4 accent-[#F4511E]" />
-              <span>I agree to the <Link to="/terms" className="font-bold text-[#F4511E]">Terms</Link> and <Link to="/privacy" className="font-bold text-[#F4511E]">Privacy Policy</Link>.</span>
+              <span>I agree to the <Link to="/terms" className="font-bold text-[#F4511E]">Terms</Link> and Privacy Policy.</span>
             </label>
             {message ? <p role="status" className="text-xs text-emerald-700">{message}</p> : null}
             {errorMessage ? <p role="alert" className="text-xs text-red-700">{errorMessage}</p> : null}

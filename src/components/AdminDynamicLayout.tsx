@@ -7,9 +7,11 @@ import {
   type GridCard,
   type HomeSection,
   type SectionType,
+  type OfferDesign,
 } from "@/lib/homeSections";
 import { FestiveSections, type PickItem } from "@/components/FestiveSections";
 import { AdminFestivePhotos } from "@/components/AdminFestivePhotos";
+import { Button } from "@/components/ui/button";
 import {
   BRAND_FOREST,
   THEME_PRESETS,
@@ -24,6 +26,12 @@ const inputCls =
   "w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary";
 
 const blankCard = (): GridCard => ({ title: "", image_url: "", video_url: "", filter: "", tag: "" });
+const OFFER_DESIGNS: { id: OfferDesign; label: string }[] = [
+  { id: "SAVINGS_RAIL", label: "Savings cards" },
+  { id: "PRODUCT_GRID", label: "2 × 2 grid" },
+  { id: "SPOTLIGHT", label: "Large spotlight" },
+  { id: "COMPACT_RAIL", label: "Compact row" },
+];
 
 const blankSection = (type: SectionType): HomeSection => ({
   id: "",
@@ -56,6 +64,8 @@ function SectionStudio() {
   const [editing, setEditing] = useState<HomeSection | null>(null);
   const [preview, setPreview] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [itemSearch, setItemSearch] = useState("");
 
   const load = () => listHomeSections(false).then(setRows);
 
@@ -70,9 +80,13 @@ function SectionStudio() {
 
   async function pickImage(file: File, apply: (url: string) => void) {
     if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) { toast.error("Use a JPG, PNG, GIF or WebP picture."); return; }
-    const up = await uploadSectionImage(file);
-    if ("error" in up) { toast.error(up.error); return; }
-    apply(up.url);
+    setUploading(true);
+    try {
+      const up = await uploadSectionImage(file);
+      if ("error" in up) { toast.error(up.error); return; }
+      apply(up.url);
+    } catch { toast.error("Picture upload failed. Please try again."); }
+    finally { setUploading(false); }
   }
 
   async function pickVideo(file: File, apply: (url: string) => void) {
@@ -84,8 +98,9 @@ function SectionStudio() {
   }
 
   async function save(publish: boolean) {
-    if (!editing) return;
+    if (!editing || uploading) return;
     if (!editing.title.trim()) { toast.error("Give the section a title."); return; }
+    if (editing.cards[0]?.offer_design && !editing.cards[0].auto_items && !editing.item_ids.length) { toast.error("Choose at least one dish or enable automatic items."); return; }
     setBusy(true);
     const payload = {
       section_type: editing.section_type,
@@ -93,7 +108,7 @@ function SectionStudio() {
       subtitle: editing.subtitle || null,
       bg_color: editing.bg_color || null,
       bg_image_url: editing.bg_image_url || null,
-      cards: editing.cards.filter((c) => c.title || c.image_url || c.video_url),
+      cards: editing.cards.filter((c) => c.offer_design || c.title || c.image_url || c.video_url),
       item_ids: editing.item_ids,
       is_active: publish,
       display_order: Number(editing.display_order) || 1,
@@ -126,6 +141,14 @@ function SectionStudio() {
 
   return (
     <section className="card-soft space-y-2 border border-border p-3">
+      <div className="border-b border-border pb-3">
+        <h2 className="mb-2 text-sm font-bold">Product offer designs</h2>
+        <div className="grid grid-cols-2 gap-2">
+          {OFFER_DESIGNS.map((design) => <Button key={design.id} variant="outline" className="h-auto flex-col gap-2 py-3 text-xs" onClick={() => setEditing({ ...blankSection("FESTIVE_PICKS_PRODUCTS"), title: "Best prices, always!", bg_color: "", cards: [{ ...blankCard(), offer_design: design.id, auto_items: true, footer_text: "See more items at low prices!" }] })}>
+            <span aria-hidden className={`grid w-full gap-1 ${design.id === "PRODUCT_GRID" ? "grid-cols-2" : "grid-cols-3"}`}>{[0, 1, 2, ...(design.id === "PRODUCT_GRID" ? [3] : [])].map((n) => <span key={n} className="h-8 rounded bg-primary/20" />)}</span>{design.label}
+          </Button>)}
+        </div>
+      </div>
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-bold">Festive section studio</p>
         <div className="flex gap-1.5">
@@ -153,7 +176,7 @@ function SectionStudio() {
           <div className="min-w-0">
             <p className="truncate text-sm font-bold">{s.title}</p>
             <p className="text-[11px] text-muted-foreground">
-              {s.section_type === "FESTIVE_GRID_4" ? "4-grid category card" : "Horizontal product picks"} · #{s.display_order} ·{" "}
+              {OFFER_DESIGNS.find((d) => d.id === s.cards[0]?.offer_design)?.label ?? (s.section_type === "FESTIVE_GRID_4" ? "4-grid category card" : "Horizontal product picks")} · #{s.display_order} ·{" "}
               {s.is_active ? "Live" : "Draft"}
             </p>
           </div>
@@ -172,6 +195,12 @@ function SectionStudio() {
 
       {editing ? (
         <div className="space-y-2 rounded-xl border border-primary/40 p-2">
+          {editing.cards[0]?.offer_design ? <>
+            <label className="block text-xs font-semibold">Offer design<select aria-label="Offer design" className={inputCls} value={editing.cards[0].offer_design} onChange={(e) => upCard(0, { offer_design: e.target.value as OfferDesign })}>{OFFER_DESIGNS.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}</select></label>
+            <label className="block text-xs font-semibold">Bottom link text<input aria-label="Bottom link text" className={inputCls} value={editing.cards[0].footer_text ?? ""} onChange={(e) => upCard(0, { footer_text: e.target.value })} /></label>
+            <label className="flex items-center gap-2 py-2 text-xs font-semibold"><input type="checkbox" checked={editing.cards[0].auto_items ?? false} onChange={(e) => upCard(0, { auto_items: e.target.checked })} />Automatically include all available dishes</label>
+          </> : null}
+          {!editing.cards[0]?.offer_design ? (
           <div className="grid grid-cols-2 gap-2">
             {(["FESTIVE_GRID_4", "FESTIVE_PICKS_PRODUCTS"] as SectionType[]).map((t) => (
               <button
@@ -183,8 +212,9 @@ function SectionStudio() {
               </button>
             ))}
           </div>
+          ) : null}
 
-          <input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} placeholder="Section title" className={inputCls} />
+          <label className="block text-xs font-semibold">Headline<input aria-label="Offer headline" value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} placeholder="Section title" className={inputCls} /></label>
           <input value={editing.subtitle ?? ""} onChange={(e) => setEditing({ ...editing, subtitle: e.target.value })} placeholder="Subtitle" className={inputCls} />
           <div className="flex flex-wrap gap-2">
             {[
@@ -206,18 +236,20 @@ function SectionStudio() {
           <div className="grid grid-cols-2 gap-2">
             <label className="block">
               <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">Background colour</span>
-              <input type="color" value={editing.bg_color || "#FFE7A8"} onChange={(e) => setEditing({ ...editing, bg_color: e.target.value })} className="h-10 w-full rounded-xl border border-border" />
+              <input type="color" aria-label="Offer background colour" value={/^#[0-9a-f]{6}$/i.test(editing.bg_color ?? "") ? editing.bg_color ?? "#0B4627" : "#0B4627"} onChange={(e) => setEditing({ ...editing, bg_color: e.target.value })} className="h-10 w-full rounded-xl border border-border" />
             </label>
             <label className="block">
               <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">Background photo</span>
               <input
                 type="file"
+                aria-label="Offer background photo"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) pickImage(f, (url) => setEditing((x) => (x ? { ...x, bg_image_url: url } : x))); }}
                 className="w-full rounded-xl border border-border px-2 py-2 text-[11px]"
               />
             </label>
           </div>
+          {uploading ? <p role="status" className="text-xs text-muted-foreground">Uploading picture…</p> : null}
           {editing.bg_image_url ? (
             <button onClick={() => setEditing({ ...editing, bg_image_url: "" })} className="rounded-full border border-border px-3 py-1 text-[11px] font-bold text-muted-foreground">
               Remove background photo
@@ -266,12 +298,14 @@ function SectionStudio() {
           ) : (
             <div className="space-y-1.5">
               <p className="pt-1 text-[11px] font-bold text-muted-foreground">Choose dishes for this row</p>
+              <input aria-label="Search offer dishes" placeholder="Search dishes" value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} className={inputCls} />
               <div className="max-h-56 space-y-1 overflow-y-auto rounded-xl border border-border p-2">
-                {items.map((i) => {
+                {items.filter((i) => i.name.toLowerCase().includes(itemSearch.toLowerCase())).map((i) => {
                   const on = editing.item_ids.includes(i.id);
                   return (
-                    <button
+                    <Button variant="outline"
                       key={i.id}
+                      disabled={editing.cards[0]?.auto_items === true}
                       onClick={() =>
                         setEditing({
                           ...editing,
@@ -282,7 +316,7 @@ function SectionStudio() {
                     >
                       <span className="truncate">{i.name}</span>
                       <span>{on ? "✓" : "+"}</span>
-                    </button>
+                    </Button>
                   );
                 })}
                 {items.length === 0 ? <p className="text-[11px] text-muted-foreground">No dishes available yet.</p> : null}
@@ -314,10 +348,10 @@ function SectionStudio() {
           ) : null}
 
           <div className="flex gap-2">
-            <button onClick={() => save(true)} disabled={busy} className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50">
+            <button onClick={() => save(true)} disabled={busy || uploading} className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50">
               {busy ? "Saving…" : "Publish to Live App"}
             </button>
-            <button onClick={() => save(false)} disabled={busy} className="rounded-xl border border-border px-3 py-2.5 text-sm font-bold text-muted-foreground">Save draft</button>
+            <button onClick={() => save(false)} disabled={busy || uploading} className="rounded-xl border border-border px-3 py-2.5 text-sm font-bold text-muted-foreground">Save draft</button>
             <button onClick={() => setEditing(null)} className="rounded-xl border border-border px-3 py-2.5 text-sm font-bold text-muted-foreground">Cancel</button>
           </div>
         </div>

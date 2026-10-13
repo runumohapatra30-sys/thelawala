@@ -199,7 +199,7 @@ export function AdminSoundbox() {
               <div className="grid h-28 place-items-center overflow-hidden rounded-xl bg-muted/50">
                 {product[key] ? (
                   <img
-                    src={product[key]!}
+                    src={product[key] ?? undefined}
                     alt={`Soundbox ${label}`}
                     className="h-full w-full object-contain"
                   />
