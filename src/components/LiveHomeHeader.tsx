@@ -32,7 +32,6 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
   const active = rows.find((row) => row.id === activeId) ?? rows[0];
   const onActive = useCallback((row: DynamicBanner | null) => setActiveId(row?.id ?? null), []);
   const themeColor = bestValueTheme ?? active?.theme_color;
-  const hasBg = Boolean(active?.media_url);
   const style = themeColor && /^#[0-9a-f]{6}$/i.test(themeColor)
     ? { "--home-theme": themeColor } as CSSProperties : undefined;
 
@@ -113,17 +112,16 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
         <section className="mt-3">
           <h2 className={`mb-2 text-xs font-black ${"text-foreground"}`}>Explore Categories</h2>
           <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
-            <Button variant="ghost" type="button" onClick={() => onCategoryChange(null)} className="w-[68px] shrink-0 text-center">
+            <Button variant="ghost" type="button" onClick={() => onCategoryChange(null)} className="h-auto w-[68px] shrink-0 flex-col gap-0 p-0 text-center" aria-pressed={activeCategoryId === null}>
               <span className={`mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full border bg-card ${activeCategoryId === null ? "border-primary" : "border-card"}`}>
                 <img src="/food/food-thali.jpg" alt="" className="h-full w-full object-cover" />
               </span>
               <span className="mt-1 block truncate text-[10px] font-bold">All food</span>
             </Button>
             {categories.map((category) => (
-              <Button variant="ghost" key={category.id} type="button" onClick={() => onCategoryChange(category.id)} className="w-[68px] shrink-0 text-center">
+              <Button variant="ghost" key={category.id} type="button" onClick={() => onCategoryChange(category.id)} className="h-auto w-[68px] shrink-0 flex-col gap-0 p-0 text-center" aria-pressed={activeCategoryId === category.id}>
                 <span className={`relative mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full border bg-card ${activeCategoryId === category.id ? "border-primary" : "border-card"}`}>
                   <img src={foodImage(category.name)} alt="" className="h-full w-full object-cover" />
-                  {category.emoji ? <span className="absolute bottom-0 right-0 grid h-5 w-5 place-items-center rounded-full bg-card text-[10px]">{category.emoji}</span> : null}
                 </span>
                 <span className="mt-1 block truncate text-[10px] font-bold">{category.name}</span>
               </Button>
