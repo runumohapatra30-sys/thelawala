@@ -497,7 +497,7 @@ function Home() {
   };
 
   return (
-    <Shell>
+    <Shell className="home-clean">
       <PremiumHome
         address={address}
         balance={balance}
@@ -609,7 +609,7 @@ function Home() {
           </section>
         ) : null}
         <StreetFoodExperience
-          items={items}
+          items={shown}
           categories={cats}
           vendors={vendors}
           lines={lines}

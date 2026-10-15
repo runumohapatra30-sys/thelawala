@@ -28,10 +28,10 @@ export function LocalSpotlight({ vendors, items, onVendor }: { vendors: StreetFo
   const current = slides[index];
   const move = (step: number) => setSlide((value) => (value + step + slides.length) % slides.length);
   return (
-    <section aria-label="Local spotlight" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onFocusCapture={() => setPaused(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false); }} className="flex h-[292px] min-w-0 flex-col overflow-hidden rounded-3xl bg-primary p-3.5 text-primary-foreground shadow-card">
+    <section aria-label="Local spotlight" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onFocusCapture={() => setPaused(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false); }} className="flex h-[292px] min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card p-3.5 text-foreground shadow-card">
       <div className="flex items-center justify-between gap-1">
         <span className="text-[9px] font-black uppercase">Local spotlight</span>
-        {slides.length > 1 ? <span className="flex shrink-0 gap-1"><Button variant="ghost" size="icon" aria-label="Previous spotlight" onClick={() => move(-1)} className="h-6 w-6 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"><ChevronLeft /></Button><Button variant="ghost" size="icon" aria-label="Next spotlight" onClick={() => move(1)} className="h-6 w-6 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"><ChevronRight /></Button></span> : null}
+        {slides.length > 1 ? <span className="flex shrink-0 gap-1"><Button variant="ghost" size="icon" aria-label="Previous spotlight" onClick={() => move(-1)} className="h-6 w-6 text-muted-foreground"><ChevronLeft /></Button><Button variant="ghost" size="icon" aria-label="Next spotlight" onClick={() => move(1)} className="h-6 w-6 text-muted-foreground"><ChevronRight /></Button></span> : null}
       </div>
       <div className="relative mt-2 min-h-0 flex-1 overflow-hidden">
         <AnimatePresence initial={false}>
@@ -39,7 +39,7 @@ export function LocalSpotlight({ vendors, items, onVendor }: { vendors: StreetFo
             <h2 className="line-clamp-2 h-11 text-base font-black leading-snug">{current?.vendor.stall_name ?? "Local street-food stalls"}</h2>
             <p className="mt-1 truncate text-[10px] font-semibold opacity-80">{current ? (current.vendor.is_open ? current.vendor.offer_label || "Fresh from your neighbourhood" : "Currently closed") : "More street bites soon"}</p>
             <div className="mt-2 grid grid-cols-2 gap-1.5">
-              {current?.food.map((item) => <div key={item.id} className="min-w-0 rounded-lg bg-primary-foreground/10 p-1.5"><img src={item.photo_url ?? foodImage(item.name)} alt={item.name} className="mx-auto h-10 w-10 rounded-md object-cover" /><p className="mt-1 truncate text-center text-[9px] font-bold">{item.name}</p></div>)}
+              {current?.food.map((item) => <div key={item.id} className="min-w-0 rounded-lg bg-muted/40 p-1.5"><img src={item.photo_url ?? foodImage(item.name)} alt={item.name} className="mx-auto h-10 w-10 rounded-md object-cover" /><p className="mt-1 truncate text-center text-[9px] font-bold">{item.name}</p></div>)}
               {!current?.food.length ? <div className="col-span-2 flex h-28 items-center justify-center"><Store className="h-10 w-10 opacity-70" /></div> : null}
             </div>
           </motion.div>
