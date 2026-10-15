@@ -1,5 +1,5 @@
 import { queryOptions, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchHomeBanners } from "@/lib/homeBanners.functions";
 
@@ -31,8 +31,8 @@ export function useHomeBanners() {
     const timer = window.setTimeout(update, Math.min(Math.max(delay, 25), 60_000));
     return () => window.clearTimeout(timer);
   }, [data, now]);
-  return data.filter((row) => {
+  return useMemo(() => data.filter((row) => {
     if (now === null) return !row.starts_at && !row.ends_at;
     return (!row.starts_at || Date.parse(row.starts_at) <= now) && (!row.ends_at || Date.parse(row.ends_at) > now);
-  });
+  }), [data, now]);
 }
