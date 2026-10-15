@@ -15,3 +15,4 @@
 - Store Soundbox gallery and stock in soundbox_product_settings, not system_settings metadata, so admin uploads and vendor reads share one protected source.
 - Store product-offer presentation options in the existing home_dynamic_sections cards metadata and reuse menu-linked live items; marketing layouts must not change checkout prices or catalog visibility.
 - Hide customer navigation centrally in Shell on checkout and through overlay-aware styling, so payment screens and dialogs cannot show competing navigation.
+- Scope the lightweight storefront theme to Shell's home class and render live food cards through HomeFoodGrid, so partner and checkout styling and price logic remain independent.
