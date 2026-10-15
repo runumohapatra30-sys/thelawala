@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Bell, ChevronDown, MapPin, Search, SlidersHorizontal, Wallet } from "lucide-react";
-import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { DynamicBanners } from "@/components/DynamicBanners";
 import { useHomeBanners } from "@/lib/homeBanners";
@@ -21,7 +21,8 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
   categories: StreetFoodCategory[]; activeCategoryId: string | null; onCategoryChange: (categoryId: string | null) => void;
   bestValueTheme: string | null;
 }) {
-  const rows = useHomeBanners().filter((row) => row.banner_format !== "BEST_VALUE");
+  const banners = useHomeBanners();
+  const rows = useMemo(() => banners.filter((row) => row.banner_format !== "BEST_VALUE"), [banners]);
   const branding = useAuthBranding();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
@@ -54,16 +55,6 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
   }, [query, reduceMotion]);
 
   return <header data-collapsed={collapsed} style={style} className="home-live-header sticky top-0 z-50 border-b border-border shadow-card transition-colors duration-500">
-    {hasBg && <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-      <AnimatePresence mode="sync">
-        <motion.div key={active!.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.6 }} className="absolute inset-0">
-          {active!.media_type === "video"
-            ? <video src={active!.media_url} autoPlay={!reduceMotion} muted loop playsInline className="h-full w-full object-cover" />
-            : <img src={active!.media_url} alt="" className="h-full w-full object-cover" />}
-        </motion.div>
-      </AnimatePresence>
-      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-background" />
-    </div>}
     <div className={`relative px-4 transition-all duration-500 ${collapsed ? "pb-2 pt-2" : "pb-3 pt-4"}`}>
       {!collapsed ? (
         <div className="mb-3 flex items-center justify-between gap-3">
@@ -77,8 +68,8 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
               />
             ) : <ThelaLogo className="h-10 w-10 shrink-0" />}
             <span className="min-w-0">
-              <span className={`block text-lg font-black leading-tight ${hasBg ? "text-white drop-shadow" : "text-primary"}`}>ThelaWala</span>
-              <span className={`block truncate text-[9px] font-extrabold uppercase tracking-[0.1em] ${hasBg ? "text-white/85" : "text-muted-foreground"}`}>Local taste. Trusted service.</span>
+              <span className={`block text-lg font-black leading-tight ${"text-foreground"}`}>ThelaWala</span>
+              <span className={`block truncate text-[9px] font-extrabold uppercase tracking-[0.1em] ${"text-muted-foreground"}`}>15 minutes · Bhubaneswar</span>
             </span>
           </Link>
           <div className="flex shrink-0 items-center gap-1.5">
@@ -92,8 +83,8 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
       ) : null}
       <div className="mb-3 flex min-w-0 items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className={`truncate text-sm font-extrabold ${hasBg ? "text-white drop-shadow" : "text-foreground"}`}>{displayName ? `Welcome Back, ${displayName.split(" ")[0]}` : "Welcome Back"}</p>
-          <Button asChild variant="ghost" className={`mt-1 h-auto min-w-0 max-w-full p-0 text-xs font-bold hover:bg-transparent ${hasBg ? "text-white" : "text-primary"}`}><Link to="/cart" title={address ?? "Choose delivery location"} aria-label="Choose delivery location"><MapPin className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{address ?? "Choose delivery location"}</span><ChevronDown className="h-3 w-3 shrink-0" /></Link></Button>
+          <p className={`truncate text-sm font-extrabold ${"text-foreground"}`}>Delivering to</p>
+          <Button asChild variant="ghost" className={`mt-1 h-auto min-w-0 max-w-full p-0 text-xs font-bold hover:bg-transparent ${"text-foreground"}`}><Link to="/cart" title={address ?? "Choose delivery location"} aria-label="Choose delivery location"><MapPin className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{address ?? "Choose delivery location"}</span><ChevronDown className="h-3 w-3 shrink-0" /></Link></Button>
         </div>
       </div>
       <label className="flex h-12 min-w-0 items-center rounded-2xl border border-border bg-card px-3.5 shadow-card focus-within:ring-2 focus-within:ring-primary/20">
@@ -102,47 +93,47 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
           {!query && <AnimatePresence mode="wait"><motion.span key={suggestion} initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -12, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="absolute inset-x-0 truncate text-xs text-muted-foreground">Search “{suggestions[suggestion]}”</motion.span></AnimatePresence>}
           <input value={query} onChange={(event) => onQueryChange(event.target.value)} aria-label="Search food and stalls" className="absolute inset-0 w-full bg-transparent text-sm text-foreground outline-none" />
         </span>
-        <button type="button" aria-label="Filter food by category" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((open) => !open)} className={`ml-2 grid h-8 w-8 shrink-0 place-items-center rounded-full border-l border-border pl-2 text-primary ${filtersOpen ? "bg-brand-soft" : ""}`}>
+        <Button variant="ghost" type="button" aria-label="Filter food by category" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((open) => !open)} className={`ml-2 grid h-8 w-8 shrink-0 place-items-center rounded-full border-l border-border pl-2 text-primary ${filtersOpen ? "bg-brand-soft" : ""}`}>
           <SlidersHorizontal className="h-4 w-4" />
-        </button>
+        </Button>
         <span className="ml-1 shrink-0 border-l border-border pl-2">{voiceSearch}</span>
       </label>
       {filtersOpen && !collapsed ? (
         <div className="mt-2 rounded-2xl border border-border bg-card p-3 shadow-card">
           <p className="mb-2 text-[11px] font-extrabold text-muted-foreground">Filter by category</p>
           <div className="no-scrollbar flex gap-2 overflow-x-auto">
-            <button type="button" onClick={() => onCategoryChange(null)} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${activeCategoryId === null ? "border-primary bg-primary text-white" : "border-border bg-white text-foreground"}`}>All food</button>
+            <Button variant="ghost" type="button" onClick={() => onCategoryChange(null)} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${activeCategoryId === null ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground"}`}>All food</Button>
             {categories.map((category) => (
-              <button key={category.id} type="button" onClick={() => onCategoryChange(category.id)} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${activeCategoryId === category.id ? "border-primary bg-primary text-white" : "border-border bg-white text-foreground"}`}>{category.emoji ? `${category.emoji} ` : ""}{category.name}</button>
+              <Button variant="ghost" key={category.id} type="button" onClick={() => onCategoryChange(category.id)} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${activeCategoryId === category.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground"}`}>{category.emoji ? `${category.emoji} ` : ""}{category.name}</Button>
             ))}
           </div>
         </div>
       ) : null}
       {!collapsed && (
         <section className="mt-3">
-          <h2 className={`mb-2 text-xs font-black ${hasBg ? "text-white" : "text-foreground"}`}>Explore Categories</h2>
+          <h2 className={`mb-2 text-xs font-black ${"text-foreground"}`}>Explore Categories</h2>
           <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
-            <button type="button" onClick={() => onCategoryChange(null)} className="w-[68px] shrink-0 text-center">
-              <span className={`mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full border-2 bg-white shadow-sm ${activeCategoryId === null ? "border-primary" : "border-white"}`}>
+            <Button variant="ghost" type="button" onClick={() => onCategoryChange(null)} className="w-[68px] shrink-0 text-center">
+              <span className={`mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full border bg-card ${activeCategoryId === null ? "border-primary" : "border-card"}`}>
                 <img src="/food/food-thali.jpg" alt="" className="h-full w-full object-cover" />
               </span>
               <span className="mt-1 block truncate text-[10px] font-bold">All food</span>
-            </button>
+            </Button>
             {categories.map((category) => (
-              <button key={category.id} type="button" onClick={() => onCategoryChange(category.id)} className="w-[68px] shrink-0 text-center">
-                <span className={`relative mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full border-2 bg-white shadow-sm ${activeCategoryId === category.id ? "border-primary" : "border-white"}`}>
+              <Button variant="ghost" key={category.id} type="button" onClick={() => onCategoryChange(category.id)} className="w-[68px] shrink-0 text-center">
+                <span className={`relative mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full border bg-card ${activeCategoryId === category.id ? "border-primary" : "border-card"}`}>
                   <img src={foodImage(category.name)} alt="" className="h-full w-full object-cover" />
-                  {category.emoji ? <span className="absolute bottom-0 right-0 grid h-5 w-5 place-items-center rounded-full bg-white text-[10px]">{category.emoji}</span> : null}
+                  {category.emoji ? <span className="absolute bottom-0 right-0 grid h-5 w-5 place-items-center rounded-full bg-card text-[10px]">{category.emoji}</span> : null}
                 </span>
                 <span className="mt-1 block truncate text-[10px] font-bold">{category.name}</span>
-              </button>
+              </Button>
             ))}
           </div>
         </section>
       )}
     </div>
     <motion.div initial={false} animate={{ height: collapsed ? 0 : "auto", opacity: collapsed ? 0 : 1 }} transition={{ duration: reduceMotion ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] }} className="relative overflow-hidden" inert={collapsed}>
-      <DynamicBanners rows={rows} onActive={onActive} onInternalRoute={onInternalRoute} overlayOnly={hasBg} />
+      <DynamicBanners rows={rows} onActive={onActive} onInternalRoute={onInternalRoute} overlayOnly={false} />
     </motion.div>
   </header>;
 }
