@@ -13,6 +13,7 @@ import { ThelaLogo } from "@/components/Shell";
 import { useAuthBranding } from "@/lib/authBranding";
 
 const suggestions = ["Khandagiri Dahi Bara", "Gupchup & Chaat", "Egg Chicken Roll", "Evening Hot Pakoda"];
+const CATEGORY_COLORS = ["#ffd9b8", "#d6e9ff", "#d9f2df", "#f6d6ef", "#fff1b8", "#e2dcff", "#ffd6d6", "#cdeff0"];
 
 export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query, onQueryChange, voiceSearch, onInternalRoute, categories, activeCategoryId, onCategoryChange, bestValueTheme }: {
   address: string | null; balance: number; query: string; onQueryChange: (query: string) => void;
@@ -31,7 +32,9 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
   const reduceMotion = useReducedMotion();
   const active = rows.find((row) => row.id === activeId) ?? rows[0];
   const onActive = useCallback((row: DynamicBanner | null) => setActiveId(row?.id ?? null), []);
-  const themeColor = bestValueTheme ?? active?.theme_color;
+  const categoryIndex = activeCategoryId ? categories.findIndex((category) => category.id === activeCategoryId) : -1;
+  const categoryColor = categoryIndex >= 0 ? CATEGORY_COLORS[categoryIndex % CATEGORY_COLORS.length] : null;
+  const themeColor = categoryColor ?? bestValueTheme ?? active?.theme_color;
   const style = themeColor && /^#[0-9a-f]{6}$/i.test(themeColor)
     ? { "--home-theme": themeColor } as CSSProperties : undefined;
 
