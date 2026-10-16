@@ -7,7 +7,7 @@ import type { DynamicBanner } from "@/lib/dynamicBanners";
 export function DynamicBanners({ rows, onActive, onInternalRoute, overlayOnly = false }: {
   rows: DynamicBanner[]; onActive?: (banner: DynamicBanner | null) => void; onInternalRoute?: (route: string) => void; overlayOnly?: boolean;
 }) {
-  const displayRows = useMemo(() => rows.filter((row) => row.banner_format !== "BEST_VALUE").slice(0, 4), [rows]);
+  const displayRows = useMemo(() => rows.filter((row) => row.banner_format !== "BEST_VALUE"), [rows]);
   const [selected, setSelected] = useState(0);
   const [hovered, setHovered] = useState(false);
   const [touched, setTouched] = useState(false);
@@ -49,8 +49,8 @@ export function DynamicBanners({ rows, onActive, onInternalRoute, overlayOnly = 
     onTouchStart={() => setTouched(true)} onTouchEnd={() => setTouched(false)}
     onFocusCapture={() => setFocused(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}>
     <div ref={emblaRef} className="overflow-hidden"><div className="flex touch-pan-y">
-      {displayRows.map((row, index) => <div key={row.id} role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${displayRows.length}`} className={`min-w-0 shrink-0 px-1.5 ${displayRows.length > 1 ? "basis-[84%]" : "basis-full px-4"}`}>
-        <Button variant="ghost" tabIndex={index === selected ? 0 : -1} onClick={() => open(row)} aria-label={row.title || `Promotion ${index + 1}`} className={`relative block h-auto w-full overflow-hidden rounded-[28px] border border-border/60 p-0 shadow-card transition-transform duration-500 hover:bg-transparent ${index === selected ? "scale-100" : "scale-[0.92] opacity-80"}`}>
+      {displayRows.map((row, index) => <div key={row.id} role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${displayRows.length}`} className="min-w-0 shrink-0 basis-full px-4">
+        <Button variant="ghost" tabIndex={index === selected ? 0 : -1} onClick={() => open(row)} aria-label={row.title || `Promotion ${index + 1}`} className="relative block h-auto w-full overflow-hidden rounded-3xl p-0 shadow-sm hover:bg-transparent">
           {overlayOnly ? <span className="flex min-h-[104px] flex-col items-center justify-center gap-1.5 px-6 py-3 text-center whitespace-normal">
             {row.badge && <span className="rounded bg-primary px-2 py-1 text-[10px] font-bold text-primary-foreground">{row.badge}</span>}
             {row.title && <span className="text-[26px] font-black uppercase leading-none tracking-wide text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]">{row.title}</span>}

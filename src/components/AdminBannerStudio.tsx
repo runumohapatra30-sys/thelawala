@@ -30,14 +30,6 @@ const inputCls = "w-full rounded-xl border border-border bg-background px-3 py-2
 function validFile(file: File) {
   return /^image\/(jpeg|png|webp)$/.test(file.type) && file.size <= MAX_MB * 1024 * 1024;
 }
-const isVideo = (file: File) => /^video\/(mp4|webm)$/.test(file.type);
-function videoSeconds(file: File) {
-  return new Promise<number>((resolve) => {
-    const v = document.createElement("video"); const url = URL.createObjectURL(file);
-    v.preload = "metadata"; v.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(v.duration); };
-    v.onerror = () => { URL.revokeObjectURL(url); resolve(999); }; v.src = url;
-  });
-}
 
 export function AdminBannerStudio() {
   const [rows, setRows] = useState<DynamicBanner[]>([]);
@@ -86,14 +78,9 @@ export function AdminBannerStudio() {
     return () => urls.forEach((url) => { if (url) URL.revokeObjectURL(url); });
   }, [gridFiles]);
 
-  async function chooseMain(next: File | null) {
+  function chooseMain(next: File | null) {
     if (!next) return;
-    if (isVideo(next)) {
-      if (next.size > 10 * 1024 * 1024) { toast.error("Video must be under 10 MB."); return; }
-      if (await videoSeconds(next) > 4.5) { toast.error("Video must be 4 seconds or shorter."); return; }
-      setFile(next); return;
-    }
-    if (!validFile(next)) { toast.error("Use a JPG, PNG, WebP picture or a 4-second MP4 video."); return; }
+    if (!validFile(next)) { toast.error("Use a JPG, PNG or WebP picture under 5 MB."); return; }
     setFile(next);
   }
 
@@ -111,8 +98,6 @@ export function AdminBannerStudio() {
     if (editing && format !== editing.banner_format && chosen.length === 0) { toast.error("Choose pictures for the new format."); return; }
     if (ends && starts && new Date(ends) <= new Date(starts)) { toast.error("End time must be after start time."); return; }
     if (color && !/^#[0-9a-f]{6}$/i.test(color)) { toast.error("Choose a valid theme color."); return; }
-    const liveOthers = rows.filter((row) => row.is_active && row.id !== editing?.id).length;
-    if (enabled && liveOthers >= 4) { toast.error("Maximum 4 banners can be live. Disable one first."); return; }
     setBusy(true);
     try {
     const uploaded = await Promise.all(chosen.map(uploadBannerMedia));
@@ -121,7 +106,7 @@ export function AdminBannerStudio() {
     const files = uploaded.filter((item): item is { path: string; url: string } => "url" in item);
     const first = files[0];
     const values = {
-      media_type: first ? (file && isVideo(file) && format !== "4_GRID" ? "video" : "image") : editing?.media_type ?? "image",
+      media_type: first ? "image" : editing?.media_type ?? "image",
       media_url: first?.url ?? editing?.media_url ?? "",
       media_path: first?.path ?? editing?.media_path ?? null,
       target_route: route.trim() || null,
@@ -146,7 +131,6 @@ export function AdminBannerStudio() {
   }
 
   async function activate(banner: DynamicBanner) {
-    if (!banner.is_active && rows.filter((row) => row.is_active).length >= 4) { toast.error("Maximum 4 banners can be live. Disable one first."); return; }
     const { error } = await supabase.from("app_dynamic_banners").update({ is_active: !banner.is_active }).eq("id", banner.id);
     if (error) toast.error(error.message); else { toast.success("Active banner changed."); load(); }
   }
@@ -185,7 +169,7 @@ export function AdminBannerStudio() {
             </div>
           ) : (
             <div className={`grid w-full place-items-center overflow-hidden bg-muted ${format === "SLIM" ? "aspect-[4/1] max-h-20 rounded-xl" : "aspect-video max-h-[180px] rounded-2xl"}`}>
-              {file && isVideo(file) && preview ? <video src={preview} muted autoPlay loop playsInline className="h-full w-full object-cover" /> : previewImages[0] ? <img src={previewImages[0]} alt="Banner preview" className="h-full w-full object-cover" /> : <span className="text-xs font-semibold text-muted-foreground">Choose a picture</span>}
+              {previewImages[0] ? <img src={previewImages[0]} alt="Banner preview" className="h-full w-full object-cover" /> : <span className="text-xs font-semibold text-muted-foreground">Choose a picture</span>}
             </div>
           )}
           <p className="mt-3 text-center text-[11px] font-bold text-muted-foreground">{FORMATS.find((item) => item.value === format)?.note}</p>
@@ -201,8 +185,8 @@ export function AdminBannerStudio() {
               ))}
             </div>
           ) : (
-            <label className="block text-xs font-bold text-muted-foreground">Banner picture, gift image or 4-second video
-              <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" onChange={(event) => chooseMain(event.target.files?.[0] ?? null)} className={`${inputCls} mt-1 text-xs`} />
+            <label className="block text-xs font-bold text-muted-foreground">Banner picture
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => chooseMain(event.target.files?.[0] ?? null)} className={`${inputCls} mt-1 text-xs`} />
             </label>
           )}
 

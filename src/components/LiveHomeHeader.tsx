@@ -13,7 +13,6 @@ import { ThelaLogo } from "@/components/Shell";
 import { useAuthBranding } from "@/lib/authBranding";
 
 const suggestions = ["Khandagiri Dahi Bara", "Gupchup & Chaat", "Egg Chicken Roll", "Evening Hot Pakoda"];
-const CATEGORY_COLORS = ["#ffd9b8", "#d6e9ff", "#d9f2df", "#f6d6ef", "#fff1b8", "#e2dcff", "#ffd6d6", "#cdeff0"];
 
 export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query, onQueryChange, voiceSearch, onInternalRoute, categories, activeCategoryId, onCategoryChange, bestValueTheme }: {
   address: string | null; balance: number; query: string; onQueryChange: (query: string) => void;
@@ -32,9 +31,7 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
   const reduceMotion = useReducedMotion();
   const active = rows.find((row) => row.id === activeId) ?? rows[0];
   const onActive = useCallback((row: DynamicBanner | null) => setActiveId(row?.id ?? null), []);
-  const categoryIndex = activeCategoryId ? categories.findIndex((category) => category.id === activeCategoryId) : -1;
-  const categoryColor = categoryIndex >= 0 ? CATEGORY_COLORS[categoryIndex % CATEGORY_COLORS.length] : null;
-  const themeColor = categoryColor ?? bestValueTheme ?? active?.theme_color;
+  const themeColor = bestValueTheme ?? active?.theme_color;
   const style = themeColor && /^#[0-9a-f]{6}$/i.test(themeColor)
     ? { "--home-theme": themeColor } as CSSProperties : undefined;
 
@@ -123,10 +120,9 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
             </Button>
             {categories.map((category) => (
               <Button variant="ghost" key={category.id} type="button" onClick={() => onCategoryChange(category.id)} className="h-auto w-[68px] shrink-0 flex-col gap-0 p-0 text-center" aria-pressed={activeCategoryId === category.id}>
-                <span className={`relative mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full border bg-card transition-transform duration-300 ${activeCategoryId === category.id ? "scale-110 border-primary shadow-card" : "border-card"}`}>
+                <span className={`relative mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full border bg-card ${activeCategoryId === category.id ? "border-primary" : "border-card"}`}>
                   <img src={foodImage(category.name)} alt="" className="h-full w-full object-cover" />
                 </span>
-                {activeCategoryId === category.id ? <span className="mx-auto mt-1 block h-1 w-8 rounded-full bg-primary" /> : null}
                 <span className="mt-1 block truncate text-[10px] font-bold">{category.name}</span>
               </Button>
             ))}
