@@ -2,8 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const ONBOARDING_KEY = "thelawala_onboarding_completed";
-
 export const Route = createFileRoute("/auth/callback")({
   validateSearch: (search: Record<string, unknown>) => ({
     next: typeof search["next"] === "string" ? search["next"] : "/",
@@ -38,11 +36,6 @@ function AuthCallback() {
         return;
       }
 
-      window.localStorage.setItem(ONBOARDING_KEY, "true");
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: { onboarding_completed: true },
-      });
-      if (updateError) console.error("Could not save onboarding status:", updateError);
       window.location.replace(safeNext(next));
     }
 

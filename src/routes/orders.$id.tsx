@@ -225,7 +225,7 @@ function Track() {
             <p className="text-sm font-bold">We couldn't open this order.</p>
             <p className="mt-1 text-xs text-muted-foreground">Please sign in with the Google account you ordered from.</p>
             <div className="mt-4 flex justify-center gap-2">
-              <Link to="/auth" search={{ mode: "signin" }} className="press rounded-full bg-primary px-4 py-2 text-xs font-black text-primary-foreground">Sign in with Google</Link>
+              <Link to="/auth" className="press rounded-full bg-primary px-4 py-2 text-xs font-black text-primary-foreground">Sign in with Google</Link>
               <Link to="/orders" className="press rounded-full border border-border px-4 py-2 text-xs font-black">My orders</Link>
             </div>
           </div>

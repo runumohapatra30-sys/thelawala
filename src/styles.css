@@ -4,16 +4,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-.product-offer { --offer-color: var(--primary); --offer-art: none; background: var(--card); }
-.offer-product-art { background-color: var(--offer-color); background-image: var(--offer-art); background-size: cover; background-position: center; }
-.offer-product-art::before { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, color-mix(in oklab, var(--foreground) 65%, transparent), transparent 65%); }
-.offer-product-art img { position: relative; z-index: 1; }
-.product-offer--product_grid .offer-product-art { aspect-ratio: 1; }
-.product-offer--compact_rail .offer-product-art { aspect-ratio: 1; }
-.product-offer--spotlight .offer-product-art { aspect-ratio: 4 / 3; }
-.offer-footer { background: color-mix(in oklab, var(--offer-color) 10%, var(--card)); }
-body:has([aria-modal="true"], [role="dialog"], [class*="fixed inset-0"][class*="bg-"]) .customer-bottom-nav { display: none; }
-
 /*
  * Design system definition.
  *
@@ -606,26 +596,3 @@ body:has([aria-modal="true"], [role="dialog"], [class*="fixed inset-0"][class*="
   background: var(--background);
   color: var(--foreground);
 }
-
-/* Home-only lightweight storefront theme; partner and checkout tokens stay intact. */
-.home-clean {
-  --background: oklch(0.985 0.003 247);
-  --card: oklch(1 0 0);
-  --foreground: oklch(0.24 0.015 260);
-  --muted: oklch(0.97 0.004 247);
-  --muted-foreground: oklch(0.52 0.018 260);
-  --border: oklch(0 0 0 / 0.06);
-  --primary: oklch(0.45 0.12 153);
-  --primary-foreground: oklch(1 0 0);
-  --brand-soft: oklch(0.96 0.018 153);
-  --shadow-soft: 0 4px 20px oklch(0 0 0 / 0.03);
-  --font-display: "Plus Jakarta Sans", ui-sans-serif, sans-serif;
-}
-.home-clean .home-live-header { background: color-mix(in oklab, var(--card) 96%, transparent); backdrop-filter: blur(16px); }
-.home-clean .home-food-card { box-shadow: var(--shadow-soft); }
-.home-clean .customer-bottom-nav { box-shadow: var(--shadow-soft); background: color-mix(in oklab, var(--card) 95%, transparent); }
-.home-clean .offer-product-art { background-color: var(--muted); }
-.home-clean .offer-product-art::before { display: none; }
-.home-clean .offer-product-art { color: var(--foreground); }
-.home-clean .product-offer h2 { color: var(--foreground); font-size: 1.125rem; text-transform: none; }
-.home-clean h2 { font-family: "Plus Jakarta Sans", ui-sans-serif, sans-serif; }

@@ -1,5 +1,5 @@
 import { queryOptions, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchHomeBanners } from "@/lib/homeBanners.functions";
 
@@ -24,15 +24,15 @@ export function useHomeBanners() {
   }, [queryClient]);
   useEffect(() => {
     const update = () => setNow(Date.now());
+    update();
     const boundaries = data.flatMap((row) => [row.starts_at, row.ends_at]).filter((date): date is string => Boolean(date))
       .map((date) => Date.parse(date)).filter((time) => time > Date.now());
     const delay = boundaries.length ? Math.min(...boundaries) - Date.now() + 25 : 60_000;
     const timer = window.setTimeout(update, Math.min(Math.max(delay, 25), 60_000));
     return () => window.clearTimeout(timer);
   }, [data, now]);
-  useEffect(() => { setNow(Date.now()); }, []);
-  return useMemo(() => data.filter((row) => {
+  return data.filter((row) => {
     if (now === null) return !row.starts_at && !row.ends_at;
     return (!row.starts_at || Date.parse(row.starts_at) <= now) && (!row.ends_at || Date.parse(row.ends_at) > now);
-  }), [data, now]);
+  });
 }

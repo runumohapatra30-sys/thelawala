@@ -3,8 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type SectionType = "FESTIVE_GRID_4" | "FESTIVE_PICKS_PRODUCTS";
 
-export type OfferDesign = "SAVINGS_RAIL" | "PRODUCT_GRID" | "SPOTLIGHT" | "COMPACT_RAIL";
-export type GridCard = { title: string; image_url: string; video_url: string; filter: string; tag: string; offer_design?: OfferDesign; auto_items?: boolean; footer_text?: string };
+export type GridCard = { title: string; image_url: string; video_url: string; filter: string; tag: string };
 
 export type HomeSection = {
   id: string;
@@ -32,7 +31,6 @@ export function toCards(value: unknown): GridCard[] {
       video_url: String(v["video_url"] ?? ""),
       filter: String(v["filter"] ?? ""),
       tag: String(v["tag"] ?? ""),
-      ...(["SAVINGS_RAIL", "PRODUCT_GRID", "SPOTLIGHT", "COMPACT_RAIL"].includes(String(v["offer_design"])) ? { offer_design: v["offer_design"] as OfferDesign, auto_items: v["auto_items"] === true, footer_text: String(v["footer_text"] ?? "") } : {}),
     }));
 }
 

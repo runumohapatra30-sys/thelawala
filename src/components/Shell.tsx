@@ -17,7 +17,7 @@ const NAV = [
   { to: "/profile", label: "Profile", Icon: CircleUserRound },
 ];
 
-export function Shell({ children, hideNavigation = false, className = "" }: { children: ReactNode; hideNavigation?: boolean; className?: string }) {
+export function Shell({ children, hideNavigation = false }: { children: ReactNode; hideNavigation?: boolean }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { user } = useSession();
   const branding = useAuthBranding();
@@ -48,11 +48,11 @@ export function Shell({ children, hideNavigation = false, className = "" }: { ch
     user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || guestProfile.name;
 
   return (
-    <div className={`min-h-screen bg-background ${className}`}>
+    <div className="min-h-screen bg-background">
       <div className="mx-auto min-h-screen w-full max-w-[520px] bg-background pb-36 shadow-[0_0_48px_color-mix(in_oklab,var(--color-foreground)_8%,transparent)]">
         {children}
       </div>
-      {!hideNavigation && path !== "/cart" && !loginOpen ? <nav aria-label="Customer navigation" className="customer-bottom-nav fixed inset-x-0 bottom-3 z-40 mx-auto grid w-[calc(100%-24px)] max-w-[480px] grid-cols-6 items-end rounded-full border border-border bg-card/95 px-2 py-2 shadow-[0_18px_45px_-20px_color-mix(in_oklab,var(--color-primary)_35%,transparent)] backdrop-blur-xl">
+      {!hideNavigation ? <nav className="fixed inset-x-0 bottom-3 z-40 mx-auto grid w-[calc(100%-24px)] max-w-[480px] grid-cols-6 items-end rounded-full border border-border bg-card/95 px-2 py-2 shadow-[0_18px_45px_-20px_color-mix(in_oklab,var(--color-primary)_35%,transparent)] backdrop-blur-xl">
         {NAV.map((n) => {
           const active =
             n.label === "Home"
@@ -71,7 +71,7 @@ export function Shell({ children, hideNavigation = false, className = "" }: { ch
               className="press flex min-w-0 flex-col items-center gap-1"
             >
               <span
-                className={`relative grid h-9 w-10 place-items-center rounded-full transition-all ${active ? "bg-primary/8 text-primary" : "text-muted-foreground"}`}
+                className={`relative grid h-10 w-12 place-items-center rounded-full transition-all ${active ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
               >
                 {n.label === "Profile" && user?.user_metadata?.["avatar_url"] ? (
                   <img
@@ -87,16 +87,16 @@ export function Shell({ children, hideNavigation = false, className = "" }: { ch
                     className="h-6 w-6 object-contain"
                   />
                 ) : (
-                  <n.Icon className="h-5 w-5" strokeWidth={1.6} />
+                  <n.Icon className="h-5 w-5" strokeWidth={2} />
                 )}
                 {n.label === "Cart" && cartCount > 0 ? (
-                  <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-black text-primary-foreground">
+                  <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#5B9BD5] px-1 text-[9px] font-black text-white">
                     {cartCount > 99 ? "99+" : cartCount}
                   </span>
                 ) : null}
               </span>
               <span
-                className={`truncate text-[10px] font-medium ${
+                className={`truncate text-[9px] font-extrabold uppercase ${
                   active ? "text-primary" : "text-muted-foreground"
                 }`}
               >
@@ -204,7 +204,7 @@ export function PortalTabs<T extends string>({
         <button
           key={key}
           onClick={() => onChange(key as T)}
-          className={`rounded-lg px-1.5 py-2.5 text-[10px] font-black transition-colors sm:px-2 sm:text-[11px] ${active === key ? "bg-primary/8 text-primary" : "text-muted-foreground"}`}
+          className={`rounded-lg px-1.5 py-2.5 text-[10px] font-black transition-colors sm:px-2 sm:text-[11px] ${active === key ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
         >
           {label}
         </button>

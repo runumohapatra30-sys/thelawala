@@ -13,6 +13,3 @@
 - Keep the local-stall slideshow in a dedicated client component fed by the unfiltered approved-stall catalog, so search filters cannot silently exclude stalls from its rotation.
 - Use app_dynamic_banners as the shared source for scheduled home hero copy, media and theme; prime a public server query in the home loader and invalidate it on realtime events so admin edits never affect catalog or ordering logic.
 - Store Soundbox gallery and stock in soundbox_product_settings, not system_settings metadata, so admin uploads and vendor reads share one protected source.
-- Store product-offer presentation options in the existing home_dynamic_sections cards metadata and reuse menu-linked live items; marketing layouts must not change checkout prices or catalog visibility.
-- Hide customer navigation centrally in Shell on checkout and through overlay-aware styling, so payment screens and dialogs cannot show competing navigation.
-- Scope the lightweight storefront theme to Shell's home class and render live food cards through HomeFoodGrid, so partner and checkout styling and price logic remain independent.

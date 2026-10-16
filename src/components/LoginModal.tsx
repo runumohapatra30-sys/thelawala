@@ -1,76 +1,13 @@
-import { useNavigate } from "@tanstack/react-router";
 import { X } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { lovable } from "@/integrations/lovable";
 import { useAuthBranding } from "@/lib/authBranding";
 
 export const OPEN_LOGIN_EVENT = "thelawala:open-login";
 export const GUEST_PROFILE_EVENT = "thelawala:guest-profile";
-const ONBOARDING_KEY = "thelawala_onboarding_completed";
-const GOOGLE_IDENTITY_SCRIPT = "https://accounts.google.com/gsi/client";
-
-type GoogleCredentialResponse = { credential: string };
-type GooglePromptNotification = {
-  isNotDisplayed: () => boolean;
-  isSkippedMoment: () => boolean;
-  isDismissedMoment: () => boolean;
-};
-type GoogleIdentityApi = {
-  accounts: {
-    id: {
-      initialize: (options: {
-        client_id: string;
-        callback: (response: GoogleCredentialResponse) => void;
-      }) => void;
-      prompt: (callback?: (notification: GooglePromptNotification) => void) => void;
-    };
-  };
-};
-
-declare global {
-  interface Window {
-    google?: GoogleIdentityApi;
-  }
-}
-
-let googleScriptPromise: Promise<GoogleIdentityApi> | null = null;
-
-function loadGoogleIdentity(): Promise<GoogleIdentityApi> {
-  if (window.google) return Promise.resolve(window.google);
-  if (!googleScriptPromise) {
-    googleScriptPromise = new Promise((resolve, reject) => {
-      let script = document.querySelector<HTMLScriptElement>(`script[src="${GOOGLE_IDENTITY_SCRIPT}"]`);
-      if (!script) {
-        script = document.createElement("script");
-        script.src = GOOGLE_IDENTITY_SCRIPT;
-        script.async = true;
-        script.defer = true;
-        document.head.append(script);
-      }
-      script.addEventListener("load", () => {
-        if (window.google) resolve(window.google);
-        else reject(new Error("Google sign-in could not be loaded."));
-      }, { once: true });
-      script.addEventListener("error", () => reject(new Error("Google sign-in could not be loaded.")), { once: true });
-    });
-  }
-  return googleScriptPromise;
-}
-
-async function persistOnboarding() {
-  window.localStorage.setItem(ONBOARDING_KEY, "true");
-  const { error } = await supabase.auth.updateUser({ data: { onboarding_completed: true } });
-  if (error) console.error("Could not save onboarding status:", error);
-}
-
-async function startGoogleOAuth() {
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: `${window.location.origin}/auth/callback?next=/` },
-  });
-  if (error) throw error;
-}
 
 export function openLoginModal() {
   window.dispatchEvent(new Event(OPEN_LOGIN_EVENT));
@@ -96,59 +33,22 @@ export function GoogleButton({
   async function signIn() {
     setBusy(true);
     setMsg(null);
-    const clientId = import.meta.env["VITE_GOOGLE_CLIENT_ID"];
-    if (!clientId) {
-      try {
-        await startGoogleOAuth();
-      } catch (error) {
-        setBusy(false);
-        setMsg(error instanceof Error ? error.message : "Google sign-in failed. Please try again.");
-      }
-      return;
-    }
     try {
-      const google = await loadGoogleIdentity();
-      google.accounts.id.initialize({
-        client_id: clientId,
-        callback: (credentialResponse) => {
-          void (async () => {
-            try {
-              const { data, error } = await supabase.auth.signInWithIdToken({
-                provider: "google",
-                token: credentialResponse.credential,
-              });
-              if (error || !data.session) {
-                setBusy(false);
-                setMsg(error?.message ?? "Google sign-in did not create a session.");
-                return;
-              }
-              await persistOnboarding();
-              setBusy(false);
-              await onSuccess?.();
-            } catch (error) {
-              setBusy(false);
-              setMsg(error instanceof Error ? error.message : "Google sign-in failed. Please try again.");
-            }
-          })();
-        },
+      await supabase.auth.signOut({ scope: "local" });
+      const res = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin + "/auth",
+        extraParams: { prompt: "select_account" },
       });
-      google.accounts.id.prompt((notification) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          void startGoogleOAuth().catch((error: unknown) => {
-            setBusy(false);
-            setMsg(error instanceof Error ? error.message : "Google sign-in failed. Please try again.");
-          });
-        } else if (notification.isDismissedMoment()) {
-          setBusy(false);
-        }
-      });
-    } catch (error) {
-      try {
-        await startGoogleOAuth();
-      } catch (oauthError) {
-        setBusy(false);
-        setMsg(oauthError instanceof Error ? oauthError.message : "Google sign-in failed. Please try again.");
-      }
+      if (res.error) throw res.error;
+      if (res.redirected) return;
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) throw new Error("Session not established");
+      if (onSuccess) await onSuccess();
+      else await navigate({ to: "/auth" });
+    } catch {
+      setMsg("Google sign-in could not finish. Please try again.");
+    } finally {
+      setBusy(false);
     }
   }
   return (
@@ -194,47 +94,7 @@ export function GoogleButton({
   );
 }
 
-export function SocialAuthButton({
-  provider,
-  label,
-  children,
-}: {
-  provider: "facebook" | "twitter";
-  label: string;
-  children: React.ReactNode;
-}) {
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-  async function signIn() {
-    setBusy(true);
-    setMsg(null);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/` },
-    });
-    if (error) {
-      setBusy(false);
-      setMsg(`${label} sign-in failed. Please try again.`);
-    }
-  }
-  return (
-    <>
-      <button
-        type="button"
-        aria-label={`Continue with ${label}`}
-        disabled={busy}
-        onClick={() => void signIn()}
-        className="press grid h-11 w-11 place-items-center rounded-full border border-[#E9E2DC] bg-white text-[#333] disabled:opacity-50"
-      >
-        {children}
-      </button>
-      {msg ? <span className="sr-only" role="status">{msg}</span> : null}
-    </>
-  );
-}
-
 export function LoginModal({ open, onClose }: LoginModalProps) {
-  const navigate = useNavigate();
   if (!open) return null;
   return (
     <div
@@ -268,10 +128,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
           </button>
         </div>
         <div className="mt-5">
-          <GoogleButton onSuccess={() => {
-            onClose();
-            void navigate({ to: "/" });
-          }} />
+          <GoogleButton />
         </div>
       </section>
     </div>
@@ -292,10 +149,10 @@ function LoginBrandHeader() {
             </span>
           )}
         </span>
-        <span className="text-sm font-extrabold text-foreground">ThelaWala</span>
+        <span className="text-sm font-extrabold text-foreground">{branding.brandTitle}</span>
       </div>
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">
-        Welcome to ThelaWala
+        Welcome to {branding.brandTitle}
       </p>
     </>
   );

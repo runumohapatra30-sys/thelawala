@@ -24,6 +24,7 @@ import { themeStyle, useTopBarTheme } from "@/lib/appTheme";
 import { ArrowRight, Bike, Gift, Heart, MapPin, Plus, Search, ShoppingBag, Utensils, Wallet, X, Zap } from "lucide-react";
 import { StreetFoodExperience, type CuratedFoodDeal, type StreetFoodCategory, type StreetFoodItem, type StreetFoodVendor } from "@/components/StreetFoodExperience";
 import { PremiumHome } from "@/components/PremiumHome";
+import { OnboardingScreen } from "@/components/OnboardingScreen";
 import { WelcomeFoodScreen } from "@/components/WelcomeFoodScreen";
 import { HomeMarketingModules } from "@/components/HomeMarketingModules";
 import { HomeFeatureModals } from "@/components/HomeFeatureModals";
@@ -68,6 +69,7 @@ const routeSlug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, 
 
 function HomeEntry() {
   const [hasSession, setHasSession] = useState<boolean | null>(null);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -75,11 +77,9 @@ function HomeEntry() {
       if (!alive) return;
       if (event === "SIGNED_OUT") {
         window.localStorage.removeItem("thelawala_onboarding_completed");
+        setShowWelcome(false);
       }
-      if (session) {
-        window.localStorage.setItem("thelawala_onboarding_completed", "true");
-        setHasSession(true);
-      }
+      if (session) setHasSession(true);
       else setHasSession(false);
     });
 
@@ -97,6 +97,15 @@ function HomeEntry() {
     return <div className="fixed inset-0 bg-[#FAFAFA]" aria-hidden="true" />;
   }
   if (hasSession) return <Home />;
+  if (!showWelcome) {
+    return (
+      <OnboardingScreen
+        onComplete={() => {
+          setShowWelcome(true);
+        }}
+      />
+    );
+  }
   return <WelcomeFoodScreen />;
 }
 
@@ -128,8 +137,6 @@ function Home() {
   const [promotion, setPromotion] = useState<Tables<"app_promotions"> | null>(null);
   const [rainMode, setRainMode] = useState(false);
   const activeBanners = useHomeBanners();
-  const bestValuePromo = activeBanners.find((banner) => banner.banner_format === "BEST_VALUE");
-  const homeFeatureBanners = activeBanners.filter((banner) => banner.banner_format !== "BEST_VALUE");
   const [promoFocus, setPromoFocus] = useState<string | null>(null);
   const topBarTheme = useTopBarTheme();
   const theme = themeStyle(topBarTheme?.theme_token);
@@ -284,7 +291,7 @@ function Home() {
     }
     if (parts[0] === "category" && parts[1]) {
       const wanted = routeSlug(parts[1]);
-      const category = cats.find((candidate) => candidate.id === parts[1] || routeSlug(candidate.name) === wanted || routeSlug(candidate.name).includes(wanted));
+      const category = cats.find((candidate) => routeSlug(candidate.name) === wanted || routeSlug(candidate.name).includes(wanted));
       setActive(category?.id ?? null);
       setQ(category ? "" : parts[1].replace(/-/g, " "));
       setVendorFilter(null);
@@ -336,7 +343,6 @@ function Home() {
         items={items}
         onFilter={(v) => { setQ(v); setActive(null); setVendorFilter(null); }}
         onAdd={(id) => { const it = items.find((x) => x.id === id); if (it) add(it); }}
-        onRemove={(id) => cart.remove(id)}
         qtyOf={(id) => lines.find((l) => l.itemId === id)?.qty ?? 0}
       />
     ),
@@ -497,7 +503,7 @@ function Home() {
   };
 
   return (
-    <Shell className="home-clean">
+    <Shell>
       <PremiumHome
         address={address}
         balance={balance}
@@ -519,12 +525,11 @@ function Home() {
         onRemove={(itemId) => cart.remove(itemId)}
         onViewDeals={() => { setPromoFocus("deals"); document.getElementById("street-food-recommendations")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
         onInternalRoute={openBannerRoute}
-        bestValuePromo={bestValuePromo}
       />
 
       <HomeMarketingModules onSearch={(value) => { setQ(value); setActive(null); setVendorFilter(null); }} />
       <HomeFeatureModals
-        banners={homeFeatureBanners}
+        banners={activeBanners}
         promotion={promotion}
         campaignTitle={campaign?.title ?? null}
         rainMode={rainMode}
@@ -609,7 +614,7 @@ function Home() {
           </section>
         ) : null}
         <StreetFoodExperience
-          items={shown}
+          items={items}
           categories={cats}
           vendors={vendors}
           lines={lines}
