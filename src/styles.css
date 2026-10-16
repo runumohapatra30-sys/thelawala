@@ -621,7 +621,7 @@ body:has([aria-modal="true"], [role="dialog"], [class*="fixed inset-0"][class*="
   --shadow-soft: 0 4px 20px oklch(0 0 0 / 0.03);
   --font-display: "Plus Jakarta Sans", ui-sans-serif, sans-serif;
 }
-.home-clean .home-live-header { background: color-mix(in oklab, var(--card) 96%, transparent); backdrop-filter: blur(16px); }
+.home-clean .home-live-header { background-color: color-mix(in oklab, var(--home-theme) 85%, var(--card)); background-image: linear-gradient(180deg, var(--home-theme), color-mix(in oklab, var(--home-theme) 40%, var(--card))); backdrop-filter: blur(16px); }
 .home-clean .home-food-card { box-shadow: var(--shadow-soft); }
 .home-clean .customer-bottom-nav { box-shadow: var(--shadow-soft); background: color-mix(in oklab, var(--card) 95%, transparent); }
 .home-clean .offer-product-art { background-color: var(--muted); }
