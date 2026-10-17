@@ -34,7 +34,7 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
   const categoryIndex = activeCategoryId ? categories.findIndex((category) => category.id === activeCategoryId) : -1;
   const categoryColor = categoryIndex >= 0 ? CATEGORY_THEMES[categoryIndex % CATEGORY_THEMES.length] : null;
   const themeColor = categoryColor ?? active?.theme_color;
-  const hasBg = Boolean(active?.media_url);
+  const hasBg = false; // banner media now shows in the card carousel, header stays a soft tint
   const style = themeColor && /^#[0-9a-f]{6}$/i.test(themeColor)
     ? { "--home-theme": themeColor } as CSSProperties : undefined;
 
@@ -57,18 +57,6 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
   }, [query, reduceMotion]);
 
   return <header data-collapsed={collapsed} style={style} className="home-live-header sticky top-0 z-50 border-b border-border shadow-card transition-colors duration-500">
-    {hasBg && <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-      <AnimatePresence mode="sync">
-        <motion.div key={active!.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.6 }} className="absolute inset-0">
-          {active!.media_type === "video"
-            ? <video src={active!.media_url} autoPlay={!reduceMotion} muted loop playsInline className="h-full w-full object-cover" />
-            : <img src={active!.media_url} alt="" className="h-full w-full object-cover" />}
-        </motion.div>
-      </AnimatePresence>
-      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-background" />
-    </div>}
-    <div aria-hidden="true" className={`home-category-tint pointer-events-none absolute inset-0 transition-opacity duration-500 ${categoryColor && hasBg ? "opacity-100" : "opacity-0"}`} />
-    <div aria-hidden="true" className={`pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-background transition-opacity duration-500 ${categoryColor && hasBg ? "opacity-100" : "opacity-0"}`} />
     <div className={`relative px-4 transition-all duration-500 ${collapsed ? "pb-2 pt-2" : "pb-3 pt-4"}`}>
       {!collapsed ? (
         <div className="mb-3 flex items-center justify-between gap-3">
@@ -151,7 +139,7 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
       )}
     </div>
     <motion.div initial={false} animate={{ height: collapsed ? 0 : "auto", opacity: collapsed ? 0 : 1 }} transition={{ duration: reduceMotion ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] }} className="relative overflow-hidden" inert={collapsed}>
-      <DynamicBanners rows={rows} onActive={onActive} onInternalRoute={onInternalRoute} overlayOnly={hasBg} />
+      <DynamicBanners rows={rows} onActive={onActive} onInternalRoute={onInternalRoute} peek />
     </motion.div>
   </header>;
 }

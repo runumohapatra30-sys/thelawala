@@ -191,8 +191,8 @@
 }
 
 .home-live-header {
-  background-color: color-mix(in oklab, var(--home-theme) 32%, var(--color-card));
-  background-image: linear-gradient(180deg, color-mix(in oklab, var(--home-theme) 42%, transparent), transparent);
+  background-color: color-mix(in oklab, var(--home-theme) 16%, var(--color-card));
+  background-image: linear-gradient(180deg, color-mix(in oklab, var(--home-theme) 26%, transparent), transparent);
   transition: --home-theme 500ms ease, background-color 500ms ease;
   overflow-anchor: none;
 }
