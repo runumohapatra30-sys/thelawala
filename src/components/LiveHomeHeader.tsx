@@ -29,7 +29,9 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
   const reduceMotion = useReducedMotion();
   const active = rows.find((row) => row.id === activeId) ?? rows[0];
   const onActive = useCallback((row: DynamicBanner | null) => setActiveId(row?.id ?? null), []);
-  const themeColor = active?.theme_color;
+  const categoryIndex = activeCategoryId ? categories.findIndex((category) => category.id === activeCategoryId) : -1;
+  const categoryColor = categoryIndex >= 0 ? CATEGORY_THEMES[categoryIndex % CATEGORY_THEMES.length] : null;
+  const themeColor = categoryColor ?? active?.theme_color;
   const hasBg = Boolean(active?.media_url);
   const style = themeColor && /^#[0-9a-f]{6}$/i.test(themeColor)
     ? { "--home-theme": themeColor } as CSSProperties : undefined;
@@ -63,6 +65,8 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
       </AnimatePresence>
       <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-background" />
     </div>}
+    <div aria-hidden="true" className={`home-category-tint pointer-events-none absolute inset-0 transition-opacity duration-500 ${categoryColor ? "opacity-100" : "opacity-0"}`} />
+    <div aria-hidden="true" className={`pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-background transition-opacity duration-500 ${categoryColor ? "opacity-100" : "opacity-0"}`} />
     <div className={`relative px-4 transition-all duration-500 ${collapsed ? "pb-2 pt-2" : "pb-3 pt-4"}`}>
       {!collapsed ? (
         <div className="mb-3 flex items-center justify-between gap-3">
@@ -121,21 +125,25 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
         <section className="mt-3">
           <h2 className={`mb-2 text-xs font-black ${hasBg ? "text-white" : "text-foreground"}`}>Explore Categories</h2>
           <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
-            <button type="button" onClick={() => onCategoryChange(null)} className="w-[68px] shrink-0 text-center">
-              <span className={`mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full border-2 bg-white shadow-sm ${activeCategoryId === null ? "border-primary" : "border-white"}`}>
+            <button type="button" aria-pressed={activeCategoryId === null} onClick={() => onCategoryChange(null)} className="w-[68px] shrink-0 text-center">
+              <span className={`mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full border-2 bg-white shadow-sm transition-all duration-300 ${activeCategoryId === null ? "scale-105 border-primary ring-2 ring-primary/30" : "border-white"}`}>
                 <img src="/food/food-thali.jpg" alt="" className="h-full w-full object-cover" />
               </span>
-              <span className="mt-1 block truncate text-[10px] font-bold">All food</span>
+              <span className={`mt-1 block truncate rounded-full px-1 py-0.5 text-[10px] font-bold transition-colors duration-300 ${activeCategoryId === null ? "bg-primary text-primary-foreground" : hasBg && !categoryColor ? "text-white" : "text-foreground"}`}>All food</span>
             </button>
-            {categories.map((category) => (
-              <button key={category.id} type="button" onClick={() => onCategoryChange(category.id)} className="w-[68px] shrink-0 text-center">
-                <span className={`relative mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full border-2 bg-white shadow-sm ${activeCategoryId === category.id ? "border-primary" : "border-white"}`}>
-                  <img src={foodImage(category.name)} alt="" className="h-full w-full object-cover" />
-                  {category.emoji ? <span className="absolute bottom-0 right-0 grid h-5 w-5 place-items-center rounded-full bg-white text-[10px]">{category.emoji}</span> : null}
-                </span>
-                <span className="mt-1 block truncate text-[10px] font-bold">{category.name}</span>
-              </button>
-            ))}
+            {categories.map((category, index) => {
+              const selected = activeCategoryId === category.id;
+              const color = CATEGORY_THEMES[index % CATEGORY_THEMES.length];
+              return (
+                <button key={category.id} type="button" aria-pressed={selected} onClick={() => onCategoryChange(selected ? null : category.id)} className="w-[68px] shrink-0 text-center">
+                  <span style={selected ? { borderColor: color, boxShadow: `0 0 0 3px color-mix(in oklab, ${color} 35%, transparent)` } : undefined} className={`relative mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full border-2 bg-white shadow-sm transition-all duration-300 ${selected ? "scale-110" : "border-white"}`}>
+                    <img src={foodImage(category.name)} alt="" className="h-full w-full object-cover" />
+                    {category.emoji ? <span className="absolute bottom-0 right-0 grid h-5 w-5 place-items-center rounded-full bg-white text-[10px]">{category.emoji}</span> : null}
+                  </span>
+                  <span style={selected ? { backgroundColor: color } : undefined} className={`mt-1 block truncate rounded-full px-1 py-0.5 text-[10px] font-bold transition-colors duration-300 ${selected ? "text-white" : hasBg && !categoryColor ? "text-white" : "text-foreground"}`}>{category.name}</span>
+                </button>
+              );
+            })}
           </div>
         </section>
       )}
