@@ -196,6 +196,9 @@
   transition: --home-theme 500ms ease, background-color 500ms ease;
   overflow-anchor: none;
 }
+.home-category-tint {
+  background: linear-gradient(180deg, color-mix(in oklab, var(--home-theme) 92%, black), color-mix(in oklab, var(--home-theme) 70%, transparent));
+}
 .home-banner-copy {
   background: linear-gradient(180deg, transparent, var(--color-card) 35%);
 }

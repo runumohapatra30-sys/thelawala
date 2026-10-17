@@ -13,6 +13,8 @@ import { ThelaLogo } from "@/components/Shell";
 import { useAuthBranding } from "@/lib/authBranding";
 
 const suggestions = ["Khandagiri Dahi Bara", "Gupchup & Chaat", "Egg Chicken Roll", "Evening Hot Pakoda"];
+/** Per-category header themes: tapping a category tints the whole header like quick-commerce apps. */
+const CATEGORY_THEMES = ["#E8590C", "#2F6FDB", "#0F9D58", "#C2255C", "#7048E8", "#D9480F", "#0C8599", "#B08900"];
 
 export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query, onQueryChange, voiceSearch, onInternalRoute, categories, activeCategoryId, onCategoryChange }: {
   address: string | null; balance: number; query: string; onQueryChange: (query: string) => void;
