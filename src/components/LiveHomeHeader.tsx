@@ -65,8 +65,8 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
       </AnimatePresence>
       <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-background" />
     </div>}
-    <div aria-hidden="true" className={`home-category-tint pointer-events-none absolute inset-0 transition-opacity duration-500 ${categoryColor ? "opacity-100" : "opacity-0"}`} />
-    <div aria-hidden="true" className={`pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-background transition-opacity duration-500 ${categoryColor ? "opacity-100" : "opacity-0"}`} />
+    <div aria-hidden="true" className={`home-category-tint pointer-events-none absolute inset-0 transition-opacity duration-500 ${categoryColor && hasBg ? "opacity-100" : "opacity-0"}`} />
+    <div aria-hidden="true" className={`pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-background transition-opacity duration-500 ${categoryColor && hasBg ? "opacity-100" : "opacity-0"}`} />
     <div className={`relative px-4 transition-all duration-500 ${collapsed ? "pb-2 pt-2" : "pb-3 pt-4"}`}>
       {!collapsed ? (
         <div className="mb-3 flex items-center justify-between gap-3">
@@ -129,7 +129,7 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
               <span className={`mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full border-2 bg-white shadow-sm transition-all duration-300 ${activeCategoryId === null ? "scale-105 border-primary ring-2 ring-primary/30" : "border-white"}`}>
                 <img src="/food/food-thali.jpg" alt="" className="h-full w-full object-cover" />
               </span>
-              <span className={`mt-1 block truncate rounded-full px-1 py-0.5 text-[10px] font-bold transition-colors duration-300 ${activeCategoryId === null ? "bg-primary text-primary-foreground" : hasBg && !categoryColor ? "text-white" : "text-foreground"}`}>All food</span>
+              <span className={`mt-1 block truncate rounded-full px-1 py-0.5 text-[10px] font-bold transition-colors duration-300 ${activeCategoryId === null ? "bg-primary text-primary-foreground" : hasBg ? "text-white" : "text-foreground"}`}>All food</span>
             </button>
             {categories.map((category, index) => {
               const selected = activeCategoryId === category.id;
@@ -140,7 +140,7 @@ export function LiveHomeHeader({ address, balance, displayName, avatarUrl, query
                     <img src={foodImage(category.name)} alt="" className="h-full w-full object-cover" />
                     {category.emoji ? <span className="absolute bottom-0 right-0 grid h-5 w-5 place-items-center rounded-full bg-white text-[10px]">{category.emoji}</span> : null}
                   </span>
-                  <span style={selected ? { backgroundColor: color } : undefined} className={`mt-1 block truncate rounded-full px-1 py-0.5 text-[10px] font-bold transition-colors duration-300 ${selected ? "text-white" : hasBg && !categoryColor ? "text-white" : "text-foreground"}`}>{category.name}</span>
+                  <span style={selected ? { backgroundColor: color } : undefined} className={`mt-1 block truncate rounded-full px-1 py-0.5 text-[10px] font-bold transition-colors duration-300 ${selected ? "text-white" : hasBg ? "text-white" : "text-foreground"}`}>{category.name}</span>
                 </button>
               );
             })}
