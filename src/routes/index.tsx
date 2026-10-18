@@ -513,12 +513,18 @@ function Home() {
         vendors={vendors}
         items={shown}
         spotlightItems={items}
+        searchItems={items}
+        favoriteIds={favs}
+        ratings={ratings}
+        userCanFavorite={Boolean(user)}
         deals={deals}
         lines={lines}
         query={q}
         activeCategoryId={active}
         voiceSearch={<VoiceSearch stalls={vendors.map((vendor) => vendor.stall_name)} items={items.map((item) => item.name)} onResult={(result) => { setQ(result.query); setActive(null); setOnlyFav(false); const vendor = result.stall ? vendors.find((candidate) => candidate.stall_name === result.stall) : null; setVendorFilter(vendor?.id ?? null); }} />}
         onQueryChange={(value) => { setQ(value); setVendorFilter(null); }}
+        onSearchSelect={(value) => { setQ(value); setActive(null); setVendorFilter(null); }}
+        onFavorite={toggleFav}
         onCategoryChange={(categoryId) => { setActive(categoryId); setQ(""); setVendorFilter(null); }}
         onVendor={(vendorId) => navigate({ to: "/stalls/$id", params: { id: vendorId } })}
         onAdd={add}

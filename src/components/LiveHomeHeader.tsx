@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Bell, ChevronDown, Search, SlidersHorizontal } from "lucide-react";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { DynamicBanners } from "@/components/DynamicBanners";
@@ -21,9 +21,12 @@ function categoryTint(name: string | null): { bg: string; text: string } {
   return { bg: "#FFF7ED", text: "#EA580C" }; // Roll & everything else — warm orange
 }
 
-export function LiveHomeHeader({ address, avatarUrl, query, onQueryChange, voiceSearch, onInternalRoute, categories, activeCategoryId, onCategoryChange }: {
-  address: string | null; balance: number; query: string; onQueryChange: (query: string) => void;
-  displayName?: string | null | undefined; avatarUrl?: string | null | undefined;
+const suggestions = ["Khandagiri Dahi Bara", "Gupchup & Chaat", "Egg Chicken Roll", "Evening Hot Pakoda"];
+
+export function LiveHomeHeader({ address, avatarUrl, query, onQueryChange, onSearchFocus, voiceSearch, onInternalRoute, categories, activeCategoryId, onCategoryChange }: {
+  address: string | null; query: string; onQueryChange: (query: string) => void;
+  onSearchFocus: () => void;
+  avatarUrl?: string | null | undefined;
   voiceSearch: ReactNode; onInternalRoute: (route: string) => void;
   categories: StreetFoodCategory[]; activeCategoryId: string | null; onCategoryChange: (categoryId: string | null) => void;
 }) {
@@ -31,6 +34,7 @@ export function LiveHomeHeader({ address, avatarUrl, query, onQueryChange, voice
   const [activeId, setActiveId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [suggestion, setSuggestion] = useState(0);
   const reduceMotion = useReducedMotion();
   const onActive = useCallback((row: DynamicBanner | null) => setActiveId(row?.id ?? null), []);
   const activeCategory = activeCategoryId ? categories.find((category) => category.id === activeCategoryId) : null;
@@ -48,6 +52,11 @@ export function LiveHomeHeader({ address, avatarUrl, query, onQueryChange, voice
     scroll(); window.addEventListener("scroll", scroll, { passive: true });
     return () => { window.removeEventListener("scroll", scroll); cancelAnimationFrame(frame); };
   }, []);
+  useEffect(() => {
+    if (query || reduceMotion) return;
+    const timer = window.setInterval(() => setSuggestion((value) => (value + 1) % suggestions.length), 2800);
+    return () => window.clearInterval(timer);
+  }, [query, reduceMotion]);
 
   return <header data-collapsed={collapsed} style={{ backgroundColor: tint.bg, transition: "background-color 0.3s ease" }} className="sticky top-0 z-50 border-b border-border">
     <div className={`relative px-4 transition-all duration-300 ${collapsed ? "pb-2 pt-2" : "pb-2.5 pt-3"}`}>
@@ -67,7 +76,10 @@ export function LiveHomeHeader({ address, avatarUrl, query, onQueryChange, voice
       </div>
       <label className="flex h-11 min-w-0 items-center rounded-2xl border border-border bg-card px-3.5 shadow-sm focus-within:ring-2 focus-within:ring-primary/20">
         <Search className="mr-2 h-4 w-4 shrink-0 text-primary" />
-        <input value={query} onChange={(event) => onQueryChange(event.target.value)} aria-label="Search food and stalls" placeholder="Search for Gupchup, Chaat, Rolls..." className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground" />
+        <span className="relative h-5 min-w-0 flex-1 overflow-hidden">
+          {!query && <AnimatePresence mode="wait"><motion.span key={suggestion} initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -12, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }} className="absolute inset-x-0 truncate text-xs text-muted-foreground">Search “{suggestions[suggestion]}”</motion.span></AnimatePresence>}
+          <input value={query} onFocus={onSearchFocus} onChange={(event) => onQueryChange(event.target.value)} aria-label="Search food and stalls" placeholder="Search for Gupchup, Chaat, Rolls..." className="absolute inset-0 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground" />
+        </span>
         <button type="button" aria-label="Filter food by category" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((open) => !open)} className={`ml-2 grid h-8 w-8 shrink-0 place-items-center rounded-full border-l border-border pl-2 text-primary ${filtersOpen ? "bg-brand-soft" : ""}`}>
           <SlidersHorizontal className="h-4 w-4" />
         </button>
