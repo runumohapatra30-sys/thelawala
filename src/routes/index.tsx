@@ -120,6 +120,7 @@ function Home() {
   const [cats, setCats] = useState<Category[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [ratings, setRatings] = useState<Record<string, number>>({});
+  const [ratingCounts, setRatingCounts] = useState<Record<string, number>>({});
   const [deals, setDeals] = useState<CuratedFoodDeal[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
@@ -179,7 +180,7 @@ function Home() {
       setDeals((dealResult.data ?? []) as CuratedFoodDeal[]);
       setCatalogLoading(false);
       const vendorIds = catalogVendors.map((vendor) => vendor.id);
-      if (!vendorIds.length) { setRatings({}); return; }
+      if (!vendorIds.length) { setRatings({}); setRatingCounts({}); return; }
       const { data: ratingsData } = await supabase.from("order_ratings").select("vendor_id,food_stars").in("vendor_id", vendorIds);
       if (!alive) return;
       const ratingTotals = new Map<string, { total: number; count: number }>();
@@ -191,6 +192,7 @@ function Home() {
         ratingTotals.set(rating.vendor_id, current);
       }
       setRatings(Object.fromEntries([...ratingTotals].map(([vendorId, rating]) => [vendorId, rating.total / rating.count])));
+      setRatingCounts(Object.fromEntries([...ratingTotals].map(([vendorId, rating]) => [vendorId, rating.count])));
     };
     void loadCatalog();
     const refreshCampaign = () => activeCampaign().then((value) => { if (alive) setCampaign(value); });
@@ -439,7 +441,7 @@ function Home() {
             const off = vendorOffer[i.vendor_id] ?? 0;
             const offerPrice = off > 0 ? Math.round(shownPrice * (100 - off)) / 100 : shownPrice;
             return (
-              <div key={i.id} style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }} className="press rise-in overflow-visible rounded-3xl border border-border bg-white p-2.5 shadow-sm hover:-translate-y-0.5">
+              <div key={i.id} role="link" tabIndex={0} onClick={() => navigate({ to: "/item/$id", params: { id: i.id } })} onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); navigate({ to: "/item/$id", params: { id: i.id } }); } }} style={{ animationDelay: `${Math.min(idx, 8) * 55}ms` }} className="press rise-in cursor-pointer overflow-visible rounded-3xl border border-border bg-white p-2.5 shadow-sm hover:-translate-y-0.5">
                 <div className={`product-tile relative aspect-square overflow-visible rounded-3xl ${PRODUCT_TINTS[idx % PRODUCT_TINTS.length]}`}>
                   <img
                     src={i.photo_url ?? foodImage(i.name)}
@@ -459,7 +461,7 @@ function Home() {
                   {user ? (
                     <button
                       aria-label={favs.includes(i.id) ? "Remove from favourites" : "Add to favourites"}
-                      onClick={() => toggleFav(i.id, i.vendor_id)}
+                      onClick={(event) => { event.stopPropagation(); void toggleFav(i.id, i.vendor_id); }}
                       className={`press absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-card/90 text-sm shadow-md ${favs.includes(i.id) ? "text-destructive" : "text-muted-foreground"}`}
                     >
                       <Heart className="h-4 w-4" fill={favs.includes(i.id) ? "currentColor" : "none"} />
@@ -467,13 +469,13 @@ function Home() {
                   ) : null}
                   {!i.in_stock ? null : line ? (
                     <div className="absolute -bottom-3 right-2 z-20 flex items-center gap-1 rounded-full border border-primary bg-white px-1.5 py-1 text-primary shadow-sm">
-                      <button aria-label="Remove one" onClick={() => cart.remove(i.id)} className="press grid h-6 w-6 place-items-center rounded-full text-sm font-bold">−</button>
+                      <button aria-label="Remove one" onClick={(event) => { event.stopPropagation(); cart.remove(i.id); }} className="press grid h-6 w-6 place-items-center rounded-full text-sm font-bold">−</button>
                       <span className="min-w-3 text-center text-[10px] font-extrabold">{line.qty}</span>
-                      <button aria-label="Add one" onClick={() => add(i)} className="press grid h-6 w-6 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground">+</button>
+                      <button aria-label="Add one" onClick={(event) => { event.stopPropagation(); add(i); }} className="press grid h-6 w-6 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground">+</button>
                     </div>
                   ) : (
                     <button
-                      onClick={() => add(i)}
+                      onClick={(event) => { event.stopPropagation(); add(i); }}
                       aria-label={`Add ${i.name}`}
                       className="press absolute -bottom-3 right-2 z-20 grid h-9 w-9 place-items-center rounded-full bg-primary text-white shadow-sm"
                     >
@@ -516,6 +518,7 @@ function Home() {
         searchItems={items}
         favoriteIds={favs}
         ratings={ratings}
+        ratingCounts={ratingCounts}
         userCanFavorite={Boolean(user)}
         deals={deals}
         lines={lines}
@@ -525,6 +528,7 @@ function Home() {
         onQueryChange={(value) => { setQ(value); setVendorFilter(null); }}
         onSearchSelect={(value) => { setQ(value); setActive(null); setVendorFilter(null); }}
         onFavorite={toggleFav}
+        onItem={(itemId) => navigate({ to: "/item/$id", params: { id: itemId } })}
         onCategoryChange={(categoryId) => { setActive(categoryId); setQ(""); setVendorFilter(null); }}
         onVendor={(vendorId) => navigate({ to: "/stalls/$id", params: { id: vendorId } })}
         onAdd={add}
@@ -633,6 +637,7 @@ function Home() {
           onRemove={(itemId) => cart.remove(itemId)}
           onOptions={(itemId, options) => cart.setOptions(itemId, options)}
           onVendor={(vendorId) => navigate({ to: "/stalls/$id", params: { id: vendorId } })}
+          onItem={(itemId) => navigate({ to: "/item/$id", params: { id: itemId } })}
           onClearPromoFocus={clearPromoFocus}
           deals={deals}
         />

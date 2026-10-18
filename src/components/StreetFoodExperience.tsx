@@ -58,6 +58,7 @@ type Props = {
   onRemove: (itemId: string) => void;
   onOptions: (itemId: string, options: string[]) => void;
   onVendor: (vendorId: string) => void;
+  onItem: (itemId: string) => void;
   onClearPromoFocus: () => void;
   deals: CuratedFoodDeal[];
 };
@@ -111,6 +112,7 @@ export function StreetFoodExperience({
   onRemove,
   onOptions,
   onVendor,
+  onItem,
   onClearPromoFocus,
   deals,
 }: Props) {
@@ -230,16 +232,16 @@ export function StreetFoodExperience({
                 const line = lines.find((candidate) => candidate.itemId === item.id);
                 const qty = line?.qty ?? 0;
                 return (
-                  <div key={item.id} className="flex items-center gap-2 rounded-lg border border-border p-2">
+                  <div key={item.id} role="link" tabIndex={0} onClick={() => onItem(item.id)} onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onItem(item.id); } }} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border p-2">
                     <img src={item.photo_url ?? foodImage(item.name)} alt={item.name} className="h-10 w-10 shrink-0 rounded-md bg-muted object-cover" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[11px] font-bold text-foreground">{item.name}</p>
                       <p className="text-[10px] font-black text-primary">{inr(customerPrice(item.price))}</p>
                     </div>
                     <div className="grid grid-cols-[1.75rem_1.25rem_1.75rem] items-center rounded-full border border-border">
-                      <button type="button" aria-label={`Remove one ${item.name}`} onClick={() => onRemove(item.id)} disabled={!qty} className="grid h-7 w-7 place-items-center text-primary disabled:opacity-35"><Minus className="h-3 w-3" /></button>
+                      <button type="button" aria-label={`Remove one ${item.name}`} onClick={(event) => { event.stopPropagation(); onRemove(item.id); }} disabled={!qty} className="grid h-7 w-7 place-items-center text-primary disabled:opacity-35"><Minus className="h-3 w-3" /></button>
                       <span className="text-center text-[10px] font-black">{qty}</span>
-                      <button type="button" aria-label={`Add one ${item.name}`} onClick={() => onAdd(item)} className="grid h-7 w-7 place-items-center rounded-full bg-primary text-primary-foreground"><Plus className="h-3.5 w-3.5" /></button>
+                      <button type="button" aria-label={`Add one ${item.name}`} onClick={(event) => { event.stopPropagation(); onAdd(item); }} className="grid h-7 w-7 place-items-center rounded-full bg-primary text-primary-foreground"><Plus className="h-3.5 w-3.5" /></button>
                     </div>
                     {qty ? <span className="sr-only">{line?.qty} in cart</span> : null}
                   </div>
@@ -274,11 +276,11 @@ export function StreetFoodExperience({
               const price = customerPrice(item.price);
               const discount = original > price ? Math.round((1 - price / original) * 100) : 0;
               return (
-                <article key={item.id} className="w-[142px] shrink-0 snap-start overflow-hidden rounded-xl border border-border bg-white">
+                <article key={item.id} role="link" tabIndex={0} onClick={() => onItem(item.id)} onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onItem(item.id); } }} className="w-[142px] shrink-0 cursor-pointer snap-start overflow-hidden rounded-xl border border-border bg-white">
                   <div className="relative aspect-[4/3] bg-muted">
                     <img src={item.photo_url ?? foodImage(item.name)} alt={item.name} loading="lazy" className="h-full w-full object-cover" />
                     {discount > 0 ? <span className="absolute left-2 top-2 rounded-full bg-primary px-2 py-1 text-[9px] font-black text-primary-foreground">-{discount}%</span> : null}
-                    <button type="button" aria-label={`Add ${item.name}`} onClick={() => onAdd(item)} className="absolute bottom-2 right-2 grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground shadow-md"><Plus className="h-4 w-4" /></button>
+                    <button type="button" aria-label={`Add ${item.name}`} onClick={(event) => { event.stopPropagation(); onAdd(item); }} className="absolute bottom-2 right-2 grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground shadow-md"><Plus className="h-4 w-4" /></button>
                   </div>
                   <div className="p-2.5">
                     <p className="truncate text-[11px] font-bold text-foreground">{item.name}</p>

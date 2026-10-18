@@ -23,6 +23,7 @@ import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as AuthenticatedRiderRouteImport } from './routes/_authenticated/rider'
 import { Route as AuthenticatedVendorRouteImport } from './routes/_authenticated/vendor'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as ItemIdRouteImport } from './routes/item.$id'
 import { Route as OrdersIndexRouteImport } from './routes/orders.index'
 import { Route as OrdersIdRouteImport } from './routes/orders.$id'
 import { Route as StallsIndexRouteImport } from './routes/stalls.index'
@@ -101,6 +102,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/callback',
   getParentRoute: () => AuthRoute,
 } as any)
+const ItemIdRoute = ItemIdRouteImport.update({
+  id: '/item/$id',
+  path: '/item/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrdersIndexRoute = OrdersIndexRouteImport.update({
   id: '/orders/',
   path: '/orders/',
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/rider': typeof AuthenticatedRiderRoute
   '/vendor': typeof AuthenticatedVendorRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/item/$id': typeof ItemIdRoute
   '/orders/$id': typeof OrdersIdRoute
   '/stalls/$id': typeof StallsIdRoute
   '/support/$id': typeof SupportIdRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/rider': typeof AuthenticatedRiderRoute
   '/vendor': typeof AuthenticatedVendorRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/item/$id': typeof ItemIdRoute
   '/orders/$id': typeof OrdersIdRoute
   '/stalls/$id': typeof StallsIdRoute
   '/support/$id': typeof SupportIdRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/_authenticated/rider': typeof AuthenticatedRiderRoute
   '/_authenticated/vendor': typeof AuthenticatedVendorRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/item/$id': typeof ItemIdRoute
   '/orders/$id': typeof OrdersIdRoute
   '/stalls/$id': typeof StallsIdRoute
   '/support/$id': typeof SupportIdRoute
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
     | '/rider'
     | '/vendor'
     | '/auth/callback'
+    | '/item/$id'
     | '/orders/$id'
     | '/stalls/$id'
     | '/support/$id'
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/rider'
     | '/vendor'
     | '/auth/callback'
+    | '/item/$id'
     | '/orders/$id'
     | '/stalls/$id'
     | '/support/$id'
@@ -277,6 +288,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rider'
     | '/_authenticated/vendor'
     | '/auth/callback'
+    | '/item/$id'
     | '/orders/$id'
     | '/stalls/$id'
     | '/support/$id'
@@ -299,6 +311,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   TermsRoute: typeof TermsRoute
   WalletRoute: typeof WalletRoute
+  ItemIdRoute: typeof ItemIdRoute
   OrdersIdRoute: typeof OrdersIdRoute
   StallsIdRoute: typeof StallsIdRoute
   SupportIdRoute: typeof SupportIdRoute
@@ -409,6 +422,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/item/$id': {
+      id: '/item/$id'
+      path: '/item/$id'
+      fullPath: '/item/$id'
+      preLoaderRoute: typeof ItemIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/orders/': {
       id: '/orders/'
       path: '/orders'
@@ -503,6 +523,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   TermsRoute: TermsRoute,
   WalletRoute: WalletRoute,
+  ItemIdRoute: ItemIdRoute,
   OrdersIdRoute: OrdersIdRoute,
   StallsIdRoute: StallsIdRoute,
   SupportIdRoute: SupportIdRoute,
