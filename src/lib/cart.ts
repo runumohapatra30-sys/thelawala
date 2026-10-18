@@ -13,6 +13,8 @@ export type CartLine = {
   base?: number;
   options?: string[];
   promotionalMinimum?: number;
+  campaignSlug?: string;
+  freeDelivery?: boolean;
   qty: number;
 };
 
@@ -70,7 +72,11 @@ export const cart = {
       if (existing.promotionalMinimum) {
         return { ok: false as const, error: "Only one eligible ₹1 bundle item may be added per order." };
       }
-      commit(lines.map((l) => (l.itemId === line.itemId ? { ...l, qty: l.qty + 1 } : l)));
+      commit(lines.map((l) => (l.itemId === line.itemId
+        ? line.campaignSlug
+          ? { ...l, ...line, qty: l.qty + 1 }
+          : { ...l, qty: l.qty + 1 }
+        : l)));
       return { ok: true as const };
     }
     if (lines.length && lines[0]!.vendorId !== line.vendorId) {

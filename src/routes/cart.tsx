@@ -11,6 +11,7 @@ import { checkoutGate, minimumOrderValue, stallOfferDiscount } from "@/lib/prici
 import { payInAppWithCashfree } from "@/lib/checkout";
 import { codRestrictionUntil } from "@/lib/codPolicy";
 import { useSession } from "@/lib/session";
+import { usePromotionalCredit } from "@/lib/promotionalCredit";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Banknote, Bike, BellOff, ChevronRight, ChevronsRight, CircleDollarSign, CreditCard, DoorOpen, MapPin, Phone, PhoneOff, Plus, ShieldCheck, ShoppingCart, Smartphone, Tag } from "lucide-react";
 import { toast } from "sonner";
@@ -41,6 +42,7 @@ function Cart() {
   const navigate = useNavigate();
   const { user } = useSession();
   const userId = user?.id;
+  const promotionalCredit = usePromotionalCredit(userId);
   const lines = useCart();
   const cartVendorId = lines[0]?.vendorId;
   const { foodTotal, baseTotal, mrpTotal } = cartTotals(lines);
@@ -153,6 +155,10 @@ function Cart() {
       .maybeSingle()
       .then(({ data }) => setWalletBalance(data?.status === "ACTIVE" ? Number(data.balance) : 0));
   }, [userId]);
+
+  useEffect(() => {
+    if (promotionalCredit.error) toast.error(promotionalCredit.error);
+  }, [promotionalCredit.error]);
 
   useEffect(() => {
     if (!userId) return;
@@ -381,20 +387,27 @@ function Cart() {
     : 0;
   // No automatic MRP discount any more: a discount exists only when the stall runs its own offer.
   const hasLocation = Boolean(vendor && coords);
+  const hasCampaignFreeDelivery = lines.some((line) => line.campaignSlug === "99-store" && line.freeDelivery);
   const bill = hasLocation
-    ? computeBill({ settings, foodTotal, mrpTotal: foodTotal, distanceKm })
+    ? computeBill({ settings, foodTotal, mrpTotal: foodTotal, distanceKm, freeDelivery: hasCampaignFreeDelivery })
     : null;
   const stallOff = stallOfferDiscount(foodTotal, vendor?.offer_percent);
   const couponOff = coupon ? couponDiscount(coupon, foodTotal) : 0;
+  const freeCashApplied = promotionalCredit.eligible && promotionalCredit.settings
+    ? Math.min(
+        Number(promotionalCredit.settings.credit_amount),
+        Math.max(0, foodTotal - stallOff - couponOff),
+      )
+    : 0;
   const netTotal = bill
-    ? Math.max(0, Math.round((bill.grandTotal - stallOff - couponOff + tip) * 100) / 100)
+    ? Math.max(0, Math.round((bill.grandTotal - stallOff - couponOff - freeCashApplied + tip) * 100) / 100)
     : 0;
   const walletUse = bill && useWallet ? Math.min(walletBalance, netTotal) : 0;
   const payable = bill ? Math.round((netTotal - walletUse) * 100) / 100 : 0;
   const onlineDue = payment === "SPLIT" ? Math.round(payable * 50) / 100 : payable;
   const standardDeliveryFee = bill ? 22 + Math.max(0, bill.distanceKm - 2) * 3.5 : 0;
   const deliverySavings = bill ? Math.max(0, standardDeliveryFee - bill.deliveryFee) : 0;
-  const savings = Math.round((Math.max(0, mrpTotal - foodTotal) + stallOff + couponOff + deliverySavings) * 100) / 100;
+  const savings = Math.round((Math.max(0, mrpTotal - foodTotal) + stallOff + couponOff + freeCashApplied + deliverySavings) * 100) / 100;
   const instructionOptions = [
     { label: "Avoid ringing bell", Icon: BellOff },
     { label: "Leave at the door", Icon: DoorOpen },
@@ -617,7 +630,7 @@ function Cart() {
         surge_fee: bill.surgeFee,
         grand_total: netTotal,
         coupon_code: coupon?.code ?? null,
-        discount_amount: Math.round((couponOff + stallOff) * 100) / 100,
+        discount_amount: Math.round((couponOff + stallOff + freeCashApplied) * 100) / 100,
         wallet_paid: walletUse,
         tip_amount: tip,
         delivery_instructions: [
@@ -829,6 +842,22 @@ function Cart() {
             </div>
           </section>
         ) : null}
+
+        {freeCashApplied > 0 ? (
+          <div className="flex items-center justify-between rounded-2xl border border-[#e6c46d] bg-[linear-gradient(110deg,#fff8df,#fff)] px-4 py-3 shadow-sm">
+            <span>
+              <span className="block text-sm font-black text-[#173665]">₹{freeCashApplied} Free Cash applied</span>
+              <span className="text-[10px] font-semibold text-muted-foreground">Promotional credit on your food subtotal</span>
+            </span>
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-[#f5d77e] text-lg shadow-inner">🪙</span>
+          </div>
+        ) : null}
+        {promotionalCredit.error ? (
+          <p role="status" className="rounded-xl border border-[#e6c46d] bg-[#fffaf0] px-3 py-2 text-[11px] font-semibold text-[#735519]">
+            Free Cash could not be verified, so no promotional credit has been applied.
+          </p>
+        ) : null}
+        {promotionalCredit.loading ? <p aria-live="polite" className="text-[10px] font-semibold text-muted-foreground">Checking your Free Cash eligibility…</p> : null}
 
         <button onClick={() => setPickerOpen(true)} className="card-soft press rise-in flex w-full items-center gap-3 p-4 text-left">
           <MapPin className="h-5 w-5 shrink-0 text-primary" />
@@ -1076,6 +1105,8 @@ function Cart() {
               {couponOff > 0 ? (
                 <Row label={`Coupon ${coupon?.code}`} value={`− ${inr(couponOff)}`} good />
               ) : null}
+              {freeCashApplied > 0 ? <Row label={`${inr(freeCashApplied)} Free Cash applied`} value={`− ${inr(freeCashApplied)}`} good /> : null}
+              {hasCampaignFreeDelivery ? <Row label="99 Store free delivery" value="FREE" good /> : null}
               {tip > 0 ? <Row label="Tip for delivery partner" value={inr(tip)} /> : null}
               {walletUse > 0 ? (
                 <Row label="Paid from wallet" value={`− ${inr(walletUse)}`} good />
@@ -1127,7 +1158,7 @@ function Cart() {
             <span className="flex shrink-0 items-center gap-0.5 text-[11px] font-black text-primary">Change <ChevronRight className="h-3.5 w-3.5" /></span>
           </button>
           {blockedReason ? <p className="px-1 pb-2 text-[11px] font-bold text-destructive">{minimumShortfall > 0 ? `Add ${inr(minimumShortfall)} more to order` : blockedReason}</p> : null}
-          <button disabled={busy || !!blockedReason || !hasLocation} onClick={() => void place()} className="press flex w-full items-center justify-between gap-3 rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-md disabled:opacity-50">
+          <button disabled={busy || !!blockedReason || !hasLocation || promotionalCredit.loading} onClick={() => void place()} className="press flex w-full items-center justify-between gap-3 rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-md disabled:opacity-50">
             <span className="flex items-center gap-2"><ChevronsRight className="h-5 w-5" /><span className="text-sm font-black">{busy ? "Placing your order…" : minimumShortfall > 0 ? `Add ${inr(minimumShortfall)} more to order` : payment === "COD" ? "Place Cash Order" : `Pay with ${onlineMethod}`}</span></span>
             <span className="shrink-0 text-base font-black">{bill ? inr(payable) : "—"}</span>
           </button>
@@ -1226,6 +1257,9 @@ function Cart() {
 
             <section className="card-soft p-4">
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">Order total</span><span className="font-bold">{inr(netTotal)}</span></div>
+              {freeCashApplied > 0 ? <div className="mt-2 flex justify-between text-sm"><span className="text-muted-foreground">{inr(freeCashApplied)} Free Cash applied</span><span className="font-bold text-primary">− {inr(freeCashApplied)}</span></div> : null}
+              {promotionalCredit.error ? <p role="status" className="mt-2 text-[11px] font-semibold text-[#735519]">Free Cash could not be verified; no credit has been applied.</p> : null}
+              {promotionalCredit.loading ? <p aria-live="polite" className="mt-2 text-[11px] font-semibold text-muted-foreground">Checking your Free Cash eligibility…</p> : null}
               {walletUse > 0 ? <div className="mt-2 flex justify-between text-sm"><span className="text-muted-foreground">Wallet balance</span><span className="font-bold text-primary">− {inr(walletUse)}</span></div> : null}
               {payment === "SPLIT" ? (
                 <>
@@ -1238,7 +1272,7 @@ function Cart() {
             {err ? <p className="rounded-lg bg-destructive/10 p-3 text-xs font-semibold text-destructive">{err}</p> : null}
           </main>
           <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[520px] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            <button type="button" disabled={busy || !!blockedReason || ((payment === "ONLINE" || payment === "SPLIT") && !settings?.enable_online_payment)} onClick={() => void place()} className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-card disabled:opacity-50">
+            <button type="button" disabled={busy || !!blockedReason || promotionalCredit.loading || ((payment === "ONLINE" || payment === "SPLIT") && !settings?.enable_online_payment)} onClick={() => void place()} className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-card disabled:opacity-50">
               <span><span className="block text-[10px] font-bold opacity-75">{busy ? "SECURELY PROCESSING" : payment === "SPLIT" ? "PAY ONLINE NOW" : "TOTAL TO PAY"}</span><span className="text-lg font-black">{inr(onlineDue)}</span></span>
               <span className="flex items-center gap-2 text-sm font-black">{busy ? "Please wait…" : minimumShortfall > 0 ? `Add ${inr(minimumShortfall)} more to order` : payment === "COD" ? `Pay ${inr(payable)} with Cash` : payment === "SPLIT" ? `Pay 50% now via ${onlineMethod}` : `Pay ${inr(payable)} with ${onlineMethod}`}<ChevronRight className="h-4 w-4" /></span>
             </button>

@@ -10,6 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import type { CuratedFoodDeal, StreetFoodCategory, StreetFoodItem, StreetFoodVendor } from "@/components/StreetFoodExperience";
 import { LiveHomeHeader } from "@/components/LiveHomeHeader";
 import { LocalSpotlight } from "@/components/LocalSpotlight";
+import { OfferImageOverlay } from "@/components/OfferImageOverlay";
 
 const SEARCH_SUGGESTIONS = [
   "Khandagiri Dahi Bara",
@@ -348,8 +349,9 @@ export function PremiumHome({
                             <article key={item.id} role="link" tabIndex={0} onClick={() => onItem(item.id)} onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onItem(item.id); } }} className="relative flex min-w-0 cursor-pointer gap-3 overflow-hidden rounded-2xl border border-border bg-white p-2.5 shadow-sm">
                               <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl bg-brand-soft">
                                 <img src={item.photo_url ?? foodImage(item.name)} alt={item.name} className="h-full w-full object-cover" />
+                                <OfferImageOverlay stallName={vendor?.stall_name ?? "Local stall"} offerPercent={Number(vendor?.offer_percent ?? 0)} offerLabel={vendor?.offer_label} offerPrice={price} mrp={mrp} />
                                 {matchingDeal || mrp > price ? <span className="absolute left-1.5 top-1.5 rounded-md bg-primary px-1.5 py-1 text-[8px] font-black uppercase text-primary-foreground">{matchingDeal?.tag ?? (mrp > price ? `${Math.round((1 - price / mrp) * 100)}% off` : "Deal")}</span> : null}
-                                <span className="absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-md bg-white/95 px-1 py-1 text-[8px] font-black text-foreground shadow-sm">
+                                <span className="absolute right-1.5 top-1.5 flex items-center gap-1 rounded-md bg-white/95 px-1 py-1 text-[8px] font-black text-foreground shadow-sm">
                                   <Clock3 className="h-3 w-3 text-primary" />{vendor?.default_prep_minutes ?? 15} min
                                 </span>
                               </div>
@@ -453,7 +455,7 @@ export function PremiumHome({
               const original = Math.max(Number(deal.original_price), customerPrice(item.mrp));
               return (
                 <article key={deal.id} role="link" tabIndex={0} onClick={() => onItem(item.id)} onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onItem(item.id); } }} className="min-w-0 cursor-pointer rounded-3xl border border-border bg-white p-2.5 shadow-sm">
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-brand-soft"><img src={deal.image_url ?? item.photo_url ?? foodImage(item.name)} alt={item.name} className="h-full w-full object-cover" />{offer < original ? <span className="absolute left-2 top-2 rounded-md bg-success px-1.5 py-0.5 text-[9px] font-black text-success-foreground">SAVE {inr(original - offer)}</span> : null}</div>
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-brand-soft"><img src={deal.image_url ?? item.photo_url ?? foodImage(item.name)} alt={item.name} className="h-full w-full object-cover" /><OfferImageOverlay stallName={vendors.find((vendor) => vendor.id === item.vendor_id)?.stall_name ?? "Local stall"} offerPercent={Number(vendors.find((vendor) => vendor.id === item.vendor_id)?.offer_percent ?? 0)} offerLabel={vendors.find((vendor) => vendor.id === item.vendor_id)?.offer_label} offerPrice={offer} mrp={original} />{offer < original ? <span className="absolute left-2 top-2 rounded-md bg-success px-1.5 py-0.5 text-[9px] font-black text-success-foreground">SAVE {inr(original - offer)}</span> : null}</div>
                   <button type="button" onClick={(event) => { event.stopPropagation(); onVendor(item.vendor_id); }} className="mt-2 block w-full truncate text-left text-[9px] font-bold text-muted-foreground">{vendors.find((vendor) => vendor.id === item.vendor_id)?.stall_name ?? "Local stall"}</button>
                   <h2 className="truncate text-xs font-extrabold text-foreground">{item.name}</h2>
                   <div className="mt-2 flex items-center justify-between gap-1"><span className="text-xs font-black text-primary">{inr(offer)} {offer < original ? <span className="text-[9px] font-medium text-muted-foreground line-through">{inr(original)}</span> : null}</span>{line ? <span className="flex items-center gap-1 rounded-lg bg-primary p-1 text-primary-foreground"><button type="button" aria-label={`Remove one ${item.name}`} onClick={(event) => { event.stopPropagation(); onRemove(item.id); }}><Minus className="h-3 w-3" /></button><span className="text-[10px] font-black">{line.qty}</span><button type="button" aria-label={`Add one ${item.name}`} onClick={(event) => { event.stopPropagation(); onAdd(item, offer, offer === 1 ? 199 : undefined); }}><Plus className="h-3 w-3" /></button></span> : <button type="button" onClick={(event) => { event.stopPropagation(); onAdd(item, offer, offer === 1 ? 199 : undefined); }} className="rounded-lg bg-primary px-2.5 py-1.5 text-[9px] font-black text-primary-foreground">+ ADD</button>}</div>

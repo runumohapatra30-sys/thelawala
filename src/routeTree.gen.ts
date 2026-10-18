@@ -23,6 +23,8 @@ import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as AuthenticatedRiderRouteImport } from './routes/_authenticated/rider'
 import { Route as AuthenticatedVendorRouteImport } from './routes/_authenticated/vendor'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as Campaign99StoreRouteImport } from './routes/campaign.99-store'
+import { Route as FestivalDurgaPujaRouteImport } from './routes/festival.durga-puja'
 import { Route as ItemIdRouteImport } from './routes/item.$id'
 import { Route as OrdersIndexRouteImport } from './routes/orders.index'
 import { Route as OrdersIdRouteImport } from './routes/orders.$id'
@@ -102,6 +104,16 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/callback',
   getParentRoute: () => AuthRoute,
 } as any)
+const Campaign99StoreRoute = Campaign99StoreRouteImport.update({
+  id: '/campaign/99-store',
+  path: '/campaign/99-store',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FestivalDurgaPujaRoute = FestivalDurgaPujaRouteImport.update({
+  id: '/festival/durga-puja',
+  path: '/festival/durga-puja',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ItemIdRoute = ItemIdRouteImport.update({
   id: '/item/$id',
   path: '/item/$id',
@@ -163,6 +175,8 @@ export interface FileRoutesByFullPath {
   '/rider': typeof AuthenticatedRiderRoute
   '/vendor': typeof AuthenticatedVendorRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/campaign/99-store': typeof Campaign99StoreRoute
+  '/festival/durga-puja': typeof FestivalDurgaPujaRoute
   '/item/$id': typeof ItemIdRoute
   '/orders/$id': typeof OrdersIdRoute
   '/stalls/$id': typeof StallsIdRoute
@@ -187,6 +201,8 @@ export interface FileRoutesByTo {
   '/rider': typeof AuthenticatedRiderRoute
   '/vendor': typeof AuthenticatedVendorRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/campaign/99-store': typeof Campaign99StoreRoute
+  '/festival/durga-puja': typeof FestivalDurgaPujaRoute
   '/item/$id': typeof ItemIdRoute
   '/orders/$id': typeof OrdersIdRoute
   '/stalls/$id': typeof StallsIdRoute
@@ -213,6 +229,8 @@ export interface FileRoutesById {
   '/_authenticated/rider': typeof AuthenticatedRiderRoute
   '/_authenticated/vendor': typeof AuthenticatedVendorRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/campaign/99-store': typeof Campaign99StoreRoute
+  '/festival/durga-puja': typeof FestivalDurgaPujaRoute
   '/item/$id': typeof ItemIdRoute
   '/orders/$id': typeof OrdersIdRoute
   '/stalls/$id': typeof StallsIdRoute
@@ -239,6 +257,8 @@ export interface FileRouteTypes {
     | '/rider'
     | '/vendor'
     | '/auth/callback'
+    | '/campaign/99-store'
+    | '/festival/durga-puja'
     | '/item/$id'
     | '/orders/$id'
     | '/stalls/$id'
@@ -263,6 +283,8 @@ export interface FileRouteTypes {
     | '/rider'
     | '/vendor'
     | '/auth/callback'
+    | '/campaign/99-store'
+    | '/festival/durga-puja'
     | '/item/$id'
     | '/orders/$id'
     | '/stalls/$id'
@@ -288,6 +310,8 @@ export interface FileRouteTypes {
     | '/_authenticated/rider'
     | '/_authenticated/vendor'
     | '/auth/callback'
+    | '/campaign/99-store'
+    | '/festival/durga-puja'
     | '/item/$id'
     | '/orders/$id'
     | '/stalls/$id'
@@ -311,6 +335,8 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   TermsRoute: typeof TermsRoute
   WalletRoute: typeof WalletRoute
+  Campaign99StoreRoute: typeof Campaign99StoreRoute
+  FestivalDurgaPujaRoute: typeof FestivalDurgaPujaRoute
   ItemIdRoute: typeof ItemIdRoute
   OrdersIdRoute: typeof OrdersIdRoute
   StallsIdRoute: typeof StallsIdRoute
@@ -422,6 +448,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/campaign/99-store': {
+      id: '/campaign/99-store'
+      path: '/campaign/99-store'
+      fullPath: '/campaign/99-store'
+      preLoaderRoute: typeof Campaign99StoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/festival/durga-puja': {
+      id: '/festival/durga-puja'
+      path: '/festival/durga-puja'
+      fullPath: '/festival/durga-puja'
+      preLoaderRoute: typeof FestivalDurgaPujaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/item/$id': {
       id: '/item/$id'
       path: '/item/$id'
@@ -523,6 +563,8 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   TermsRoute: TermsRoute,
   WalletRoute: WalletRoute,
+  Campaign99StoreRoute: Campaign99StoreRoute,
+  FestivalDurgaPujaRoute: FestivalDurgaPujaRoute,
   ItemIdRoute: ItemIdRoute,
   OrdersIdRoute: OrdersIdRoute,
   StallsIdRoute: StallsIdRoute,

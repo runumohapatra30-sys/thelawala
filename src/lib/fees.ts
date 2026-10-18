@@ -22,6 +22,7 @@ export type BillInput = {
   mrpTotal: number;
   distanceKm: number;
   penaltyFee?: number;
+  freeDelivery?: boolean;
 };
 
 export type Bill = {
@@ -58,10 +59,11 @@ export function computeBill({
   mrpTotal,
   distanceKm,
   penaltyFee = 0,
+  freeDelivery = false,
 }: BillInput): Bill {
   const standardDeliveryFee = 22 + Math.max(0, distanceKm - 2) * 3.5;
-  let deliveryFee = standardDeliveryFee;
-  if (foodTotal >= 200) {
+  let deliveryFee = freeDelivery ? 0 : standardDeliveryFee;
+  if (!freeDelivery && foodTotal >= 200) {
     deliveryFee = distanceKm <= 5 ? 0 : Math.max(0, standardDeliveryFee - 30);
   }
   deliveryFee = r2(deliveryFee);

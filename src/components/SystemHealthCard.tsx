@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, HardDrive, Store, Bike, Trash2, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useVisualEngineSettings } from "@/lib/visualEngine";
 
 const LIMIT_MB = 1024;
 const WATCHED = ["banners", "dish-photos"];
@@ -9,6 +10,7 @@ const WATCHED = ["banners", "dish-photos"];
 type Usage = { bucket_id: string; bytes: number; files: number };
 
 export function SystemHealthCard() {
+  const { settings: visualSettings, loading: visualSettingsLoading } = useVisualEngineSettings();
   const [usage, setUsage] = useState<Usage[]>([]);
   const [stalls, setStalls] = useState(0);
   const [riders, setRiders] = useState(0);
@@ -17,19 +19,88 @@ export function SystemHealthCard() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [{ data: use, error }, { count: sc }, { count: rc }] = await Promise.all([
-      supabase.rpc("admin_storage_usage"),
-      supabase.from("vendors").select("id", { count: "exact", head: true }).eq("status", "APPROVED"),
-      supabase.from("delivery_partners").select("id", { count: "exact", head: true }).eq("is_online", true),
-    ]);
-    if (error) console.error("Storage usage error:", error);
-    setUsage(((use ?? []) as Usage[]).map((u) => ({ ...u, bytes: Number(u.bytes), files: Number(u.files) })));
-    setStalls(sc ?? 0);
-    setRiders(rc ?? 0);
-    setLoading(false);
+    try {
+      const [storageResult, stallsResult, ridersResult] = await Promise.all([
+        supabase.rpc("admin_storage_usage"),
+        supabase.from("vendors").select("id", { count: "exact", head: true }).eq("status", "APPROVED"),
+        supabase.from("delivery_partners").select("id", { count: "exact", head: true }).eq("is_online", true),
+      ]);
+      const failure = storageResult.error ?? stallsResult.error ?? ridersResult.error;
+      if (failure) throw failure;
+      setUsage(((storageResult.data ?? []) as Usage[]).map((u) => ({ ...u, bytes: Number(u.bytes), files: Number(u.files) })));
+      setStalls(stallsResult.count ?? 0);
+      setRiders(ridersResult.count ?? 0);
+      return true;
+    } catch (error) {
+      console.error("System health refresh failed:", error);
+      toast.error("Could not refresh system health. Please try again.");
+      return false;
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (visualSettingsLoading) return;
+    if (!visualSettings.is_enabled) void load();
+  }, [load, visualSettings.is_enabled, visualSettingsLoading]);
+
+  useEffect(() => {
+    if (visualSettingsLoading || !visualSettings.is_enabled) return;
+    let alive = true;
+    let timer = 0;
+    const storageKey = "thelawala_visual_engine_health_scan";
+    const todayInIndia = () => new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+    const lastScanDate = () => {
+      try {
+        return window.localStorage.getItem(storageKey);
+      } catch (error) {
+        console.error("Could not read the health scan schedule:", error);
+        return null;
+      }
+    };
+    const recordScanDate = (date: string) => {
+      try {
+        window.localStorage.setItem(storageKey, date);
+      } catch (error) {
+        console.error("Could not save the health scan schedule:", error);
+      }
+    };
+    const runIfDue = async () => {
+      const today = todayInIndia();
+      if (!alive || document.visibilityState !== "visible" || lastScanDate() === today) return;
+      if (await load()) recordScanDate(today);
+    };
+    const scheduleNextMidnight = () => {
+      if (!alive) return;
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Kolkata",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23",
+      }).formatToParts(new Date());
+      const time = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+      const secondsToday = Number(time["hour"]) * 3600 + Number(time["minute"]) * 60 + Number(time["second"]);
+      const untilMidnight = (86400 - secondsToday) * 1000 + 1000;
+      timer = window.setTimeout(() => {
+        void runIfDue().finally(scheduleNextMidnight);
+      }, untilMidnight);
+    };
+    const onVisible = () => { if (document.visibilityState === "visible") void runIfDue(); };
+    void runIfDue().finally(scheduleNextMidnight);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [load, visualSettings.is_enabled, visualSettingsLoading]);
 
   const watched = usage.filter((u) => WATCHED.includes(u.bucket_id));
   const usedBytes = watched.reduce((a, u) => a + u.bytes, 0);

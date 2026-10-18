@@ -6,7 +6,7 @@ import { Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { cart, cartTotals, useCart } from "@/lib/cart";
 import { inr } from "@/lib/fees";
-import { customerPrice } from "@/lib/pricing";
+import { customerPrice, PRICE_MARKUP } from "@/lib/pricing";
 import { foodImage } from "@/lib/foodImage";
 import { useSession } from "@/lib/session";
 import { BannerCarousel } from "@/components/BannerCarousel";
@@ -20,7 +20,7 @@ import { DynamicPageRenderer, type SectionRegistry } from "@/components/DynamicP
 import { FestiveAmbience, FestiveHero, FestiveSections } from "@/components/FestiveSections";
 import { useHomeSections } from "@/lib/homeSections";
 import { FestivePhotoStrip } from "@/components/FestivePhotoStrip";
-import { themeStyle, useTopBarTheme } from "@/lib/appTheme";
+import { useTopBarTheme } from "@/lib/appTheme";
 import { ArrowRight, Bike, Gift, Heart, MapPin, Plus, Search, ShoppingBag, Utensils, Wallet, X, Zap } from "lucide-react";
 import { StreetFoodExperience, type CuratedFoodDeal, type StreetFoodCategory, type StreetFoodItem, type StreetFoodVendor } from "@/components/StreetFoodExperience";
 import { PremiumHome } from "@/components/PremiumHome";
@@ -28,10 +28,14 @@ import { OnboardingScreen } from "@/components/OnboardingScreen";
 import { WelcomeFoodScreen } from "@/components/WelcomeFoodScreen";
 import { HomeMarketingModules } from "@/components/HomeMarketingModules";
 import { HomeFeatureModals } from "@/components/HomeFeatureModals";
+import { FreeCashBanner, DurgaPujaTrigger, NinetyNineStoreSection } from "@/components/PromoModules";
+import { usePromotionalCredit } from "@/lib/promotionalCredit";
 import { homeBannersQuery } from "@/lib/homeBanners";
 import { useHomeBanners } from "@/lib/homeBanners";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
+import { FlashDealModal } from "@/components/FlashDealModal";
+import { useVisualEngineSettings } from "@/lib/visualEngine";
 
 export const Route = createFileRoute("/")({
   loader: ({ context }) => context.queryClient.ensureQueryData(homeBannersQuery),
@@ -111,6 +115,7 @@ function HomeEntry() {
 
 function Home() {
   const { user } = useSession();
+  const promotionalCredit = usePromotionalCredit(user?.id);
   const userId = user?.id;
   const navigate = useNavigate();
   const lines = useCart();
@@ -140,14 +145,21 @@ function Home() {
   const activeBanners = useHomeBanners();
   const [promoFocus, setPromoFocus] = useState<string | null>(null);
   const topBarTheme = useTopBarTheme();
-  const theme = themeStyle(topBarTheme?.theme_token);
+  const visualEngine = useVisualEngineSettings();
+  const effectiveTopBarTheme = visualEngine.settings.is_enabled ? topBarTheme : null;
   const homeSections = useHomeSections();
   const festiveTheme = homeSections.find((s) => s.section_type === "FESTIVE_GRID_4" && s.cards.some((c) => c.title || c.image_url)) ?? null;
   const otherSections = festiveTheme ? homeSections.filter((s) => s.id !== festiveTheme.id) : homeSections;
 
   useEffect(() => {
+    if (promotionalCredit.error) setToast(promotionalCredit.error);
+  }, [promotionalCredit.error]);
+
+  useEffect(() => {
     let alive = true;
-    activeCampaign().then((value) => { if (alive) setCampaign(value); });
+    activeCampaign()
+      .then((value) => { if (alive) setCampaign(value); })
+      .catch((error: unknown) => console.error("Could not load the active home campaign:", error));
     void Promise.all([
       supabase.from("app_promotions").select("*").eq("is_active", true).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
       supabase.from("app_dynamic_assets").select("weather_tags").eq("is_enabled", true).eq("is_active", true).maybeSingle(),
@@ -195,7 +207,9 @@ function Home() {
       setRatingCounts(Object.fromEntries([...ratingTotals].map(([vendorId, rating]) => [vendorId, rating.count])));
     };
     void loadCatalog();
-    const refreshCampaign = () => activeCampaign().then((value) => { if (alive) setCampaign(value); });
+    const refreshCampaign = () => activeCampaign()
+      .then((value) => { if (alive) setCampaign(value); })
+      .catch((error: unknown) => console.error("Could not refresh the active home campaign:", error));
     const channel = supabase
       .channel("street-food-home-feed")
       .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => void loadCatalog())
@@ -260,7 +274,12 @@ function Home() {
       (!onlyFav || favs.includes(i.id)),
   );
 
-  function add(i: Item, offerPrice?: number, promotionalMinimum?: number) {
+  function add(
+    i: Item,
+    offerPrice?: number,
+    promotionalMinimum?: number,
+    campaign?: { slug: string; freeDelivery?: boolean },
+  ) {
     const res = cart.add({
       itemId: i.id,
       vendorId: i.vendor_id,
@@ -268,10 +287,11 @@ function Home() {
       name: i.name,
       photo: i.photo_url,
       unit: i.unit,
-      base: Number(i.price),
+      base: campaign && offerPrice !== undefined ? Math.round((Number(offerPrice) / PRICE_MARKUP) * 100) / 100 : Number(i.price),
       price: offerPrice ?? customerPrice(i.price),
       mrp: customerPrice(i.mrp),
       ...(promotionalMinimum ? { promotionalMinimum } : {}),
+      ...(campaign ? { campaignSlug: campaign.slug, freeDelivery: campaign.freeDelivery ?? false } : {}),
     });
     if (!res.ok && !("conflict" in res)) setToast(res.error);
     else setToast(null);
@@ -538,7 +558,15 @@ function Home() {
         onInternalRoute={openBannerRoute}
       />
 
-      <HomeMarketingModules onSearch={(value) => { setQ(value); setActive(null); setVendorFilter(null); }} />
+      <HomeMarketingModules
+        onSearch={(value) => { setQ(value); setActive(null); setVendorFilter(null); }}
+        items={items}
+        vendors={vendors}
+        deals={deals}
+        visualEngineEnabled={visualEngine.settings.is_enabled}
+        onVendor={(vendorId) => navigate({ to: "/stalls/$id", params: { id: vendorId } })}
+      />
+      <FlashDealModal items={items} vendors={vendors} settings={visualEngine.settings} loading={visualEngine.loading} />
       <HomeFeatureModals
         banners={activeBanners}
         promotion={promotion}
@@ -551,18 +579,28 @@ function Home() {
       <main className="flex min-w-0 flex-col gap-4 overflow-x-hidden pb-36">
         <FestiveContextBanner
           campaign={campaign}
-          theme={topBarTheme}
+          theme={effectiveTopBarTheme}
           onFilter={(value) => {
             setQ(value);
             setActive(null);
             setVendorFilter(null);
           }}
         />
-        {topBarTheme?.header_bg_image_url ? (
+        {promotionalCredit.eligible && promotionalCredit.settings ? (
+          <FreeCashBanner amount={Number(promotionalCredit.settings.credit_amount)} />
+        ) : null}
+        <NinetyNineStoreSection
+          onAdd={(itemId, offerPrice) => {
+            const item = items.find((candidate) => candidate.id === itemId);
+            if (item) add(item, offerPrice, undefined, { slug: "99-store", freeDelivery: true });
+          }}
+          onItem={(itemId) => navigate({ to: "/item/$id", params: { id: itemId } })}
+        />
+        {effectiveTopBarTheme?.header_bg_image_url ? (
           <section className="px-5 py-3">
             <img
-              key={topBarTheme.header_bg_image_url}
-              src={topBarTheme.header_bg_image_url}
+              key={effectiveTopBarTheme.header_bg_image_url}
+              src={effectiveTopBarTheme.header_bg_image_url}
               alt="Thaleewala festive offer"
               className="festive-header-photo block h-auto w-full rounded-2xl shadow-sm"
             />
@@ -646,6 +684,7 @@ function Home() {
         <DynamicPageRenderer app="customer" page="home" registry={registry} />
       </main>
       <HomeChat userId={user?.id} cartVisible={count > 0} />
+      <DurgaPujaTrigger campaign={campaign} />
 
       {toast ? (
         <div className="fixed inset-x-0 bottom-44 z-40 mx-auto w-full max-w-[440px] px-4">

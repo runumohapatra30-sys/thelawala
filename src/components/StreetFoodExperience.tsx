@@ -5,6 +5,7 @@ import { customerPrice } from "@/lib/pricing";
 import { foodImage } from "@/lib/foodImage";
 import { inr } from "@/lib/fees";
 import type { CartLine } from "@/lib/cart";
+import { OfferImageOverlay } from "@/components/OfferImageOverlay";
 
 export type StreetFoodItem = {
   id: string;
@@ -280,6 +281,7 @@ export function StreetFoodExperience({
                   <div className="relative aspect-[4/3] bg-muted">
                     <img src={item.photo_url ?? foodImage(item.name)} alt={item.name} loading="lazy" className="h-full w-full object-cover" />
                     {discount > 0 ? <span className="absolute left-2 top-2 rounded-full bg-primary px-2 py-1 text-[9px] font-black text-primary-foreground">-{discount}%</span> : null}
+                    <OfferImageOverlay stallName={vendors.find((vendor) => vendor.id === item.vendor_id)?.stall_name ?? "Local stall"} offerPercent={Number(vendors.find((vendor) => vendor.id === item.vendor_id)?.offer_percent ?? 0)} offerLabel={vendors.find((vendor) => vendor.id === item.vendor_id)?.offer_label} offerPrice={price} mrp={original} />
                     <button type="button" aria-label={`Add ${item.name}`} onClick={(event) => { event.stopPropagation(); onAdd(item); }} className="absolute bottom-2 right-2 grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground shadow-md"><Plus className="h-4 w-4" /></button>
                   </div>
                   <div className="p-2.5">

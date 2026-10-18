@@ -49,14 +49,16 @@ export function toPromoCards(value: unknown): PromoCard[] {
 export async function listBanners(onlyActive: boolean): Promise<Banner[]> {
   let q = supabase.from("banners").select(BANNER_COLS).order("priority").order("created_at");
   if (onlyActive) q = q.eq("is_active", true);
-  const { data } = await q;
+  const { data, error } = await q;
+  if (error) throw error;
   return (data ?? []) as Banner[];
 }
 
 export async function listCampaigns(onlyActive: boolean): Promise<Campaign[]> {
   let q = supabase.from("campaigns").select(CAMPAIGN_COLS).order("created_at", { ascending: false });
   if (onlyActive) q = q.eq("is_active", true);
-  const { data } = await q;
+  const { data, error } = await q;
+  if (error) throw error;
   return (data ?? []).map((c) => ({ ...c, promo_cards: toPromoCards(c.promo_cards) })) as Campaign[];
 }
 

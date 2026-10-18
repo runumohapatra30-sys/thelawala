@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { listBanners, type Banner } from "@/lib/marketing";
 
 type Props = {
@@ -11,7 +12,18 @@ export function BannerCarousel({ onCategory, onVendor }: Props) {
   const [i, setI] = useState(0);
 
   useEffect(() => {
-    listBanners(true).then(setBanners);
+    let alive = true;
+    listBanners(true)
+      .then((rows) => {
+        if (alive) setBanners(rows);
+      })
+      .catch((error: unknown) => {
+        console.error("Could not load active promotional banners:", error);
+        toast.error("Promotional banners could not load.");
+      });
+    return () => {
+      alive = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -41,7 +53,12 @@ export function BannerCarousel({ onCategory, onVendor }: Props) {
               className="w-full shrink-0"
               aria-label="Offer banner"
             >
-              <img src={b.image_url} alt="Offer" loading="lazy" className="aspect-[3/1] w-full object-cover" />
+              <img
+                src={b.image_url}
+                alt="Offer"
+                loading="lazy"
+                className="aspect-[3/1] w-full object-cover"
+              />
             </button>
           ))}
         </div>

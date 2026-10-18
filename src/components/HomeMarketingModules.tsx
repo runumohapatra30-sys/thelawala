@@ -1,5 +1,10 @@
 import { motion, useReducedMotion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { Droplets, Flame, MapPinned, Store } from "lucide-react";
+import { VisualCampaignCard } from "@/components/VisualCampaignCards";
+import type { CuratedFoodDeal, StreetFoodItem, StreetFoodVendor } from "@/components/StreetFoodExperience";
+import { foodImage } from "@/lib/foodImage";
+import { inr } from "@/lib/fees";
 
 const trustItems = [
   { title: "Local street-food stalls", detail: "Find neighbourhood favourites", icon: Store },
@@ -16,10 +21,41 @@ const cravings = [
 
 type Props = {
   onSearch: (query: string) => void;
+  items: StreetFoodItem[];
+  vendors: StreetFoodVendor[];
+  deals: CuratedFoodDeal[];
+  visualEngineEnabled: boolean;
+  onVendor: (vendorId: string) => void;
 };
 
-export function HomeMarketingModules({ onSearch }: Props) {
+export function HomeMarketingModules({ onSearch, items, vendors, deals, visualEngineEnabled, onVendor }: Props) {
   const reduceMotion = useReducedMotion();
+  const [timeStyleCycle, setTimeStyleCycle] = useState(0);
+  const vendorById = new Map(vendors.map((vendor) => [vendor.id, vendor]));
+  const curatedByItemId = new Map(deals.map((deal) => [deal.menu_item_id, deal]));
+  const storeVendors = vendors.slice(0, 8);
+  const topDeals = items
+    .filter((item) => item.in_stock && vendorById.has(item.vendor_id) && (
+      curatedByItemId.has(item.id) ||
+      Number(item.mrp) > Number(item.price) ||
+      Number(vendorById.get(item.vendor_id)?.offer_percent ?? 0) > 0
+    ))
+    .slice(0, 8);
+
+  useEffect(() => {
+    if (!visualEngineEnabled) return;
+    const updateStyle = () => {
+      const hour = Number(new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Kolkata",
+        hour: "2-digit",
+        hourCycle: "h23",
+      }).format(new Date()));
+      setTimeStyleCycle(Math.floor(hour / 6));
+    };
+    updateStyle();
+    const timer = window.setInterval(updateStyle, 60_000);
+    return () => window.clearInterval(timer);
+  }, [visualEngineEnabled]);
 
   const enter = (delay = 0) => ({
     initial: reduceMotion ? false : { opacity: 0, y: 18 },
@@ -36,6 +72,57 @@ export function HomeMarketingModules({ onSearch }: Props) {
   return (
     <>
       <div className="flex min-w-0 flex-col gap-7 overflow-x-hidden px-4 py-5">
+        {visualEngineEnabled && storeVendors.length > 0 ? (
+          <motion.section {...enter()}>
+            <div className="mb-3">
+              <h2 className="text-lg font-black text-foreground">Shop by Store</h2>
+              <p className="text-xs font-semibold text-muted-foreground">Discover neighbourhood favourites</p>
+            </div>
+            <div className="no-scrollbar flex snap-x gap-3 overflow-x-auto pb-2">
+              {storeVendors.map((vendor, index) => (
+                <VisualCampaignCard
+                  key={vendor.id}
+                  image={vendor.photo_url || foodImage(vendor.stall_name)}
+                  title={vendor.stall_name}
+                  subtitle={vendor.is_open ? "Open now · Explore menu" : "Local street-food favourite"}
+                  badge={vendor.offer_label || (vendor.offer_percent ? `${vendor.offer_percent}% OFF` : "Local pick")}
+                  styleIndex={index + timeStyleCycle}
+                  enabled={visualEngineEnabled}
+                  onClick={() => onVendor(vendor.id)}
+                />
+              ))}
+            </div>
+          </motion.section>
+        ) : null}
+
+        {visualEngineEnabled && topDeals.length > 0 ? (
+          <motion.section {...enter()}>
+            <div className="mb-3">
+              <h2 className="text-lg font-black text-foreground">Brands with Top Deals</h2>
+              <p className="text-xs font-semibold text-muted-foreground">Fresh picks from local menus</p>
+            </div>
+            <div className="no-scrollbar flex snap-x gap-3 overflow-x-auto pb-2">
+              {topDeals.map((item, index) => {
+                const vendor = vendorById.get(item.vendor_id)!;
+                const deal = curatedByItemId.get(item.id);
+                const badge = deal?.tag || vendor.offer_label || (vendor.offer_percent ? `${vendor.offer_percent}% OFF` : "Top deal");
+                return (
+                  <VisualCampaignCard
+                    key={item.id}
+                    image={deal?.image_url || item.photo_url || foodImage(item.name)}
+                    title={item.name}
+                    subtitle={`${vendor.stall_name} · ${inr(Number(deal?.offer_price ?? item.price))}`}
+                    badge={badge}
+                    styleIndex={index + timeStyleCycle + 1}
+                    enabled={visualEngineEnabled}
+                    onClick={() => onVendor(vendor.id)}
+                  />
+                );
+              })}
+            </div>
+          </motion.section>
+        ) : null}
+
         <motion.section {...enter()}>
           <div className="mb-3">
             <h2 className="text-lg font-black text-foreground">What makes us different</h2>

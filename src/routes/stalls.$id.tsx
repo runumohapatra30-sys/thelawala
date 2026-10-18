@@ -9,6 +9,7 @@ import { foodImage } from "@/lib/foodImage";
 import { ArrowLeft, BadgeCheck, Compass, Phone, Search, Share2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthBranding } from "@/lib/authBranding";
+import { OfferImageOverlay } from "@/components/OfferImageOverlay";
 
 export const Route = createFileRoute("/stalls/$id")({
   head: () => ({
@@ -218,6 +219,7 @@ function StallDetail() {
                         stallName={vendor.stall_name}
                         stallOpen={vendor.is_open}
                         offerPercent={Number(vendor.offer_percent ?? 0)}
+                        offerLabel={vendor.offer_label}
                       />
                     ))}
                 </div>
@@ -238,6 +240,7 @@ function StallDetail() {
                       stallName={vendor.stall_name}
                       stallOpen={vendor.is_open}
                       offerPercent={Number(vendor.offer_percent ?? 0)}
+                      offerLabel={vendor.offer_label}
                     />
                   ))}
                 </div>
@@ -256,12 +259,14 @@ function ItemRow({
   stallName,
   stallOpen,
   offerPercent,
+  offerLabel,
 }: {
   item: Item;
   vendorId: string;
   stallName: string;
   stallOpen: boolean;
   offerPercent: number;
+  offerLabel: string | null;
 }) {
   const lines = useCart();
   const navigate = useNavigate();
@@ -303,6 +308,7 @@ function ItemRow({
               alt={i.name}
               loading="lazy"
             />
+            <OfferImageOverlay stallName={stallName} offerPercent={offerPercent} offerLabel={offerLabel} offerPrice={price} mrp={listPrice} />
           </button>
           {!available ? (
             <div className="absolute inset-0 grid place-items-center rounded-2xl bg-black/50 text-[10px] font-black text-white">

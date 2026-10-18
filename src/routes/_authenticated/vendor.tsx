@@ -21,6 +21,7 @@ import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 import { confirmOnboardingPayment, onboardingFee, startOnboardingPayment } from "@/lib/onboarding.functions";
 import { loadCashfreeSdk } from "@/lib/checkout";
 import { VendorSoundbox } from "@/components/VendorSoundbox";
+import { VendorCampaignOptIn } from "@/components/VendorCampaignOptIn";
 
 export const Route = createFileRoute("/_authenticated/vendor")({
   head: () => ({
@@ -788,6 +789,7 @@ function VendorPortal() {
 
 
         <section className={portalTab === "accounts" ? "portal-panel" : "hidden"}>
+          <VendorCampaignOptIn vendorId={vendor.id} items={items} />
           <div className="flex items-center justify-between">
             <p className="text-sm font-bold">Your menu</p>
             <button

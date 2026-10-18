@@ -12,6 +12,7 @@ import {
 import { SmartAssetManager } from "@/components/SmartAssetManager";
 import { AdminBannerStudio } from "@/components/AdminBannerStudio";
 import { AdminDynamicLayout } from "@/components/AdminDynamicLayout";
+import { CommerceCampaignManager } from "@/components/CommerceCampaignManager";
 
 const inputCls =
   "w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary";
@@ -35,6 +36,7 @@ export function MarketingManager() {
     <div className="space-y-3">
       <AdminDynamicLayout />
       <AdminBannerStudio />
+      <CommerceCampaignManager />
       <BannerManager vendors={vendors} cats={cats} />
       <CampaignBuilder cats={cats} />
       <SmartAssetManager />
@@ -51,7 +53,10 @@ function BannerManager({ vendors, cats }: { vendors: Opt[]; cats: Opt[] }) {
   const [priority, setPriority] = useState("1");
   const [busy, setBusy] = useState(false);
 
-  const load = () => listBanners(false).then(setRows);
+  const load = () => listBanners(false).then(setRows).catch((error: unknown) => {
+    console.error("Could not load admin banners:", error);
+    toast.error("Could not load banners. Please refresh and try again.");
+  });
   useEffect(() => { load(); }, []);
 
   async function publish() {
@@ -168,7 +173,10 @@ function CampaignBuilder({ cats }: { cats: Opt[] }) {
   const [editing, setEditing] = useState<Campaign | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const load = () => listCampaigns(false).then(setRows);
+  const load = () => listCampaigns(false).then(setRows).catch((error: unknown) => {
+    console.error("Could not load admin campaigns:", error);
+    toast.error("Could not load campaigns. Please refresh and try again.");
+  });
   useEffect(() => { load(); }, []);
 
   const blank = (): Campaign => ({
