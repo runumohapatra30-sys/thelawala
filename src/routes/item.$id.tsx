@@ -133,6 +133,7 @@ function FoodItemDetail() {
       const result = cart.add({
         itemId: item.id,
         vendorId: item.vendor_id,
+        vendorName: vendor?.stall_name,
         name: item.name,
         photo: item.photo_url,
         unit: item.unit,
@@ -141,7 +142,7 @@ function FoodItemDetail() {
         mrp: customerPrice(item.mrp),
       });
       if (!result.ok) {
-        toast.error(result.error);
+        if (!("conflict" in result)) toast.error(result.error);
         return;
       }
     }

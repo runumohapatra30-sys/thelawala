@@ -249,6 +249,8 @@ function VendorPortal() {
       const riderId = await offerToNearestPartner(o.id);
       console.log(`[Dispatched to Rider ID: ${riderId ?? "none available"}] order ${o.id}`);
     }
+    const label = status === "READY_FOR_PICKUP" ? "Ready for pickup" : STATUS_LABEL[effective] ?? effective;
+    toast.success(`Order #${o.code} marked as ${label}`);
   }
 
   async function addDish(): Promise<void> {

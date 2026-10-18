@@ -61,8 +61,8 @@ function Categories() {
   }, [cat]);
 
   function add(i: Item) {
-    const r = cart.add({ itemId: i.id, vendorId: i.vendor_id, name: i.name, photo: i.photo_url, unit: i.unit, base: Number(i.price), price: customerPrice(i.price), mrp: customerPrice(i.mrp) });
-    if (r && "ok" in r && !r.ok) toast.error(r.error);
+    const r = cart.add({ itemId: i.id, vendorId: i.vendor_id, vendorName: vendors[i.vendor_id]?.stall_name, name: i.name, photo: i.photo_url, unit: i.unit, base: Number(i.price), price: customerPrice(i.price), mrp: customerPrice(i.mrp) });
+    if (!r.ok && !("conflict" in r)) toast.error(r.error);
   }
 
   useEffect(() => {

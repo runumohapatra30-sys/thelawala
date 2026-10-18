@@ -273,6 +273,7 @@ function ItemRow({
   const itemForCart = {
     itemId: i.id,
     vendorId,
+    vendorName: stallName,
     name: i.name,
     photo: i.photo_url,
     unit: i.unit,
@@ -282,7 +283,7 @@ function ItemRow({
   };
   function addItem() {
     const result = cart.add(itemForCart);
-    if (!result.ok) toast.error(result.error);
+    if (!result.ok && !("conflict" in result)) toast.error(result.error);
     return result.ok;
   }
 

@@ -3,6 +3,7 @@ import { useSyncExternalStore } from "react";
 export type CartLine = {
   itemId: string;
   vendorId: string;
+  vendorName?: string | undefined;
   name: string;
   photo: string | null;
   unit: string | null;
@@ -13,6 +14,13 @@ export type CartLine = {
   options?: string[];
   promotionalMinimum?: number;
   qty: number;
+};
+
+export const CART_CONFLICT_EVENT = "thelawala:cart-conflict";
+export type CartConflictDetail = {
+  currentVendorId: string;
+  currentVendorName?: string | undefined;
+  incoming: Omit<CartLine, "qty">;
 };
 
 const KEY = "thaleewala.cart.v3";
@@ -66,10 +74,22 @@ export const cart = {
       return { ok: true as const };
     }
     if (lines.length && lines[0]!.vendorId !== line.vendorId) {
-      return { ok: false as const, error: "One order can be from one stall only. Clear the cart first." };
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent<CartConflictDetail>(CART_CONFLICT_EVENT, {
+          detail: {
+            currentVendorId: lines[0]!.vendorId,
+            currentVendorName: lines[0]!.vendorName,
+            incoming: line,
+          },
+        }));
+      }
+      return { ok: false as const, conflict: true as const };
     }
     commit([...lines, { ...line, qty: 1 }]);
     return { ok: true as const };
+  },
+  replaceWith(line: Omit<CartLine, "qty">) {
+    commit([{ ...line, qty: 1 }]);
   },
   remove(itemId: string) {
     commit(

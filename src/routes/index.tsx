@@ -264,6 +264,7 @@ function Home() {
     const res = cart.add({
       itemId: i.id,
       vendorId: i.vendor_id,
+      vendorName: vendorName[i.vendor_id],
       name: i.name,
       photo: i.photo_url,
       unit: i.unit,
@@ -272,7 +273,7 @@ function Home() {
       mrp: customerPrice(i.mrp),
       ...(promotionalMinimum ? { promotionalMinimum } : {}),
     });
-    if (!res.ok) setToast(res.error);
+    if (!res.ok && !("conflict" in res)) setToast(res.error);
     else setToast(null);
   }
 

@@ -4,9 +4,19 @@ import { useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { GUEST_PROFILE_EVENT, LoginModal, OPEN_LOGIN_EVENT } from "@/components/LoginModal";
 import { useSession } from "@/lib/session";
-import { useCart } from "@/lib/cart";
+import { CART_CONFLICT_EVENT, type CartConflictDetail, cart, useCart } from "@/lib/cart";
 import { useAuthBranding } from "@/lib/authBranding";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const NAV = [
   { to: "/", label: "Home", Icon: House },
@@ -24,6 +34,8 @@ export function Shell({ children, hideNavigation = false }: { children: ReactNod
   const cartLines = useCart();
   const cartCount = cartLines.reduce((total, line) => total + line.qty, 0);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [cartConflict, setCartConflict] = useState<CartConflictDetail | null>(null);
+  const [conflictStallNames, setConflictStallNames] = useState<{ current: string; incoming: string } | null>(null);
 
   useEffect(() => {
     const open = () => setLoginOpen(true);
@@ -31,6 +43,35 @@ export function Shell({ children, hideNavigation = false }: { children: ReactNod
     return () => {
       window.removeEventListener(OPEN_LOGIN_EVENT, open);
     };
+  }, []);
+
+  useEffect(() => {
+    const handleConflict = (event: Event) => {
+      const detail = (event as CustomEvent<CartConflictDetail>).detail;
+      setCartConflict(detail);
+      setConflictStallNames({
+        current: detail.currentVendorName ?? cart.lines.find((line) => line.vendorId === detail.currentVendorId)?.vendorName ?? "your current stall",
+        incoming: detail.incoming.vendorName ?? "the selected stall",
+      });
+      if (detail.currentVendorName && detail.incoming.vendorName) return;
+      void supabase
+        .from("vendors")
+        .select("id,stall_name")
+        .in("id", [detail.currentVendorId, detail.incoming.vendorId])
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("Could not load stall names for cart conflict:", error);
+            return;
+          }
+          const names = new Map((data ?? []).map((vendor) => [vendor.id, vendor.stall_name]));
+          setConflictStallNames({
+            current: detail.currentVendorName ?? names.get(detail.currentVendorId) ?? "your current stall",
+            incoming: detail.incoming.vendorName ?? names.get(detail.incoming.vendorId) ?? "the selected stall",
+          });
+        });
+    };
+    window.addEventListener(CART_CONFLICT_EVENT, handleConflict);
+    return () => window.removeEventListener(CART_CONFLICT_EVENT, handleConflict);
   }, []);
 
   return (
@@ -93,6 +134,34 @@ export function Shell({ children, hideNavigation = false }: { children: ReactNod
         })}
       </nav> : null}
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+      <AlertDialog open={cartConflict !== null} onOpenChange={(open) => {
+        if (!open) {
+          setCartConflict(null);
+          setConflictStallNames(null);
+        }
+      }}>
+        <AlertDialogContent className="top-auto bottom-0 translate-y-0 rounded-t-3xl sm:top-[50%] sm:bottom-auto sm:translate-y-[-50%] sm:rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Replace cart items?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your cart contains items from {conflictStallNames?.current ?? "your current stall"}. Reset your cart to add items from {conflictStallNames?.incoming ?? "the selected stall"}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="grid grid-cols-2">
+            <AlertDialogCancel className="mt-0 rounded-full">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-full"
+              onClick={() => {
+                if (cartConflict) cart.replaceWith(cartConflict.incoming);
+                setCartConflict(null);
+                setConflictStallNames(null);
+              }}
+            >
+              Clear &amp; Add
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

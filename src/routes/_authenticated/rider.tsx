@@ -23,6 +23,16 @@ import { Html5Qrcode } from "html5-qrcode";
 import { RiderOrderSwipe } from "@/components/RiderOrderSwipe";
 import { RiderCodUpiQr } from "@/components/RiderCodUpiQr";
 import { RiderCollectQr } from "@/components/RiderCollectQr";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/rider")({
   head: () => ({
@@ -130,6 +140,8 @@ function RiderPortal() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [showComplete, setShowComplete] = useState(false);
+  const [pickupConfirmOpen, setPickupConfirmOpen] = useState(false);
+  const [pickupBusy, setPickupBusy] = useState(false);
   const [manualCode, setManualCode] = useState("");
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState(CANCEL_REASONS[0]!);
@@ -574,22 +586,32 @@ function RiderPortal() {
       setScanErr("Incorrect parcel! Please verify Order ID");
       return;
     }
+    setScanErr(null);
+    setScanOpen(false);
+    setPickupConfirmOpen(true);
+  }
+
+  async function confirmPickup() {
+    if (!trip || pickupBusy) return;
+    setPickupBusy(true);
     const now = new Date().toISOString();
-    const { error: pickErr } = await supabase.from("orders").update({
+    const { error } = await supabase.from("orders").update({
       status: "OUT_FOR_DELIVERY", pickup_scanned_at: now, picked_up_at: now, updated_at: now,
     }).eq("id", trip.id);
-    if (pickErr) {
-      console.error("Order status update error:", pickErr);
+    setPickupBusy(false);
+    setPickupConfirmOpen(false);
+    if (error) {
+      console.error("Order status update error:", error);
       chime(false);
-      setScanErr(`Could not update this order: ${pickErr.message}`);
+      setScanErr(`Could not update this order: ${error.message}`);
       return;
     }
     chime(true);
     setScanErr(null);
-    setScanOpen(false);
     setMsg(null);
+    setManualCode("");
     setActive({ ...trip, status: "OUT_FOR_DELIVERY" });
-    toast.success("Parcel verified · out for delivery");
+    toast.success("Order picked up · out for delivery");
   }
 
   async function completeDelivery() {
@@ -649,19 +671,8 @@ function RiderPortal() {
       setScanErr("Incorrect parcel! Please verify Order ID");
       return;
     }
-    const now = new Date().toISOString();
-    const { error: pickErr } = await supabase.from("orders").update({ status: "OUT_FOR_DELIVERY", pickup_scanned_at: now, picked_up_at: now, updated_at: now }).eq("id", trip.id);
-    if (pickErr) {
-      console.error("Order status update error:", pickErr);
-      chime(false);
-      setScanErr(`Could not update this order: ${pickErr.message}`);
-      return;
-    }
-    chime(true);
     setScanErr(null);
-    setManualCode("");
-    setActive({ ...trip, status: "OUT_FOR_DELIVERY" });
-    toast.success("Order verified · out for delivery");
+    setPickupConfirmOpen(true);
   }
 
   async function requestCancel(reason = cancelReason) {
@@ -935,7 +946,7 @@ function RiderPortal() {
                   }}
                   className="press w-full rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground"
                 >
-                  Scan Order QR to Pickup
+                  Scan QR to pick up
                 </button>
                 <div className="portal-panel">
                   <p className="text-sm font-bold">QR not scanning?</p>
@@ -959,7 +970,7 @@ function RiderPortal() {
                       disabled={manualCode.length < 4}
                       className="press flex-1 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
                     >
-                      Confirm pickup
+                      Review pickup
                     </button>
                   </div>
                 </div>
@@ -971,7 +982,7 @@ function RiderPortal() {
                 onClick={() => setShowComplete(true)}
                 className="press w-full rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground"
               >
-                Complete delivery
+                Mark delivered
               </button>
             ) : null}
 
@@ -1059,6 +1070,25 @@ function RiderPortal() {
       ) : null}
 
       {scanOpen && trip ? <ScannerModal onClose={() => setScanOpen(false)} onResult={onScan} /> : null}
+
+      {trip ? (
+        <AlertDialog open={pickupConfirmOpen} onOpenChange={setPickupConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm order pickup?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Confirm that order #{trip.code} has been handed over by {vendor?.stall_name ?? "the stall"} before starting delivery.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={pickupBusy}>Cancel</AlertDialogCancel>
+              <AlertDialogAction disabled={pickupBusy} onClick={() => void confirmPickup()}>
+                {pickupBusy ? "Confirming…" : "Confirm Pick Up"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      ) : null}
 
       {showComplete && trip ? (
         <CompleteDrawer
