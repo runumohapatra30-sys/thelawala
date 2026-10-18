@@ -24,28 +24,14 @@ export function Shell({ children, hideNavigation = false }: { children: ReactNod
   const cartLines = useCart();
   const cartCount = cartLines.reduce((total, line) => total + line.qty, 0);
   const [loginOpen, setLoginOpen] = useState(false);
-  const [guestProfile, setGuestProfile] = useState(() => ({
-    name: typeof window === "undefined" ? "" : localStorage.getItem("thelawala.guest_name") || "",
-    mobile:
-      typeof window === "undefined" ? "" : localStorage.getItem("thelawala.guest_mobile") || "",
-  }));
 
   useEffect(() => {
     const open = () => setLoginOpen(true);
-    const updateGuest = (event: Event) => {
-      const profile = (event as CustomEvent<{ name: string; mobile: string }>).detail;
-      setGuestProfile(profile);
-    };
     window.addEventListener(OPEN_LOGIN_EVENT, open);
-    window.addEventListener(GUEST_PROFILE_EVENT, updateGuest);
     return () => {
       window.removeEventListener(OPEN_LOGIN_EVENT, open);
-      window.removeEventListener(GUEST_PROFILE_EVENT, updateGuest);
     };
   }, []);
-
-  const displayName =
-    user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || guestProfile.name;
 
   return (
     <div className="min-h-screen bg-background">
@@ -100,7 +86,7 @@ export function Shell({ children, hideNavigation = false }: { children: ReactNod
                   active ? "text-primary" : "text-muted-foreground"
                 }`}
               >
-                {n.label === "Profile" && displayName ? displayName : n.label}
+                {n.label}
               </span>
             </Link>
           );
