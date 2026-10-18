@@ -1,6 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { CircleUserRound, Grid2X2, House, ReceiptText, ShoppingCart, Store } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { GUEST_PROFILE_EVENT, LoginModal, OPEN_LOGIN_EVENT } from "@/components/LoginModal";
 import { useSession } from "@/lib/session";
@@ -29,6 +30,7 @@ const NAV = [
 
 export function Shell({ children, hideNavigation = false }: { children: ReactNode; hideNavigation?: boolean }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const navigationHidden = hideNavigation || path === "/cart";
   const { user } = useSession();
   const branding = useAuthBranding();
   const cartLines = useCart();
@@ -76,11 +78,12 @@ export function Shell({ children, hideNavigation = false }: { children: ReactNod
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto min-h-screen w-full max-w-[520px] bg-background pb-36 shadow-[0_0_48px_color-mix(in_oklab,var(--color-foreground)_8%,transparent)]">
+      <div className={`mx-auto min-h-screen w-full max-w-[520px] bg-background shadow-[0_0_48px_color-mix(in_oklab,var(--color-foreground)_8%,transparent)] ${navigationHidden ? "" : "pb-36"}`}>
         {children}
       </div>
-      {!hideNavigation ? <nav className="fixed inset-x-0 bottom-3 z-40 mx-auto grid w-[calc(100%-24px)] max-w-[480px] grid-cols-6 items-end rounded-full border border-border bg-card/95 px-2 py-2 shadow-[0_18px_45px_-20px_color-mix(in_oklab,var(--color-primary)_35%,transparent)] backdrop-blur-xl">
-        {NAV.map((n) => {
+      {!navigationHidden ? <nav aria-label="Main navigation" className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+12px)] z-40 mx-auto flex h-[74px] w-[calc(100%-24px)] max-w-[480px] items-center justify-between rounded-full border border-white/70 bg-white/90 px-2 shadow-[0_18px_45px_-20px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+        <div className="grid h-full w-[calc(50%-34px)] grid-cols-3">
+          {NAV.slice(0, 3).map((n) => {
           const active =
             n.label === "Home"
               ? path === "/"
@@ -95,43 +98,50 @@ export function Shell({ children, hideNavigation = false }: { children: ReactNod
                   setLoginOpen(true);
                 }
               }}
-              className="press flex min-w-0 flex-col items-center gap-1"
+              className={`press relative flex min-w-0 flex-col items-center justify-center gap-1 transition-transform duration-200 active:scale-95 ${active ? "text-[#F05A22]" : "text-slate-400"}`}
             >
-              <span
-                className={`relative grid h-10 w-12 place-items-center rounded-full transition-all ${active ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
-              >
-                {n.label === "Profile" && user?.user_metadata?.["avatar_url"] ? (
-                  <img
-                    src={String(user.user_metadata["avatar_url"])}
-                    alt=""
-                    className="h-full w-full rounded-full object-cover"
-                  />
-                ) : n.label === "Home" && branding.appLogoUrl ? (
-                  <img
-                    src={branding.appLogoUrl}
-                    alt=""
-                    onError={(event) => { event.currentTarget.style.display = "none"; }}
-                    className="h-6 w-6 object-contain"
-                  />
-                ) : (
-                  <n.Icon className="h-5 w-5" strokeWidth={2} />
-                )}
-                {n.label === "Cart" && cartCount > 0 ? (
-                  <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#5B9BD5] px-1 text-[9px] font-black text-white">
-                    {cartCount > 99 ? "99+" : cartCount}
-                  </span>
-                ) : null}
-              </span>
-              <span
-                className={`truncate text-[9px] font-extrabold uppercase ${
-                  active ? "text-primary" : "text-muted-foreground"
-                }`}
-              >
-                {n.label}
-              </span>
+              {active ? <span className="absolute top-1 h-0.5 w-5 rounded-full bg-[#F05A22]" /> : null}
+              <motion.span animate={{ scale: active ? 1.08 : 1 }} transition={{ type: "spring", stiffness: 360, damping: 20 }}>
+                {n.label === "Home" && branding.appLogoUrl ? (
+                  <img src={branding.appLogoUrl} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} className="h-5 w-5 object-contain" />
+                ) : <n.Icon className="h-5 w-5" strokeWidth={2} />}
+              </motion.span>
+              <span className="max-w-full truncate text-[9px] font-extrabold">{n.label}</span>
             </Link>
           );
         })}
+        </div>
+        <Link to="/cart" aria-label={`Cart${cartCount ? `, ${cartCount} items` : ""}`} className={`absolute left-1/2 top-[-19px] flex -translate-x-1/2 flex-col items-center gap-0.5 transition-transform duration-200 active:scale-95 ${path.startsWith("/cart") ? "scale-105" : ""}`}>
+          <span className="relative grid h-[54px] w-[54px] place-items-center rounded-full border-[4px] border-white bg-[#F05A22] text-white shadow-[0_8px_20px_-6px_rgba(240,90,34,0.75)]">
+            <ShoppingCart className="h-5 w-5" strokeWidth={2.4} />
+            {cartCount > 0 ? <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full border-2 border-white bg-[#5B9BD5] px-1 text-[9px] font-black text-white">{cartCount > 99 ? "99+" : cartCount}</span> : null}
+          </span>
+          <span className={`text-[9px] font-extrabold ${path.startsWith("/cart") ? "text-[#F05A22]" : "text-slate-500"}`}>Cart</span>
+        </Link>
+        <div className="grid h-full w-[calc(50%-34px)] grid-cols-2">
+          {NAV.slice(4).map((n) => {
+            const active = path.startsWith(n.to);
+            return (
+              <Link
+                key={n.label}
+                to={n.to}
+                onClick={(event) => {
+                  if (n.label === "Profile" && !user) {
+                    event.preventDefault();
+                    setLoginOpen(true);
+                  }
+                }}
+                className={`press relative flex min-w-0 flex-col items-center justify-center gap-1 transition-transform duration-200 active:scale-95 ${active ? "text-[#F05A22]" : "text-slate-400"}`}
+              >
+                {active ? <span className="absolute top-1 h-0.5 w-5 rounded-full bg-[#F05A22]" /> : null}
+                <motion.span animate={{ scale: active ? 1.08 : 1 }} transition={{ type: "spring", stiffness: 360, damping: 20 }}>
+                  {n.label === "Profile" && user?.user_metadata?.["avatar_url"] ? <img src={String(user.user_metadata["avatar_url"])} alt="" className="h-5 w-5 rounded-full object-cover" /> : <n.Icon className="h-5 w-5" strokeWidth={2} />}
+                </motion.span>
+                <span className="max-w-full truncate text-[9px] font-extrabold">{n.label}</span>
+              </Link>
+            );
+          })}
+        </div>
       </nav> : null}
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
       <AlertDialog open={cartConflict !== null} onOpenChange={(open) => {

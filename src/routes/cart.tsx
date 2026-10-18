@@ -376,6 +376,9 @@ function Cart() {
       : 0;
   const gate = vendor && coords ? checkoutGate(distanceKm, baseTotal) : ({ ok: true } as const);
   const blockedReason = gate.ok ? null : gate.reason;
+  const minimumShortfall = blockedReason?.startsWith("Minimum order")
+    ? Math.max(0, minimumOrderValue(distanceKm) - baseTotal)
+    : 0;
   // No automatic MRP discount any more: a discount exists only when the stall runs its own offer.
   const hasLocation = Boolean(vendor && coords);
   const bill = hasLocation
@@ -741,7 +744,7 @@ function Cart() {
                 />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-extrabold">{l.name}</p>
-                  <p className="truncate text-[11px] font-medium text-muted-foreground">{vendor?.stall_name ?? "Local stall"} · {l.unit || "Street food"}</p>
+                  <p className="line-clamp-2 text-[11px] font-medium leading-snug text-muted-foreground">{vendor?.stall_name ?? "Local stall"} · {l.unit || "Street food"}</p>
                   <p className="mt-1 text-xs font-bold text-primary">{inr(l.price)} <span className="font-medium text-muted-foreground">each</span></p>
                 </div>
                 <div className="flex h-9 items-center gap-2 rounded-full border border-border bg-muted px-1.5 text-foreground">
@@ -944,6 +947,33 @@ function Cart() {
         </div>
 
         <div className="card-soft rise-in space-y-3 p-4">
+          <p className="text-sm font-bold">Delivery notes</p>
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            {instructionOptions.map(({ label, Icon }) => {
+              const active = instructions === label;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setInstructions(active ? "" : label)}
+                  className={`press flex min-h-14 items-center gap-2 rounded-lg border p-2 text-left text-[11px] font-bold ${active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card"}`}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <textarea
+            rows={2}
+            value={instructions}
+            onChange={(e) => setInstructions(e.target.value)}
+            placeholder="Delivery instructions (e.g. ring the bell, less spicy)"
+            className="w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
+          />
+        </div>
+
+        <div className="card-soft rise-in space-y-3 p-4">
           <div className="flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-full bg-brand text-brand-foreground"><Bike className="h-5 w-5" /></span>
             <div><p className="text-[11px] font-black uppercase text-muted-foreground">Delivery tip</p><p className="text-sm font-bold">100% goes to your delivery partner</p></div>
@@ -969,33 +999,6 @@ function Cart() {
               <input inputMode="numeric" value={customTip} onChange={(event) => { const value = event.target.value.replace(/\D/g, "").slice(0, 3); setCustomTip(value); setTip(Number(value) || 0); }} placeholder="Enter tip" className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
             </label>
           ) : null}
-        </div>
-
-        <div className="card-soft rise-in space-y-3 p-4">
-          <p className="text-sm font-bold">Delivery instructions</p>
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            {instructionOptions.map(({ label, Icon }) => {
-              const active = instructions === label;
-              return (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => setInstructions(active ? "" : label)}
-                  className={`press flex min-h-14 items-center gap-2 rounded-lg border p-2 text-left text-[11px] font-bold ${active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card"}`}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-          <textarea
-            rows={2}
-            value={instructions}
-            onChange={(e) => setInstructions(e.target.value)}
-            placeholder="Delivery instructions (e.g. ring the bell, less spicy)"
-            className="w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
-          />
         </div>
 
         <div className="coupon-card rise-in p-4">
@@ -1113,8 +1116,8 @@ function Cart() {
         {err ? <p className="text-xs font-semibold text-destructive">{err}</p> : null}
       </div>
 
-      <div className="fixed inset-x-0 bottom-[92px] z-40 mx-auto w-full max-w-[520px]">
-        <div className="border-t border-border bg-white p-3 shadow-[0_-10px_30px_rgba(17,24,39,0.1)]">
+      <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[520px]">
+        <div className="border-t border-border bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(17,24,39,0.1)]">
           <button type="button" onClick={() => setCheckoutStep("payment")} className="mb-2 flex w-full items-center gap-3 rounded-lg border border-border bg-muted px-3 py-2.5 text-left">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-soft text-primary"><Banknote className="h-5 w-5" /></span>
             <span className="min-w-0 flex-1">
@@ -1123,9 +1126,9 @@ function Cart() {
             </span>
             <span className="flex shrink-0 items-center gap-0.5 text-[11px] font-black text-primary">Change <ChevronRight className="h-3.5 w-3.5" /></span>
           </button>
-          {blockedReason ? <p className="px-1 pb-2 text-[11px] font-bold text-destructive">{blockedReason}</p> : null}
+          {blockedReason ? <p className="px-1 pb-2 text-[11px] font-bold text-destructive">{minimumShortfall > 0 ? `Add ${inr(minimumShortfall)} more to order` : blockedReason}</p> : null}
           <button disabled={busy || !!blockedReason || !hasLocation} onClick={() => void place()} className="press flex w-full items-center justify-between gap-3 rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-md disabled:opacity-50">
-            <span className="flex items-center gap-2"><ChevronsRight className="h-5 w-5" /><span className="text-sm font-black">{busy ? "Placing your order…" : payment === "COD" ? "Place Cash Order" : `Pay with ${onlineMethod}`}</span></span>
+            <span className="flex items-center gap-2"><ChevronsRight className="h-5 w-5" /><span className="text-sm font-black">{busy ? "Placing your order…" : minimumShortfall > 0 ? `Add ${inr(minimumShortfall)} more to order` : payment === "COD" ? "Place Cash Order" : `Pay with ${onlineMethod}`}</span></span>
             <span className="shrink-0 text-base font-black">{bill ? inr(payable) : "—"}</span>
           </button>
         </div>
@@ -1153,17 +1156,22 @@ function Cart() {
               ))}
             </ol>
           </header>
-          <main className="space-y-3 bg-muted/45 p-3 pb-44">
+          <main className="space-y-3 bg-muted/45 p-3 pb-36">
             <section className="card-soft space-y-3 p-4">
               <div className="flex items-start gap-3">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand text-brand-foreground"><MapPin className="h-5 w-5" /></span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-black">{vendor?.stall_name ?? "ThelaWala"}</p>
+                  <p className="text-sm font-black leading-snug">{form.full_name || "Delivery details"}{form.mobile ? ` · ${form.mobile}` : ""}</p>
                   <p className="mt-1 truncate text-xs text-muted-foreground">{form.line}{form.pincode ? ` · ${form.pincode}` : ""}</p>
                   {form.landmark ? <p className="truncate text-[11px] text-muted-foreground">{form.landmark}</p> : null}
                 </div>
                 <button type="button" onClick={() => { setCheckoutStep("cart"); setTimeout(() => document.getElementById("delivery-details")?.scrollIntoView({ behavior: "smooth" }), 0); }} className="text-xs font-black text-primary">Edit</button>
               </div>
+            </section>
+
+            <section className="card-soft space-y-2 p-4">
+              <p className="text-sm font-bold">Delivery notes</p>
+              <p className="text-xs text-muted-foreground">{instructions || "No delivery notes added."}</p>
             </section>
 
             <section className="card-soft space-y-3 p-4">
@@ -1229,10 +1237,10 @@ function Cart() {
             </section>
             {err ? <p className="rounded-lg bg-destructive/10 p-3 text-xs font-semibold text-destructive">{err}</p> : null}
           </main>
-          <div className="fixed inset-x-0 bottom-[92px] z-40 mx-auto w-full max-w-[520px] p-3">
-            <button type="button" disabled={busy || ((payment === "ONLINE" || payment === "SPLIT") && !settings?.enable_online_payment)} onClick={() => void place()} className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-card disabled:opacity-50">
+          <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[520px] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <button type="button" disabled={busy || !!blockedReason || ((payment === "ONLINE" || payment === "SPLIT") && !settings?.enable_online_payment)} onClick={() => void place()} className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-card disabled:opacity-50">
               <span><span className="block text-[10px] font-bold opacity-75">{busy ? "SECURELY PROCESSING" : payment === "SPLIT" ? "PAY ONLINE NOW" : "TOTAL TO PAY"}</span><span className="text-lg font-black">{inr(onlineDue)}</span></span>
-              <span className="flex items-center gap-2 text-sm font-black">{busy ? "Please wait…" : payment === "COD" ? `Pay ${inr(payable)} with Cash` : payment === "SPLIT" ? `Pay 50% now via ${onlineMethod}` : `Pay ${inr(payable)} with ${onlineMethod}`}<ChevronRight className="h-4 w-4" /></span>
+              <span className="flex items-center gap-2 text-sm font-black">{busy ? "Please wait…" : minimumShortfall > 0 ? `Add ${inr(minimumShortfall)} more to order` : payment === "COD" ? `Pay ${inr(payable)} with Cash` : payment === "SPLIT" ? `Pay 50% now via ${onlineMethod}` : `Pay ${inr(payable)} with ${onlineMethod}`}<ChevronRight className="h-4 w-4" /></span>
             </button>
           </div>
         </>

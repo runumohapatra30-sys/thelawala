@@ -548,7 +548,7 @@ function Home() {
         onRoute={openBannerRoute}
       />
 
-      <main className="flex min-w-0 flex-col gap-4 overflow-x-hidden">
+      <main className="flex min-w-0 flex-col gap-4 overflow-x-hidden pb-36">
         <FestiveContextBanner
           campaign={campaign}
           theme={topBarTheme}
@@ -645,9 +645,7 @@ function Home() {
         <FestivePhotoStrip />
         <DynamicPageRenderer app="customer" page="home" registry={registry} />
       </main>
-      <div className="pb-[140px]" />
-
-      <HomeChat userId={user?.id} />
+      <HomeChat userId={user?.id} cartVisible={count > 0} />
 
       {toast ? (
         <div className="fixed inset-x-0 bottom-44 z-40 mx-auto w-full max-w-[440px] px-4">

@@ -4,7 +4,7 @@ import { askHomeBot } from "@/lib/homebot.functions";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-export function HomeChat({ userId }: { userId: string | undefined }) {
+export function HomeChat({ userId, cartVisible }: { userId: string | undefined; cartVisible: boolean }) {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([
     {
@@ -58,7 +58,7 @@ export function HomeChat({ userId }: { userId: string | undefined }) {
       <button
         onClick={openChat}
         aria-label="Chat with ThelaWala Care"
-        className="press pop-in fixed bottom-[180px] right-4 z-40 grid h-14 w-14 place-items-center rounded-full bg-primary text-2xl shadow-[0_16px_32px_-12px_var(--color-primary)]"
+        className={`press pop-in fixed ${cartVisible ? "bottom-[180px]" : "bottom-[110px]"} right-4 z-40 grid h-14 w-14 place-items-center rounded-full bg-primary text-2xl shadow-[0_16px_32px_-12px_var(--color-primary)]`}
       >
         💬
         <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full border-2 border-card bg-destructive" />

@@ -39,7 +39,7 @@ export function LocalSpotlight({ vendors, items, onVendor }: { vendors: StreetFo
             <h2 className="line-clamp-2 h-11 text-base font-black leading-snug">Maa Tarini Thela</h2>
             <p className="mt-1 truncate text-[10px] font-semibold opacity-80">{current ? (current.vendor.is_open ? current.vendor.offer_label || "Fresh from your neighbourhood" : "Currently closed") : "More street bites soon"}</p>
             <div className="mt-2 grid grid-cols-2 gap-1.5">
-              {current?.food.map((item) => <div key={item.id} className="min-w-0 rounded-lg bg-primary-foreground/10 p-1.5"><img src={item.photo_url ?? foodImage(item.name)} alt={item.name} className="mx-auto h-10 w-10 rounded-md object-cover" /><p className="mt-1 truncate text-center text-[9px] font-bold">{item.name}</p></div>)}
+              {current?.food.map((item) => <div key={item.id} className="min-w-0 rounded-lg bg-primary-foreground/10 p-1.5"><img src={item.photo_url ?? foodImage(item.name)} alt={item.name} className="mx-auto h-10 w-10 rounded-md object-cover" /><p className="mt-1 line-clamp-2 min-h-[22px] text-center text-[9px] font-bold leading-tight">{item.name}</p></div>)}
               {!current?.food.length ? <div className="col-span-2 flex h-28 items-center justify-center"><Store className="h-10 w-10 opacity-70" /></div> : null}
             </div>
           </motion.div>
