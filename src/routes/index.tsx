@@ -633,7 +633,7 @@ function Home() {
         <FestivePhotoStrip />
         <DynamicPageRenderer app="customer" page="home" registry={registry} />
       </main>
-      <div className="pb-28" />
+      <div className="pb-[140px]" />
 
       <HomeChat userId={user?.id} />
 
