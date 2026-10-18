@@ -50,7 +50,7 @@ export function DynamicBanners({ rows, onActive, onInternalRoute, overlayOnly = 
     <div ref={emblaRef} className="overflow-hidden"><div className="flex touch-pan-y">
       {rows.map((row, index) => <div key={row.id} role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${rows.length}`} className={`min-w-0 shrink-0 ${peek ? "basis-[76%] px-1.5" : "basis-full px-4"}`}>
         <Button variant="ghost" tabIndex={index === selected ? 0 : -1} onClick={() => open(row)} aria-label={row.title || `Promotion ${index + 1}`} className={`relative block h-auto w-full overflow-hidden rounded-3xl p-0 shadow-sm transition-transform duration-500 hover:bg-transparent ${peek && index !== selected ? "scale-[0.93] opacity-80" : ""}`}>
-          {peek ? <span className="relative block aspect-[3/4] w-full bg-card">
+          {peek ? <span className="relative block h-40 w-full bg-card">
             {row.banner_format === "4_GRID" ? <span className="grid h-full grid-cols-2 grid-rows-2 gap-1 p-1">{row.grid_image_urls.slice(0,4).map((url, i) => <img key={i} src={url} alt="" className="h-full min-h-0 w-full rounded-2xl object-cover" />)}</span>
               : row.media_type === "video" ? <video src={row.media_url} muted autoPlay={!reduceMotion && index === selected} loop playsInline className="h-full w-full object-cover" />
               : <img src={row.media_url} alt={row.title || "ThelaWala offer"} className="h-full w-full object-cover" />}
@@ -60,9 +60,9 @@ export function DynamicBanners({ rows, onActive, onInternalRoute, overlayOnly = 
             {row.title && <span className="text-[26px] font-black uppercase leading-none tracking-wide text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]">{row.title}</span>}
             {row.subtitle && <span className="text-xs font-semibold text-white/90 drop-shadow">{row.subtitle}</span>}
           </span>
-          : row.banner_format === "4_GRID" ? <div className="grid aspect-[4/3] grid-cols-2 grid-rows-2 gap-1 bg-card p-1">{row.grid_image_urls.slice(0,4).map((url, i) => <img key={i} src={url} alt={`Promotion tile ${i + 1}`} className="h-full min-h-0 w-full object-cover" />)}</div>
-            : row.media_type === "video" ? <video src={row.media_url} muted autoPlay={!reduceMotion && index === selected} loop playsInline className={`${row.banner_format === "SLIM" ? "aspect-[4/1]" : "aspect-[16/9]"} w-full object-cover`} />
-            : <img src={row.media_url} alt={row.title || "ThelaWala offer"} className={`${row.banner_format === "SLIM" ? "aspect-[4/1]" : "aspect-[16/9]"} w-full object-cover`} />}
+          : row.banner_format === "4_GRID" ? <div className="grid h-40 grid-cols-2 grid-rows-2 gap-1 bg-card p-1">{row.grid_image_urls.slice(0,4).map((url, i) => <img key={i} src={url} alt={`Promotion tile ${i + 1}`} className="h-full min-h-0 w-full object-cover" />)}</div>
+            : row.media_type === "video" ? <video src={row.media_url} muted autoPlay={!reduceMotion && index === selected} loop playsInline className={`${row.banner_format === "SLIM" ? "aspect-[4/1]" : "aspect-[16/9]"} max-h-40 w-full object-cover`} />
+            : <img src={row.media_url} alt={row.title || "ThelaWala offer"} className={`${row.banner_format === "SLIM" ? "aspect-[4/1]" : "aspect-[16/9]"} max-h-40 w-full object-cover`} />}
           {(row.title || row.subtitle || row.badge) && <span className="home-banner-copy absolute inset-x-0 bottom-0 flex flex-col items-start gap-1 p-3 text-left whitespace-normal">
             {row.badge && <span className="rounded bg-primary px-2 py-1 text-[10px] font-bold text-primary-foreground">{row.badge}</span>}
             {row.title && <span className="text-lg font-extrabold leading-tight text-foreground">{row.title}</span>}
