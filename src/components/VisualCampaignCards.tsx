@@ -103,7 +103,7 @@ export function VisualCampaignCard({
       <button
         type="button"
         onClick={onClick}
-        className="w-[158px] shrink-0 snap-start overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm"
+        className="w-[calc(50%-6px)] min-w-[188px] shrink-0 snap-start overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm"
       >
         <img src={image} alt="" loading="lazy" className="h-24 w-full object-cover" />
         <span className="block p-2.5">
@@ -131,7 +131,7 @@ export function VisualCampaignCard({
         type="button"
         onClick={onClick}
         {...enter}
-        className="relative h-[204px] w-[158px] shrink-0 snap-start overflow-hidden rounded-[1.6rem] border border-border bg-white text-left shadow-[0_12px_24px_-18px_rgba(18,38,28,.65)]"
+        className="relative h-[252px] w-[calc(50%-6px)] min-w-[188px] shrink-0 snap-start overflow-hidden rounded-[1.6rem] border border-border bg-white text-left shadow-[0_12px_24px_-18px_rgba(18,38,28,.65)]"
       >
         <span
           className="absolute inset-x-0 top-0 h-[132px] overflow-hidden"
@@ -168,7 +168,7 @@ export function VisualCampaignCard({
         type="button"
         onClick={onClick}
         {...enter}
-        className="relative h-[204px] w-[158px] shrink-0 snap-start overflow-hidden rounded-[1.6rem] border border-[#d8b85d] bg-[linear-gradient(150deg,#271442,#49265d_60%,#17223f)] text-left shadow-[0_0_25px_-12px_rgba(179,133,53,.75)]"
+        className="relative h-[252px] w-[calc(50%-6px)] min-w-[188px] shrink-0 snap-start overflow-hidden rounded-[1.6rem] border border-[#d8b85d] bg-[linear-gradient(150deg,#271442,#49265d_60%,#17223f)] text-left shadow-[0_0_25px_-12px_rgba(179,133,53,.75)]"
         style={{ boxShadow: `0 0 24px -12px ${palette.base}` }}
       >
         <img src={image} alt="" loading="lazy" className="h-24 w-full object-cover opacity-85" />
@@ -195,7 +195,7 @@ export function VisualCampaignCard({
         type="button"
         onClick={onClick}
         {...enter}
-        className="relative h-[204px] w-[158px] shrink-0 snap-start overflow-hidden rounded-[1.6rem] border-2 p-2 text-left shadow-[0_12px_24px_-18px_rgba(18,38,28,.65)]"
+        className="relative h-[252px] w-[calc(50%-6px)] min-w-[188px] shrink-0 snap-start overflow-hidden rounded-[1.6rem] border-2 p-2 text-left shadow-[0_12px_24px_-18px_rgba(18,38,28,.65)]"
         style={{
           borderColor: palette.base,
           background: `linear-gradient(145deg,${palette.complement},${palette.base})`,
@@ -231,7 +231,7 @@ export function VisualCampaignCard({
       type="button"
       onClick={onClick}
       {...enter}
-      className="relative h-[204px] w-[158px] shrink-0 snap-start overflow-hidden rounded-[1.6rem] border p-2.5 text-left shadow-[0_12px_24px_-18px_rgba(18,38,28,.65)]"
+      className="relative h-[252px] w-[calc(50%-6px)] min-w-[188px] shrink-0 snap-start overflow-hidden rounded-[1.6rem] border p-2.5 text-left shadow-[0_12px_24px_-18px_rgba(18,38,28,.65)]"
       style={{
         borderColor: palette.base,
         background: `linear-gradient(145deg,${palette.tint},#ffffff 75%)`,
