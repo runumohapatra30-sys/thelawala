@@ -107,7 +107,7 @@ export function VisualCampaignCard({
       >
         <img src={image} alt="" loading="lazy" className="h-28 w-full object-cover" />
         <span className="block p-2.5">
-          <span className="block truncate text-xs font-black text-foreground">{title}</span>
+          <span className="block truncate text-sm font-black text-foreground">{title}</span>
           <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
             {subtitle}
           </span>
@@ -144,8 +144,8 @@ export function VisualCampaignCard({
           <img src={image} alt="" loading="lazy" className="h-full w-full object-cover" />
         </span>
         <span className="absolute inset-x-2 bottom-2 text-center">
-          <span className="block truncate text-xs font-black text-[#23372b]">{title}</span>
-          <span className="mt-0.5 block truncate text-[9px] font-medium text-muted-foreground">
+          <span className="block truncate text-sm font-black text-[#23372b]">{title}</span>
+          <span className="mt-0.5 block truncate text-[10px] font-medium text-muted-foreground">
             {subtitle}
           </span>
           <span className="mt-1 inline-flex items-center gap-1 text-[9px] font-black text-primary">
@@ -180,8 +180,8 @@ export function VisualCampaignCard({
           <span className="flex items-center gap-1 text-[8px] font-black uppercase tracking-[.16em] text-[#f3d782]">
             <Sparkles className="h-3 w-3" /> Festive glow
           </span>
-          <span className="mt-1 block truncate text-xs font-black text-white">{title}</span>
-          <span className="mt-0.5 block truncate text-[9px] font-medium text-white/70">
+          <span className="mt-1 block truncate text-sm font-black text-white">{title}</span>
+          <span className="mt-0.5 block truncate text-[10px] font-medium text-white/70">
             {subtitle}
           </span>
         </span>
@@ -218,8 +218,8 @@ export function VisualCampaignCard({
             </span>
           </span>
           <span className="rounded-xl bg-white/90 p-2 text-[#20342a] backdrop-blur-sm">
-            <span className="block truncate text-xs font-black">{title}</span>
-            <span className="mt-0.5 block truncate text-[9px] font-medium">{subtitle}</span>
+            <span className="block truncate text-sm font-black">{title}</span>
+            <span className="mt-0.5 block truncate text-[10px] font-medium">{subtitle}</span>
           </span>
         </span>
       </motion.button>
@@ -257,8 +257,8 @@ export function VisualCampaignCard({
           className="rounded-full px-2.5 py-2 text-center text-[#20382b]"
           style={{ backgroundColor: "rgba(255,255,255,.82)" }}
         >
-          <span className="block truncate text-xs font-black">{title}</span>
-          <span className="mt-0.5 block truncate text-[9px] font-medium">{subtitle}</span>
+          <span className="block truncate text-sm font-black">{title}</span>
+          <span className="mt-0.5 block truncate text-[10px] font-medium">{subtitle}</span>
         </span>
       </span>
     </motion.button>
