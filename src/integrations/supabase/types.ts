@@ -317,6 +317,44 @@ export type Database = {
         }
         Relationships: []
       }
+      app_visual_engine_settings: {
+        Row: {
+          flash_deal_enabled: boolean
+          flash_image_url: string | null
+          flash_menu_item_id: string | null
+          flash_price: number | null
+          id: number
+          is_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          flash_deal_enabled?: boolean
+          flash_image_url?: string | null
+          flash_menu_item_id?: string | null
+          flash_price?: number | null
+          id?: number
+          is_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          flash_deal_enabled?: boolean
+          flash_image_url?: string | null
+          flash_menu_item_id?: string | null
+          flash_price?: number | null
+          id?: number
+          is_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_visual_engine_settings_flash_menu_item_id_fkey"
+            columns: ["flash_menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       banners: {
         Row: {
           category_id: string | null
