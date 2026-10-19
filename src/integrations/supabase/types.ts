@@ -451,127 +451,6 @@ export type Database = {
         }
         Relationships: []
       }
-      commerce_campaigns: {
-        Row: {
-          allowed_prices: number[]
-          created_at: string
-          description: string | null
-          id: string
-          is_active: boolean
-          slug: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          allowed_prices?: number[]
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          slug: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          allowed_prices?: number[]
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          slug?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      commerce_campaign_items: {
-        Row: {
-          campaign_id: string
-          created_at: string
-          id: string
-          is_active: boolean
-          menu_item_id: string
-          offer_price: number
-          source: string
-          updated_at: string
-          vendor_id: string
-        }
-        Insert: {
-          campaign_id: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          menu_item_id: string
-          offer_price: number
-          source: string
-          updated_at?: string
-          vendor_id: string
-        }
-        Update: {
-          campaign_id?: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          menu_item_id?: string
-          offer_price?: number
-          source?: string
-          updated_at?: string
-          vendor_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "commerce_campaign_items_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "commerce_campaigns"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "commerce_campaign_items_menu_item_id_fkey"
-            columns: ["menu_item_id"]
-            isOneToOne: false
-            referencedRelation: "menu_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "commerce_campaign_items_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendors"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      promo_credit_settings: {
-        Row: {
-          credit_amount: number
-          daily_delivery_threshold: number
-          id: number
-          is_enabled: boolean
-          rolling_delivery_threshold: number
-          rolling_window_days: number
-          updated_at: string
-        }
-        Insert: {
-          credit_amount?: number
-          daily_delivery_threshold?: number
-          id?: number
-          is_enabled?: boolean
-          rolling_delivery_threshold?: number
-          rolling_window_days?: number
-          updated_at?: string
-        }
-        Update: {
-          credit_amount?: number
-          daily_delivery_threshold?: number
-          id?: number
-          is_enabled?: boolean
-          rolling_delivery_threshold?: number
-          rolling_window_days?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
       cash_deposits: {
         Row: {
           admin_note: string | null
@@ -646,6 +525,94 @@ export type Database = {
           id?: string
           name?: string
           sort_order?: number
+        }
+        Relationships: []
+      }
+      commerce_campaign_items: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          menu_item_id: string
+          offer_price: number
+          source: string
+          vendor_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          menu_item_id: string
+          offer_price: number
+          source?: string
+          vendor_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          menu_item_id?: string
+          offer_price?: number
+          source?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commerce_campaign_items_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "commerce_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commerce_campaign_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commerce_campaign_items_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commerce_campaigns: {
+        Row: {
+          allowed_prices: number[]
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          allowed_prices?: number[]
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          allowed_prices?: number[]
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          slug?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1659,6 +1626,36 @@ export type Database = {
           mobile?: string | null
           referral_code?: string | null
           referred_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      promo_credit_settings: {
+        Row: {
+          credit_amount: number
+          daily_delivery_threshold: number
+          id: boolean
+          is_enabled: boolean
+          rolling_delivery_threshold: number
+          rolling_window_days: number
+          updated_at: string
+        }
+        Insert: {
+          credit_amount?: number
+          daily_delivery_threshold?: number
+          id?: boolean
+          is_enabled?: boolean
+          rolling_delivery_threshold?: number
+          rolling_window_days?: number
+          updated_at?: string
+        }
+        Update: {
+          credit_amount?: number
+          daily_delivery_threshold?: number
+          id?: boolean
+          is_enabled?: boolean
+          rolling_delivery_threshold?: number
+          rolling_window_days?: number
           updated_at?: string
         }
         Relationships: []

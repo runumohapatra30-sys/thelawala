@@ -103,11 +103,11 @@ export function VisualCampaignCard({
       <button
         type="button"
         onClick={onClick}
-        className="w-[158px] shrink-0 snap-start overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm"
+        className="w-[calc(50%-6px)] min-w-[188px] shrink-0 snap-start overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm"
       >
-        <img src={image} alt="" loading="lazy" className="h-24 w-full object-cover" />
+        <img src={image} alt="" loading="lazy" className="h-28 w-full object-cover" />
         <span className="block p-2.5">
-          <span className="block truncate text-xs font-black text-foreground">{title}</span>
+          <span className="block truncate text-sm font-black text-foreground">{title}</span>
           <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
             {subtitle}
           </span>
@@ -131,21 +131,21 @@ export function VisualCampaignCard({
         type="button"
         onClick={onClick}
         {...enter}
-        className="relative h-[204px] w-[158px] shrink-0 snap-start overflow-hidden rounded-[1.6rem] border border-border bg-white text-left shadow-[0_12px_24px_-18px_rgba(18,38,28,.65)]"
+        className="relative h-[252px] w-[calc(50%-6px)] min-w-[188px] shrink-0 snap-start overflow-hidden rounded-[1.6rem] border border-border bg-white text-left shadow-[0_12px_24px_-18px_rgba(18,38,28,.65)]"
       >
         <span
-          className="absolute inset-x-0 top-0 h-[132px] overflow-hidden"
+          className="absolute inset-x-0 top-0 h-[164px] overflow-hidden"
           style={{ clipPath: "ellipse(96% 84% at 50% 15%)" }}
         >
           <img src={image} alt="" loading="lazy" className="h-full w-full object-cover" />
           <span className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
         </span>
-        <span className="absolute left-1/2 top-[100px] grid h-11 w-11 -translate-x-1/2 place-items-center overflow-hidden rounded-full border-[3px] border-white bg-white shadow-md">
+        <span className="absolute left-1/2 top-[132px] grid h-14 w-14 -translate-x-1/2 place-items-center overflow-hidden rounded-full border-[3px] border-white bg-white shadow-md">
           <img src={image} alt="" loading="lazy" className="h-full w-full object-cover" />
         </span>
         <span className="absolute inset-x-2 bottom-2 text-center">
-          <span className="block truncate text-xs font-black text-[#23372b]">{title}</span>
-          <span className="mt-0.5 block truncate text-[9px] font-medium text-muted-foreground">
+          <span className="block truncate text-sm font-black text-[#23372b]">{title}</span>
+          <span className="mt-0.5 block truncate text-[10px] font-medium text-muted-foreground">
             {subtitle}
           </span>
           <span className="mt-1 inline-flex items-center gap-1 text-[9px] font-black text-primary">
@@ -168,11 +168,11 @@ export function VisualCampaignCard({
         type="button"
         onClick={onClick}
         {...enter}
-        className="relative h-[204px] w-[158px] shrink-0 snap-start overflow-hidden rounded-[1.6rem] border border-[#d8b85d] bg-[linear-gradient(150deg,#271442,#49265d_60%,#17223f)] text-left shadow-[0_0_25px_-12px_rgba(179,133,53,.75)]"
+        className="relative h-[252px] w-[calc(50%-6px)] min-w-[188px] shrink-0 snap-start overflow-hidden rounded-[1.6rem] border border-[#d8b85d] bg-[linear-gradient(150deg,#271442,#49265d_60%,#17223f)] text-left shadow-[0_0_25px_-12px_rgba(179,133,53,.75)]"
         style={{ boxShadow: `0 0 24px -12px ${palette.base}` }}
       >
-        <img src={image} alt="" loading="lazy" className="h-24 w-full object-cover opacity-85" />
-        <span className="absolute inset-x-0 top-16 h-10 bg-gradient-to-t from-[#271442] to-transparent" />
+        <img src={image} alt="" loading="lazy" className="h-28 w-full object-cover opacity-85" />
+        <span className="absolute inset-x-0 top-20 h-10 bg-gradient-to-t from-[#271442] to-transparent" />
         <span className="absolute left-2 top-2 rounded-full border border-[#e0be64] bg-black/35 px-2 py-1 text-[8px] font-black text-[#ffe6a0]">
           {badge}
         </span>
@@ -180,8 +180,8 @@ export function VisualCampaignCard({
           <span className="flex items-center gap-1 text-[8px] font-black uppercase tracking-[.16em] text-[#f3d782]">
             <Sparkles className="h-3 w-3" /> Festive glow
           </span>
-          <span className="mt-1 block truncate text-xs font-black text-white">{title}</span>
-          <span className="mt-0.5 block truncate text-[9px] font-medium text-white/70">
+          <span className="mt-1 block truncate text-sm font-black text-white">{title}</span>
+          <span className="mt-0.5 block truncate text-[10px] font-medium text-white/70">
             {subtitle}
           </span>
         </span>
@@ -195,7 +195,7 @@ export function VisualCampaignCard({
         type="button"
         onClick={onClick}
         {...enter}
-        className="relative h-[204px] w-[158px] shrink-0 snap-start overflow-hidden rounded-[1.6rem] border-2 p-2 text-left shadow-[0_12px_24px_-18px_rgba(18,38,28,.65)]"
+        className="relative h-[252px] w-[calc(50%-6px)] min-w-[188px] shrink-0 snap-start overflow-hidden rounded-[1.6rem] border-2 p-2 text-left shadow-[0_12px_24px_-18px_rgba(18,38,28,.65)]"
         style={{
           borderColor: palette.base,
           background: `linear-gradient(145deg,${palette.complement},${palette.base})`,
@@ -218,8 +218,8 @@ export function VisualCampaignCard({
             </span>
           </span>
           <span className="rounded-xl bg-white/90 p-2 text-[#20342a] backdrop-blur-sm">
-            <span className="block truncate text-xs font-black">{title}</span>
-            <span className="mt-0.5 block truncate text-[9px] font-medium">{subtitle}</span>
+            <span className="block truncate text-sm font-black">{title}</span>
+            <span className="mt-0.5 block truncate text-[10px] font-medium">{subtitle}</span>
           </span>
         </span>
       </motion.button>
@@ -231,7 +231,7 @@ export function VisualCampaignCard({
       type="button"
       onClick={onClick}
       {...enter}
-      className="relative h-[204px] w-[158px] shrink-0 snap-start overflow-hidden rounded-[1.6rem] border p-2.5 text-left shadow-[0_12px_24px_-18px_rgba(18,38,28,.65)]"
+      className="relative h-[252px] w-[calc(50%-6px)] min-w-[188px] shrink-0 snap-start overflow-hidden rounded-[1.6rem] border p-2.5 text-left shadow-[0_12px_24px_-18px_rgba(18,38,28,.65)]"
       style={{
         borderColor: palette.base,
         background: `linear-gradient(145deg,${palette.tint},#ffffff 75%)`,
@@ -251,14 +251,14 @@ export function VisualCampaignCard({
           src={image}
           alt=""
           loading="lazy"
-          className="mx-auto h-[86px] w-[116px] rounded-[2rem_2rem_1.2rem_1.2rem] object-cover shadow-md"
+          className="mx-auto h-[112px] w-[150px] rounded-[2rem_2rem_1.2rem_1.2rem] object-cover shadow-md"
         />
         <span
           className="rounded-full px-2.5 py-2 text-center text-[#20382b]"
           style={{ backgroundColor: "rgba(255,255,255,.82)" }}
         >
-          <span className="block truncate text-xs font-black">{title}</span>
-          <span className="mt-0.5 block truncate text-[9px] font-medium">{subtitle}</span>
+          <span className="block truncate text-sm font-black">{title}</span>
+          <span className="mt-0.5 block truncate text-[10px] font-medium">{subtitle}</span>
         </span>
       </span>
     </motion.button>

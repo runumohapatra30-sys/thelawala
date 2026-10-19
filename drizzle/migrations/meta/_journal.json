@@ -15,6 +15,20 @@
       "when": 1791773691243,
       "tag": "0001_restore_soundbox_storage_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792379330936,
+      "tag": "0002_create_commerce_campaigns_and_promo_credit",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792379382213,
+      "tag": "0003_create_visual_engine_settings",
+      "breakpoints": true
     }
   ]
 }
