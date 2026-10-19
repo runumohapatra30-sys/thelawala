@@ -27,7 +27,7 @@ export async function loadPromotionalCredit(userId: string): Promise<Pick<Promot
   const { data: settingsData, error: settingsError } = await supabase
     .from("promo_credit_settings")
     .select("is_enabled,credit_amount,daily_delivery_threshold,rolling_delivery_threshold,rolling_window_days")
-    .eq("id", 1)
+    .eq("id", true)
     .maybeSingle();
   if (settingsError) throw settingsError;
   if (!settingsData) return { settings: null, eligible: false };

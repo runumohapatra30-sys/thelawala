@@ -74,7 +74,7 @@ export function CommerceCampaignManager() {
         .select(
           "is_enabled,credit_amount,daily_delivery_threshold,rolling_delivery_threshold,rolling_window_days",
         )
-        .eq("id", 1)
+        .eq("id", true)
         .maybeSingle(),
     ]);
     const error =
@@ -118,7 +118,7 @@ export function CommerceCampaignManager() {
     event.preventDefault();
     if (!credit) return;
     setSaving(true);
-    const { error } = await supabase.from("promo_credit_settings").update(credit).eq("id", 1);
+    const { error } = await supabase.from("promo_credit_settings").update(credit).eq("id", true);
     setSaving(false);
     if (error) {
       toast.error(`Could not save free-cash settings: ${error.message}`);
