@@ -110,8 +110,5 @@ export function LiveHomeHeader({ address, avatarUrl, query, onQueryChange, onSea
         </section>
       )}
     </div>
-    <motion.div initial={false} animate={{ height: collapsed ? 0 : "auto", opacity: collapsed ? 0 : 1 }} transition={{ duration: reduceMotion ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] }} className="relative overflow-hidden" inert={collapsed}>
-      <DynamicBanners rows={rows} onActive={onActive} onInternalRoute={onInternalRoute} peek />
-    </motion.div>
   </header>;
 }

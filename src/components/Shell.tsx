@@ -7,6 +7,7 @@ import { GUEST_PROFILE_EVENT, LoginModal, OPEN_LOGIN_EVENT } from "@/components/
 import { useSession } from "@/lib/session";
 import { CART_CONFLICT_EVENT, type CartConflictDetail, cart, useCart } from "@/lib/cart";
 import { useAuthBranding } from "@/lib/authBranding";
+import brandLogo from "@/assets/thelawala-logo.jpeg.asset.json";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -102,8 +103,8 @@ export function Shell({ children, hideNavigation = false }: { children: ReactNod
             >
               {active ? <span className="absolute top-1 h-0.5 w-5 rounded-full bg-[#F05A22]" /> : null}
               <motion.span animate={{ scale: active ? 1.08 : 1 }} transition={{ type: "spring", stiffness: 360, damping: 20 }}>
-                {n.label === "Home" && branding.appLogoUrl ? (
-                  <img src={branding.appLogoUrl} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} className="h-5 w-5 object-contain" />
+                {n.label === "Home" ? (
+                  <img src={branding.appLogoUrl || brandLogo.url} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} className="h-5 w-5 object-contain" />
                 ) : <n.Icon className="h-5 w-5" strokeWidth={2} />}
               </motion.span>
               <span className="max-w-full truncate text-[9px] font-extrabold">{n.label}</span>
@@ -237,9 +238,9 @@ export function PortalHeader({ title, subtitle }: { title: string; subtitle?: st
           <h1 className="truncate font-display text-3xl leading-none">{title}</h1>
           {subtitle ? <p className="truncate text-xs font-medium opacity-80">{subtitle}</p> : null}
         </div>
-        {branding.appLogoUrl ? (
+        {(branding.appLogoUrl || brandLogo.url) ? (
           <img
-            src={branding.appLogoUrl}
+            src={branding.appLogoUrl || brandLogo.url}
             alt=""
             onError={(event) => { event.currentTarget.style.display = "none"; }}
             className="h-8 w-8 shrink-0 object-contain"

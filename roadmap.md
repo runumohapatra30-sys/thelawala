@@ -1,4 +1,6 @@
 # Roadmap
+- [ ] Finish clear admin artwork, equal-height home promotion rail, festive five-style cards and FESTIVE PICKS
+- [ ] Diagnose 99 Store availability and verify campaign pages, offers and mobile layout
 - [ ] Match sign-in to the food-photo reference using admin-managed artwork
 - [ ] Repair stale-session Google login recovery and verify sign-in entry
 - [ ] Repair Soundbox image upload and settings persistence

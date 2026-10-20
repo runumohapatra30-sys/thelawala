@@ -16,6 +16,8 @@ export type PromoCard = {
   subtitle: string;
   image_url: string;
   redirect_category_or_filter: string;
+  style_index?: number;
+  video_url?: string;
 };
 
 export type Campaign = {
@@ -39,6 +41,8 @@ export function toPromoCards(value: unknown): PromoCard[] {
   return value
     .filter((v): v is Record<string, unknown> => typeof v === "object" && v !== null)
     .map((v) => ({
+      style_index: Number(v["style_index"] ?? 0),
+      video_url: String(v["video_url"] ?? ""),
       title: String(v["title"] ?? ""),
       subtitle: String(v["subtitle"] ?? ""),
       image_url: String(v["image_url"] ?? ""),
