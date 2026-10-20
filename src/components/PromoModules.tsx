@@ -125,7 +125,7 @@ export function NinetyNineStoreSection({
         {error}
       </p>
     );
-  if (entries.length === 0) return null;
+  if (entries.length === 0) return <section className="px-4 py-3"><Link to="/campaign/99-store" className="flex items-center justify-between border-y border-border py-4"><span><span className="block text-base font-black text-foreground">99 Store</span><span className="block text-xs text-muted-foreground">New deals are on the way</span></span><ArrowRight className="h-5 w-5 text-primary" /></Link></section>;
   return (
     <section className="mx-4 my-3 overflow-hidden rounded-[1.7rem] border border-[#b6d4c0] bg-[linear-gradient(135deg,#effcf2,#fff8e9)] p-3.5 shadow-[0_14px_30px_-22px_rgba(27,94,56,0.6)]">
       <div className="flex items-center gap-3">

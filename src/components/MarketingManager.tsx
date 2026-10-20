@@ -9,6 +9,7 @@ import {
   type Campaign,
   type PromoCard,
 } from "@/lib/marketing";
+import { Button } from "@/components/ui/button";
 import { SmartAssetManager } from "@/components/SmartAssetManager";
 import { AdminBannerStudio } from "@/components/AdminBannerStudio";
 import { AdminDynamicLayout } from "@/components/AdminDynamicLayout";
@@ -191,6 +192,15 @@ function CampaignBuilder({ cats }: { cats: Opt[] }) {
     deals_section_active: false,
   });
 
+  async function uploadArtwork(file: File, index?: number) {
+    if (!editing) return;
+    setBusy(true);
+    const result = await uploadBannerImage(file);
+    setBusy(false);
+    if ("error" in result) { toast.error(result.error); return; }
+    setEditing((current) => current ? index === undefined ? { ...current, theme_bg_image_url: result.url } : { ...current, promo_cards: current.promo_cards.map((card, i) => i === index ? { ...card, image_url: result.url } : card) } : current);
+  }
+
   async function save() {
     if (!editing) return;
     if (!editing.title.trim()) { toast.error("Give the campaign a title."); return; }
@@ -275,9 +285,11 @@ function CampaignBuilder({ cats }: { cats: Opt[] }) {
             <input value={editing.top_tab_icon_url ?? ""} onChange={(e) => setEditing({ ...editing, top_tab_icon_url: e.target.value })} placeholder="Top tab icon link" className={inputCls} />
           </div>
 
+          <label className="block text-xs font-bold">Festive cover<input type="file" accept="image/*" disabled={busy} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadArtwork(file); }} className="mt-1 block w-full text-xs" /></label>
           <p className="pt-1 text-[11px] font-bold text-muted-foreground">Promo cards</p>
           {editing.promo_cards.map((card, n) => (
             <div key={n} className="grid grid-cols-2 gap-2 rounded-xl border border-border p-2">
+              <label className="col-span-2 text-xs">Card shape<select value={card.style_index ?? 0} onChange={(event) => setEditing({ ...editing, promo_cards: editing.promo_cards.map((x,i) => i === n ? { ...x, style_index: Number(event.target.value) } : x) })} className={inputCls}>{["Puja arch", "Scalloped arch", "Round dome", "Temple window", "Classic frame"].map((label,i) => <option key={label} value={i}>{label}</option>)}</select><input type="file" accept="image/*" disabled={busy} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadArtwork(file,n); }} className="mt-2 block w-full" /></label>
               <input value={card.title} onChange={(e) => setEditing({ ...editing, promo_cards: editing.promo_cards.map((x, i) => (i === n ? { ...x, title: e.target.value } : x)) })} placeholder="Card title" className={inputCls} />
               <input value={card.subtitle} onChange={(e) => setEditing({ ...editing, promo_cards: editing.promo_cards.map((x, i) => (i === n ? { ...x, subtitle: e.target.value } : x)) })} placeholder="Subtitle" className={inputCls} />
               <input value={card.image_url} onChange={(e) => setEditing({ ...editing, promo_cards: editing.promo_cards.map((x, i) => (i === n ? { ...x, image_url: e.target.value } : x)) })} placeholder="Image link" className={inputCls} />

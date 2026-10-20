@@ -36,7 +36,7 @@ export function LocalSpotlight({ vendors, items, onVendor }: { vendors: StreetFo
       <div className="relative mt-2 min-h-0 flex-1 overflow-hidden">
         <AnimatePresence initial={false}>
           <motion.div key={current ? `${current.vendor.id}-${index}` : "empty"} initial={reduced ? false : { y: "100%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={reduced ? { opacity: 0 } : { y: "-100%", opacity: 0 }} transition={{ duration: reduced ? 0 : 0.65, ease: [0.22, 1, 0.36, 1] }} className="absolute inset-0">
-            <h2 className="line-clamp-2 h-11 text-base font-black leading-snug">Maa Tarini Thela</h2>
+            <h2 className="line-clamp-2 h-11 text-base font-black leading-snug">{current?.vendor.stall_name ?? "Local stalls"}</h2>
             <p className="mt-1 truncate text-[10px] font-semibold opacity-80">{current ? (current.vendor.is_open ? current.vendor.offer_label || "Fresh from your neighbourhood" : "Currently closed") : "More street bites soon"}</p>
             <div className="mt-2 grid grid-cols-2 gap-1.5">
               {current?.food.map((item) => <div key={item.id} className="min-w-0 rounded-lg bg-primary-foreground/10 p-1.5"><img src={item.photo_url ?? foodImage(item.name)} alt={item.name} className="mx-auto h-10 w-10 rounded-md object-cover" /><p className="mt-1 line-clamp-2 min-h-[22px] text-center text-[9px] font-bold leading-tight">{item.name}</p></div>)}
