@@ -208,6 +208,23 @@
 .home-banner-copy {
   background: linear-gradient(180deg, transparent, var(--color-card) 35%);
 }
+.home-promotion-rail { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 12px) / 2); gap: 12px; overflow-x: auto; }
+.festival-world { --festival-background: oklch(0.37 0.14 23); --festival-gold: oklch(0.9 0.1 85); background: var(--festival-background); color: var(--festive-header-foreground); }
+.festival-cover { display: block; width: 100%; height: auto; object-fit: contain; }
+.festival-rail { display: flex; gap: 16px; overflow-x: auto; padding: 12px 24px 18px; position: relative; touch-action: pan-x pan-y; }
+.festival-arch { display: flex; flex-direction: column; flex-shrink: 0; width: 62%; height: 300px; padding: 0; overflow: hidden; border: 1px solid var(--festival-gold); background: color-mix(in oklab, var(--festival-background) 85%, var(--foreground)); color: var(--festival-gold); box-shadow: var(--shadow-soft); }
+.festival-arch:hover { background: color-mix(in oklab, var(--festival-background) 90%, var(--foreground)); }
+.festival-shape-0 { border-radius: 48% 48% 12px 12px; }
+.festival-shape-1 { border-radius: 38% 38% 20% 20%; }
+.festival-shape-2 { border-radius: 50% 50% 8px 8px; }
+.festival-shape-3 { border-radius: 40% 40% 0 0; border-width: 3px; }
+.festival-shape-4 { border-radius: 8px; }
+.festive-pick-badge { background: oklch(0.37 0.14 23); color: var(--primary-foreground); }
+.offer-image-overlay { background: linear-gradient(transparent, color-mix(in oklab, var(--foreground) 85%, transparent)); }
+.offer-stall-tag { background: color-mix(in oklab, var(--foreground) 60%, transparent); color: var(--primary-foreground); border-color: color-mix(in oklab, var(--primary-foreground) 40%, transparent); }
+@keyframes offer-blink { 0%,100% { opacity: 1; } 50% { opacity: .65; } }
+.offer-blink { animation: offer-blink 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .offer-blink { animation: none; } }
 @media (prefers-reduced-motion: reduce) {
   .home-live-header { transition: none; }
 }
