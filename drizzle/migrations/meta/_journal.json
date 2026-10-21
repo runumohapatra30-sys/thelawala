@@ -29,6 +29,13 @@
       "when": 1792379382213,
       "tag": "0003_create_visual_engine_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792550911625,
+      "tag": "0004_campaign_items_unique_by_source",
+      "breakpoints": true
     }
   ]
 }

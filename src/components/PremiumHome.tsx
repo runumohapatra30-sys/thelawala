@@ -11,6 +11,7 @@ import type { CuratedFoodDeal, StreetFoodCategory, StreetFoodItem, StreetFoodVen
 import { LiveHomeHeader } from "@/components/LiveHomeHeader";
 import { LocalSpotlight } from "@/components/LocalSpotlight";
 import { DynamicBanners } from "@/components/DynamicBanners";
+import { AutoSlideRail } from "@/components/AutoSlideRail";
 import { useHomeBanners } from "@/lib/homeBanners";
 import { OfferImageOverlay } from "@/components/OfferImageOverlay";
 
@@ -427,7 +428,7 @@ export function PremiumHome({
       </AnimatePresence>
 
       <section className="px-4 pb-2 pt-3">
-        <div className="home-promotion-rail no-scrollbar">
+        <AutoSlideRail>
           <LocalSpotlight vendors={vendors} items={spotlightItems} onVendor={onVendor} />
 
           <div className="flex h-[292px] min-w-0 flex-col rounded-3xl border border-border bg-card p-3 shadow-sm">
@@ -445,8 +446,8 @@ export function PremiumHome({
               })}
             </div>
           </div>
-          {banners.length > 0 ? <DynamicBanners rows={banners} onInternalRoute={onInternalRoute} panel /> : null}
-        </div>
+          {banners.map((banner) => <DynamicBanners key={banner.id} rows={[banner]} onInternalRoute={onInternalRoute} panel />)}
+        </AutoSlideRail>
       </section>
 
       {featured.length ? (
