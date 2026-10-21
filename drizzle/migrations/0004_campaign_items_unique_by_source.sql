@@ -1,0 +1,2 @@
+ALTER TABLE public.commerce_campaign_items ADD CONSTRAINT commerce_campaign_items_campaign_item_source_key UNIQUE (campaign_id, menu_item_id, source);
+ALTER TABLE public.commerce_campaign_items DROP CONSTRAINT IF EXISTS commerce_campaign_items_campaign_id_menu_item_id_vendor_id_key;
