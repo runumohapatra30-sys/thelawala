@@ -211,7 +211,10 @@
 .home-promotion-rail { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 12px) / 2); gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; }
 .home-promotion-rail > * { scroll-snap-align: start; }
 .festival-world { --festival-background: oklch(0.37 0.14 23); --festival-gold: oklch(0.9 0.1 85); background: var(--festival-background); color: var(--festive-header-foreground); }
-.festival-cover { display: block; width: 100%; height: auto; object-fit: contain; }
+.festival-cover-wrap { position: relative; }
+.festival-cover { display: block; width: 100%; height: auto; min-height: 340px; object-fit: cover; }
+.festival-cover-fade { position: absolute; inset-inline: 0; bottom: 0; height: 45%; background: linear-gradient(to bottom, transparent, var(--festival-background)); pointer-events: none; }
+.festival-rail-overlap { margin-top: -150px; z-index: 1; }
 .festival-rail { display: flex; gap: 16px; overflow-x: auto; padding: 12px 24px 18px; position: relative; touch-action: pan-x pan-y; }
 .festival-arch { display: flex; flex-direction: column; flex-shrink: 0; width: 62%; height: 300px; padding: 0; overflow: hidden; border: 1px solid var(--festival-gold); background: color-mix(in oklab, var(--festival-background) 85%, var(--foreground)); color: var(--festival-gold); box-shadow: var(--shadow-soft); }
 .festival-arch:hover { background: color-mix(in oklab, var(--festival-background) 90%, var(--foreground)); }

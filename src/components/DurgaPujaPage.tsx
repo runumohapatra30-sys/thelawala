@@ -81,9 +81,9 @@ export function DurgaPujaPage() {
         <span className="text-xs font-bold">ThelaWala</span>
         <Button asChild variant="ghost" size="icon" className="text-festive-header-foreground"><Link to="/cart" aria-label="View cart"><ShoppingBag /></Link></Button>
       </div>
-      {cover ? <img src={cover} alt={campaign?.title ?? "Durga Puja"} className="festival-cover" /> : <div className="px-5 py-10 text-center"><p className="text-xs font-bold uppercase">Celebrate</p><h1 className="mt-3 font-display text-4xl">Durga Puja</h1><p className="mt-3 text-xs">{campaign?.title ?? "Festive favourites from your local stalls"}</p></div>}
+      {cover ? <div className="festival-cover-wrap"><img src={cover} alt={campaign?.title ?? "Durga Puja"} className="festival-cover" /><div className="festival-cover-fade" aria-hidden="true" /></div> : <div className="px-5 pb-28 pt-10 text-center"><p className="text-xs font-bold uppercase">Celebrate</p><h1 className="mt-3 font-display text-4xl">Durga Puja</h1><p className="mt-3 text-xs">{campaign?.title ?? "Festive favourites from your local stalls"}</p></div>}
       {cover ? <h1 className="sr-only">{campaign?.title ?? "Durga Puja"}</h1> : null}
-      <div ref={rail} aria-label="Festive collections" className="festival-rail no-scrollbar" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onPointerDown={() => setPaused(true)} onPointerUp={() => setPaused(false)} onPointerCancel={() => setPaused(false)} onFocusCapture={() => setPaused(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false); }}>
+      <div ref={rail} aria-label="Festive collections" className="festival-rail festival-rail-overlap no-scrollbar" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onPointerDown={() => setPaused(true)} onPointerUp={() => setPaused(false)} onPointerCancel={() => setPaused(false)} onFocusCapture={() => setPaused(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false); }}>
         {themes.map((title, index) => {
           const card = campaign?.promo_cards[index];
           const item = items[index % Math.max(1, items.length)];
