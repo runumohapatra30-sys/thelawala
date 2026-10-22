@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { AdminHomePresentation } from "@/components/AdminHomePresentation";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listDynamicBanners,
@@ -150,6 +151,7 @@ export function AdminBannerStudio() {
         <p className="text-xs font-medium text-muted-foreground">Live home carousel</p>
       </div>
 
+      <AdminHomePresentation />
       <div className="grid gap-2 sm:grid-cols-3">
         {FORMATS.map((item) => (
           <Button key={item.value} type="button" variant={format === item.value ? "default" : "outline"} className="h-auto min-w-0 flex-col items-start py-3 text-left" onClick={() => setFormat(item.value)}>

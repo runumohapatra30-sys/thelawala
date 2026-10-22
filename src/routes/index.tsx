@@ -596,16 +596,6 @@ function Home() {
           }}
           onItem={(itemId) => navigate({ to: "/item/$id", params: { id: itemId } })}
         />
-        {effectiveTopBarTheme?.header_bg_image_url ? (
-          <section className="px-5 py-3">
-            <img
-              key={effectiveTopBarTheme.header_bg_image_url}
-              src={effectiveTopBarTheme.header_bg_image_url}
-              alt="Thaleewala festive offer"
-              className="festive-header-photo block h-auto w-full rounded-2xl shadow-sm"
-            />
-          </section>
-        ) : null}
         {user?.id ? <ActiveOrderTracker userId={user.id} /> : null}
         {catalogLoading ? (
           <section className="px-5 py-4" aria-live="polite">
