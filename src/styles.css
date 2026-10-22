@@ -209,14 +209,29 @@
   background: linear-gradient(180deg, transparent, var(--color-card) 35%);
 }
 .home-promotion-rail { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 12px) / 2); gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; }
-.home-promotion-rail > * { scroll-snap-align: start; }
+.home-promotion-rail > * { scroll-snap-align: start; height: 292px; min-width: 0; overflow: hidden; }
+.promotion-panel [aria-roledescription="slide"] { height: 100%; }
+.home-header-artwork { position: relative; width: 100%; }
+.home-header-artwork img { display: block; width: 100%; height: auto; }
+.home-header-artwork > span { position: absolute; inset-inline: 0; bottom: 0; height: 22%; background: linear-gradient(transparent, var(--background)); }
+.home-artwork-header[data-artwork="true"][data-collapsed="false"] { position: relative; background: var(--background) !important; }
+.home-artwork-header[data-artwork="true"][data-collapsed="false"] > div:last-child { margin-top: -64px; background: linear-gradient(transparent, var(--background) 48px); }
+.rain-indicator { display: inline-flex; align-items: center; gap: 4px; color: var(--sky); }
+.rain-indicator svg { animation: rainfall 1.8s ease-in-out infinite; }
+@keyframes rainfall { 0%, 100% { transform: translateY(-2px); } 50% { transform: translateY(2px); } }
 .festival-world { --festival-background: oklch(0.37 0.14 23); --festival-gold: oklch(0.9 0.1 85); background: var(--festival-background); color: var(--festive-header-foreground); }
 .festival-cover-wrap { position: relative; }
-.festival-cover { display: block; width: 100%; height: auto; min-height: 340px; object-fit: cover; }
-.festival-cover-fade { position: absolute; inset-inline: 0; bottom: 0; height: 45%; background: linear-gradient(to bottom, transparent, var(--festival-background)); pointer-events: none; }
-.festival-rail-overlap { margin-top: -150px; z-index: 1; }
+.festival-cover { display: block; width: 100%; height: auto; object-fit: contain; }
+.festival-cover-fade { position: absolute; inset-inline: 0; bottom: 0; height: 28%; background: linear-gradient(to bottom, transparent, var(--festival-background)); pointer-events: none; }
+.festival-rail-overlap { margin-top: -80px; z-index: 1; }
 .festival-rail { display: flex; gap: 16px; overflow-x: auto; padding: 12px 24px 18px; position: relative; touch-action: pan-x pan-y; }
-.festival-arch { display: flex; flex-direction: column; flex-shrink: 0; width: 62%; height: 300px; padding: 0; overflow: hidden; border: 1px solid var(--festival-gold); background: color-mix(in oklab, var(--festival-background) 85%, var(--foreground)); color: var(--festival-gold); box-shadow: var(--shadow-soft); }
+.festival-arch { position: relative; display: flex; flex-direction: column; flex-shrink: 0; width: 76%; height: 350px; padding: 0; overflow: hidden; border: 1px solid var(--festival-gold); background: color-mix(in oklab, var(--festival-background) 85%, var(--foreground)); color: var(--festival-gold); box-shadow: var(--shadow-soft); }
+.festival-card-backdrop { position: absolute; inset: 0; height: 100%; width: 100%; object-fit: cover; }
+.festival-collection-title { position: relative; text-shadow: 0 2px 8px var(--festival-background); }
+.festival-food-stage { position: relative; display: grid; place-items: center; width: 100%; flex: 1; min-height: 0; padding: 8px 12px 16px; }
+.festival-food-cutout { width: 100%; height: 100%; min-height: 0; object-fit: contain; }
+.festival-food-loading { width: 36px; height: 36px; border: 3px solid var(--festival-gold); border-right-color: transparent; border-radius: 50%; animation: cutout-loading 1s linear infinite; }
+@keyframes cutout-loading { to { transform: rotate(360deg); } }
 .festival-arch:hover { background: color-mix(in oklab, var(--festival-background) 90%, var(--foreground)); }
 .festival-shape-0 { border-radius: 48% 48% 12px 12px; }
 .festival-shape-1 { border-radius: 38% 38% 20% 20%; }
@@ -229,6 +244,7 @@
 @keyframes offer-blink { 0%,100% { opacity: 1; } 50% { opacity: .65; } }
 .offer-blink { animation: offer-blink 2.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .offer-blink { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .rain-indicator svg, .festival-food-loading { animation: none; } }
 @media (prefers-reduced-motion: reduce) {
   .home-live-header { transition: none; }
 }

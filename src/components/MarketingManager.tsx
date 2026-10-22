@@ -192,13 +192,23 @@ function CampaignBuilder({ cats }: { cats: Opt[] }) {
     deals_section_active: false,
   });
 
-  async function uploadArtwork(file: File, index?: number) {
+  async function uploadArtwork(file: File, index?: number, foreground = false) {
     if (!editing) return;
     setBusy(true);
-    const result = await uploadBannerImage(file);
+    let result;
+    try {
+      if (foreground) {
+        const { removeBackground } = await import("@imgly/background-removal");
+        const cut = await removeBackground(file, { model: "isnet_quint8", device: "cpu" });
+        result = await uploadBannerImage(new File([cut], "food-cutout.png", { type: "image/png" }));
+      } else result = await uploadBannerImage(file);
+    } catch {
+      setBusy(false); toast.error("Could not remove the photo background. Please try a clear food photo."); return;
+    }
     setBusy(false);
     if ("error" in result) { toast.error(result.error); return; }
-    setEditing((current) => current ? index === undefined ? { ...current, theme_bg_image_url: result.url } : { ...current, promo_cards: current.promo_cards.map((card, i) => i === index ? { ...card, image_url: result.url } : card) } : current);
+    const url = result.url;
+    setEditing((current) => current ? index === undefined ? { ...current, theme_bg_image_url: url } : { ...current, promo_cards: current.promo_cards.map((card, i) => i === index ? { ...card, ...(foreground ? { foreground_image_url: url } : { image_url: url }) } : card) } : current);
   }
 
   async function save() {
@@ -291,6 +301,8 @@ function CampaignBuilder({ cats }: { cats: Opt[] }) {
             <div key={n} className="grid grid-cols-2 gap-2 rounded-xl border border-border p-2">
               <label className="col-span-2 text-xs">Card shape<select value={card.style_index ?? 0} onChange={(event) => setEditing({ ...editing, promo_cards: editing.promo_cards.map((x,i) => i === n ? { ...x, style_index: Number(event.target.value) } : x) })} className={inputCls}>{["Puja arch", "Scalloped arch", "Round dome", "Temple window", "Classic frame"].map((label,i) => <option key={label} value={i}>{label}</option>)}</select><input type="file" accept="image/*" disabled={busy} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadArtwork(file,n); }} className="mt-2 block w-full" /></label>
               <input value={card.title} onChange={(e) => setEditing({ ...editing, promo_cards: editing.promo_cards.map((x, i) => (i === n ? { ...x, title: e.target.value } : x)) })} placeholder="Card title" className={inputCls} />
+              <label className="col-span-2 text-xs">Food photo · remove background<input type="file" accept="image/*" disabled={busy} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadArtwork(file, n, true); }} className="mt-2 block w-full" /></label>
+              {card.foreground_image_url ? <img src={card.foreground_image_url} alt="Food cutout preview" className="col-span-2 h-28 w-full object-contain" /> : null}
               <input value={card.subtitle} onChange={(e) => setEditing({ ...editing, promo_cards: editing.promo_cards.map((x, i) => (i === n ? { ...x, subtitle: e.target.value } : x)) })} placeholder="Subtitle" className={inputCls} />
               <input value={card.image_url} onChange={(e) => setEditing({ ...editing, promo_cards: editing.promo_cards.map((x, i) => (i === n ? { ...x, image_url: e.target.value } : x)) })} placeholder="Image link" className={inputCls} />
               <select
