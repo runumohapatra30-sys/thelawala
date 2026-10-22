@@ -97,10 +97,12 @@ export function useTopBarTheme(): ThemeConfig | null {
     const onVisible = () => { if (document.visibilityState === "visible") pull(); };
     document.addEventListener("visibilitychange", onVisible);
     const timer = window.setInterval(() => tick((n) => n + 1), 30000);
+        const channelName = `app-theme-config-${Math.random().toString(36).slice(2, 9)}`;
     const channel = supabase
-      .channel("app-theme-config")
+      .channel(channelName)
       .on("postgres_changes", { event: "*", schema: "public", table: "app_theme_config" }, pull)
       .subscribe();
+
     return () => {
       alive = false;
       document.removeEventListener("visibilitychange", onVisible);
