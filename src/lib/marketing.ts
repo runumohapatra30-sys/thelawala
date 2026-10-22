@@ -18,6 +18,7 @@ export type PromoCard = {
   redirect_category_or_filter: string;
   style_index?: number;
   video_url?: string;
+  foreground_image_url?: string;
 };
 
 export type Campaign = {
@@ -43,6 +44,7 @@ export function toPromoCards(value: unknown): PromoCard[] {
     .map((v) => ({
       style_index: Number(v["style_index"] ?? 0),
       video_url: String(v["video_url"] ?? ""),
+      foreground_image_url: String(v["foreground_image_url"] ?? ""),
       title: String(v["title"] ?? ""),
       subtitle: String(v["subtitle"] ?? ""),
       image_url: String(v["image_url"] ?? ""),

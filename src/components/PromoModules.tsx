@@ -57,7 +57,7 @@ export function FreeCashBanner({ amount }: { amount: number }) {
 
 export function DurgaPujaTrigger({ campaign }: { campaign: Campaign | null }) {
   const reduceMotion = useReducedMotion();
-  if (!campaign || !/durga\s*puja/i.test(campaign.title)) return null;
+  if (!campaign || !campaign.is_active) return null;
   return (
     <Link
       to="/festival/durga-puja"

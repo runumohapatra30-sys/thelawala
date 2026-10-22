@@ -7,6 +7,9 @@ import { useHomeBanners } from "@/lib/homeBanners";
 import type { DynamicBanner } from "@/lib/dynamicBanners";
 import type { StreetFoodCategory } from "@/components/StreetFoodExperience";
 import { foodImage } from "@/lib/foodImage";
+import { useTopBarTheme } from "@/lib/appTheme";
+import { useVisualEngineSettings } from "@/lib/visualEngine";
+import { RainIndicator } from "@/components/RainIndicator";
 
 /** Per-category circle accents (ring + label pill) like quick-commerce apps. */
 const CATEGORY_THEMES = ["#E8590C", "#2F6FDB", "#0F9D58", "#C2255C", "#7048E8", "#D9480F", "#0C8599", "#B08900"];
@@ -29,6 +32,9 @@ export function LiveHomeHeader({ address, avatarUrl, query, onQueryChange, onSea
   categories: StreetFoodCategory[]; activeCategoryId: string | null; onCategoryChange: (categoryId: string | null) => void;
 }) {
   const rows = useHomeBanners();
+  const theme = useTopBarTheme();
+  const { settings } = useVisualEngineSettings();
+  const headerPhoto = theme?.header_bg_image_url;
   const [activeId, setActiveId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -49,11 +55,12 @@ export function LiveHomeHeader({ address, avatarUrl, query, onQueryChange, onSea
     scroll(); window.addEventListener("scroll", scroll, { passive: true });
     return () => { window.removeEventListener("scroll", scroll); cancelAnimationFrame(frame); };
   }, []);
-  return <header data-collapsed={collapsed} style={{ backgroundColor: tint.bg, transition: "background-color 0.3s ease" }} className="sticky top-0 z-50 border-b border-border">
+  return <header data-collapsed={collapsed} data-artwork={Boolean(headerPhoto)} style={{ backgroundColor: tint.bg, transition: "background-color 0.3s ease" }} className="home-artwork-header sticky top-0 z-50 border-b border-border">
+    {headerPhoto && !collapsed ? <div className="home-header-artwork"><img src={headerPhoto} alt="ThelaWala festive artwork" /><span aria-hidden="true" /></div> : null}
     <div className={`relative px-4 transition-all duration-300 ${collapsed ? "pb-2 pt-2" : "pb-2.5 pt-3"}`}>
       <div className="mb-2.5 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p style={{ color: tint.text, transition: "color 0.3s ease" }} className="text-[22px] font-extrabold leading-tight">15 mins</p>
+          <div className="flex items-center gap-2"><p style={{ color: tint.text, transition: "color 0.3s ease" }} className="text-[22px] font-extrabold leading-tight">15 mins</p><RainIndicator enabled={settings.rain_animation_enabled} /></div>
           <Link to="/cart" title={address ?? "Choose delivery location"} aria-label="Choose delivery location" className="mt-0.5 flex max-w-full items-center gap-0.5 text-[11px] font-semibold text-muted-foreground">
             <span className="truncate">To {address ?? "Bhubaneswar"}</span><ChevronDown className="h-3 w-3 shrink-0" />
           </Link>

@@ -9,6 +9,9 @@ export type VisualEngineSettings = {
   flash_price: number | null;
   flash_image_url: string | null;
   updated_at: string;
+  spotlight_enabled: boolean;
+  best_value_enabled: boolean;
+  rain_animation_enabled: boolean;
 };
 
 export const DEFAULT_VISUAL_ENGINE_SETTINGS: VisualEngineSettings = {
@@ -19,13 +22,16 @@ export const DEFAULT_VISUAL_ENGINE_SETTINGS: VisualEngineSettings = {
   flash_price: null,
   flash_image_url: null,
   updated_at: "",
+  spotlight_enabled: true,
+  best_value_enabled: true,
+  rain_animation_enabled: true,
 };
 
 export async function loadVisualEngineSettings(): Promise<VisualEngineSettings> {
   const { data, error } = await supabase
     .from("app_visual_engine_settings")
     .select(
-      "id,is_enabled,flash_deal_enabled,flash_menu_item_id,flash_price,flash_image_url,updated_at",
+      "id,is_enabled,flash_deal_enabled,flash_menu_item_id,flash_price,flash_image_url,updated_at,spotlight_enabled,best_value_enabled,rain_animation_enabled",
     )
     .eq("id", 1)
     .maybeSingle();

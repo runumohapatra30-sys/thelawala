@@ -14,6 +14,7 @@ import { DynamicBanners } from "@/components/DynamicBanners";
 import { AutoSlideRail } from "@/components/AutoSlideRail";
 import { useHomeBanners } from "@/lib/homeBanners";
 import { OfferImageOverlay } from "@/components/OfferImageOverlay";
+import { useVisualEngineSettings } from "@/lib/visualEngine";
 
 const SEARCH_SUGGESTIONS = [
   "Khandagiri Dahi Bara",
@@ -97,6 +98,7 @@ export function PremiumHome({
 }: Props) {
   const reduceMotion = useReducedMotion();
   const banners = useHomeBanners();
+  const { settings: presentation } = useVisualEngineSettings();
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [searchScreen, setSearchScreen] = useState<"suggestions" | "results" | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -429,9 +431,9 @@ export function PremiumHome({
 
       <section className="px-4 pb-2 pt-3">
         <AutoSlideRail>
-          <LocalSpotlight vendors={vendors} items={spotlightItems} onVendor={onVendor} />
+          {presentation.spotlight_enabled && <LocalSpotlight vendors={vendors} items={spotlightItems} onVendor={onVendor} />}
 
-          <div className="flex h-[292px] min-w-0 flex-col rounded-3xl border border-border bg-card p-3 shadow-sm">
+          {presentation.best_value_enabled && <div className="flex h-[292px] min-w-0 flex-col rounded-3xl border border-border bg-card p-3 shadow-sm">
             <div className="mb-2 flex items-center justify-between gap-1"><span className="text-xs font-black text-foreground">Best value</span><Link to="/categories" className="text-[10px] font-black text-primary">See all ›</Link></div>
             <div className="flex flex-1 flex-col justify-between gap-2">
               {valueItems.map((item) => {
@@ -446,6 +448,7 @@ export function PremiumHome({
               })}
             </div>
           </div>
+          }
           {banners.map((banner) => <DynamicBanners key={banner.id} rows={[banner]} onInternalRoute={onInternalRoute} panel />)}
         </AutoSlideRail>
       </section>

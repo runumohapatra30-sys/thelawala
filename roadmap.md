@@ -1,4 +1,7 @@
 # Roadmap
+- [ ] Match banner panel dimensions; add admin Spotlight/Best value switches and blended header artwork
+- [ ] Widen unified festival collections with food cutouts over uploaded artwork
+- [ ] Add live-weather rain animation beside delivery time and verify changed screens
 - [ ] Finish clear admin artwork, equal-height home promotion rail, festive five-style cards and FESTIVE PICKS
 - [ ] Diagnose 99 Store availability and verify campaign pages, offers and mobile layout
 - [ ] Match sign-in to the food-photo reference using admin-managed artwork

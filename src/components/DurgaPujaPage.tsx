@@ -13,6 +13,7 @@ import { customerPrice } from "@/lib/pricing";
 import { cart, useCart } from "@/lib/cart";
 import { inr } from "@/lib/fees";
 import type { CampaignMenuItem } from "@/lib/commerceCampaigns";
+import { FoodCutout } from "@/components/FoodCutout";
 
 const themes = ["Feasting & sweets", "Festive gifting", "Puja favourites", "Family gatherings", "Celebration bites"];
 type Vendor = { id: string; stall_name: string; offer_percent: number; offer_label: string | null; is_open: boolean };
@@ -44,7 +45,7 @@ export function DurgaPujaPage() {
         if (menu.error || stalls.error || cats.error) throw menu.error ?? stalls.error ?? cats.error;
         if (!alive) return;
         const approved = new Set((stalls.data ?? []).map((v) => v.id));
-        setCampaign(campaigns.find((c) => /durga\s*puja/i.test(c.title)) ?? null);
+        setCampaign(campaigns.find((c) => /durga\s*puja/i.test(c.title)) ?? campaigns[0] ?? null);
         setItems((menu.data ?? []).filter((i) => approved.has(i.vendor_id)));
         setVendors(stalls.data ?? []);
         setCategories(cats.data ?? []);
@@ -83,15 +84,16 @@ export function DurgaPujaPage() {
       </div>
       {cover ? <div className="festival-cover-wrap"><img src={cover} alt={campaign?.title ?? "Durga Puja"} className="festival-cover" /><div className="festival-cover-fade" aria-hidden="true" /></div> : <div className="px-5 pb-28 pt-10 text-center"><p className="text-xs font-bold uppercase">Celebrate</p><h1 className="mt-3 font-display text-4xl">Durga Puja</h1><p className="mt-3 text-xs">{campaign?.title ?? "Festive favourites from your local stalls"}</p></div>}
       {cover ? <h1 className="sr-only">{campaign?.title ?? "Durga Puja"}</h1> : null}
-      <div ref={rail} aria-label="Festive collections" className="festival-rail festival-rail-overlap no-scrollbar" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onPointerDown={() => setPaused(true)} onPointerUp={() => setPaused(false)} onPointerCancel={() => setPaused(false)} onFocusCapture={() => setPaused(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false); }}>
+      <div ref={rail} aria-label="Festive collections" className={`festival-rail ${cover ? "festival-rail-overlap" : ""} no-scrollbar`} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onPointerDown={() => setPaused(true)} onPointerUp={() => setPaused(false)} onPointerCancel={() => setPaused(false)} onFocusCapture={() => setPaused(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false); }}>
         {themes.map((title, index) => {
           const card = campaign?.promo_cards[index];
           const item = items[index % Math.max(1, items.length)];
-          const image = validMedia(card?.image_url) ? card?.image_url : item?.photo_url || foodImage(item?.name ?? "sweets");
-          return <Button key={title} variant="ghost" className={`festival-arch festival-shape-${card?.style_index ?? index}`} onClick={() => { const filter = card?.redirect_category_or_filter; const category = categories.find((c) => c.name === filter); setSelected(category?.id ?? filter ?? null); }}>
-            <span className="block px-3 pt-7 text-center text-lg font-black leading-tight whitespace-normal">{card?.title || title}</span>
-            {validMedia(card?.video_url) ? <video src={card?.video_url} muted loop autoPlay={!reduced} playsInline className="min-h-0 w-full flex-1 object-contain" /> : <img src={image} alt={card?.title || title} className="min-h-0 w-full flex-1 object-contain p-3" />}
-            {card?.subtitle ? <span className="block px-3 pb-4 text-center text-xs whitespace-normal">{card.subtitle}</span> : null}
+          const image = item?.photo_url || foodImage(item?.name ?? "sweets");
+          return <Button key={title} variant="ghost" className={`festival-arch festival-shape-${campaign?.promo_cards[0]?.style_index ?? 0}`} onClick={() => { const filter = card?.redirect_category_or_filter; const category = categories.find((c) => c.name === filter); setSelected(category?.id ?? filter ?? null); }}>
+            {validMedia(card?.video_url) ? <video src={card?.video_url} muted loop autoPlay={!reduced} playsInline className="festival-card-backdrop" /> : validMedia(card?.image_url) ? <img src={card?.image_url} alt="" className="festival-card-backdrop" /> : null}
+            <span className="festival-collection-title block px-5 pt-10 text-center text-xl font-black leading-tight whitespace-normal">{card?.title || title}</span>
+            <span className="festival-food-stage">{validMedia(card?.foreground_image_url) ? <img src={card?.foreground_image_url} alt={item?.name ?? title} className="festival-food-cutout" /> : <FoodCutout src={image} alt={item?.name ?? title} />}</span>
+            {card?.subtitle ? <span className="relative block px-3 pb-4 text-center text-xs whitespace-normal">{card.subtitle}</span> : null}
           </Button>;
         })}
       </div>

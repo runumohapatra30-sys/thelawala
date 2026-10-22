@@ -42,7 +42,7 @@ export function DynamicBanners({ rows, onActive, onInternalRoute, overlayOnly = 
     if (/^https?:\/\//i.test(route)) window.open(route, "_blank", "noopener,noreferrer");
     else if (route.startsWith("/") && !route.startsWith("//")) onInternalRoute?.(route);
   }
-  return <section aria-label="Live promotions" aria-roledescription="carousel" className={panel ? "min-w-0 h-[292px]" : "min-w-0 pb-3 pt-2"}
+  return <section aria-label="Live promotions" aria-roledescription="carousel" className={panel ? "promotion-panel min-w-0 h-[292px]" : "min-w-0 pb-3 pt-2"}
     onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
     onPointerDown={() => setTouched(true)} onPointerUp={() => setTouched(false)} onPointerCancel={() => setTouched(false)}
     onTouchStart={() => setTouched(true)} onTouchEnd={() => setTouched(false)}
