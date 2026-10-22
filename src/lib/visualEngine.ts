@@ -63,9 +63,12 @@ export function useVisualEngineSettings() {
         });
     };
     pull();
+       const channelName = `visual-engine-settings-${Math.random().toString(36).slice(2, 9)}`;
     const channel = supabase
-      .channel("visual-engine-settings")
+      .channel(channelName)
       .on(
+
+      
         "postgres_changes",
         { event: "*", schema: "public", table: "app_visual_engine_settings" },
         pull,
