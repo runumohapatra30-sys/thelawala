@@ -319,30 +319,42 @@ export type Database = {
       }
       app_visual_engine_settings: {
         Row: {
+          best_value_enabled: boolean
           flash_deal_enabled: boolean
           flash_image_url: string | null
           flash_menu_item_id: string | null
           flash_price: number | null
+          header_image_url: string | null
           id: number
           is_enabled: boolean
+          rain_animation_enabled: boolean
+          spotlight_enabled: boolean
           updated_at: string
         }
         Insert: {
+          best_value_enabled?: boolean
           flash_deal_enabled?: boolean
           flash_image_url?: string | null
           flash_menu_item_id?: string | null
           flash_price?: number | null
+          header_image_url?: string | null
           id?: number
           is_enabled?: boolean
+          rain_animation_enabled?: boolean
+          spotlight_enabled?: boolean
           updated_at?: string
         }
         Update: {
+          best_value_enabled?: boolean
           flash_deal_enabled?: boolean
           flash_image_url?: string | null
           flash_menu_item_id?: string | null
           flash_price?: number | null
+          header_image_url?: string | null
           id?: number
           is_enabled?: boolean
+          rain_animation_enabled?: boolean
+          spotlight_enabled?: boolean
           updated_at?: string
         }
         Relationships: [

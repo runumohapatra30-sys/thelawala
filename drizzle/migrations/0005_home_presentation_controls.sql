@@ -1,0 +1,1 @@
+ALTER TABLE public.app_visual_engine_settings ADD COLUMN IF NOT EXISTS spotlight_enabled boolean NOT NULL DEFAULT true, ADD COLUMN IF NOT EXISTS best_value_enabled boolean NOT NULL DEFAULT true, ADD COLUMN IF NOT EXISTS header_image_url text, ADD COLUMN IF NOT EXISTS rain_animation_enabled boolean NOT NULL DEFAULT true;
