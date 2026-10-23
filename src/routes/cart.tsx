@@ -84,6 +84,13 @@ function Cart() {
   const [customTip, setCustomTip] = useState("");
   const [otherTipActive, setOtherTipActive] = useState(false);
   const [onlineMethod, setOnlineMethod] = useState<"UPI" | "CARD">("UPI");
+  const [paymentAccordion, setPaymentAccordion] = useState<string>("upi");
+    const [upiIdInput, setUpiIdInput] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvv, setCvv] = useState("");
+  const [selectedBank, setSelectedBank] = useState("");
+  
   const [instructions, setInstructions] = useState("");
   const [locating, setLocating] = useState(false);
   const [saved, setSaved] = useState<SavedAddress[]>([]);
@@ -1212,54 +1219,218 @@ function Cart() {
             </section>
 
             <section className="card-soft space-y-3 p-4">
-              <div>
-                <h2 className="text-base font-black">Pay on Delivery</h2>
-                <p className="text-xs text-muted-foreground">Pay your delivery partner when your food arrives.</p>
-              </div>
-              {codRestriction ? (
-                <p className="rounded-xl bg-[#FFF0E9] px-3 py-2.5 text-xs font-semibold text-[#9A3412]">
-                  Cash on Delivery is temporarily unavailable until {new Date(codRestriction).toLocaleDateString()}. Choose split payment or full online payment.
-                </p>
-              ) : codPolicyError ? (
-                <p className="rounded-xl bg-[#FFF0E9] px-3 py-2.5 text-xs font-semibold text-[#9A3412]">
-                  We couldn&apos;t confirm Cash on Delivery eligibility. Full online payment is available instead.
-                </p>
-              ) : !codPolicyChecked ? (
-                <p className="rounded-xl bg-muted px-3 py-2.5 text-xs font-medium text-muted-foreground">
-                  Checking Cash on Delivery availability…
-                </p>
-              ) : null}
-              {settings?.enable_cod !== false && codPolicyChecked && !codPolicyError && !codRestriction ? (
-                <PayBtn active={payment === "COD"} onClick={() => setPayment("COD")} label="Cash/Pay on Delivery" hint="Cash at your doorstep" Icon={Banknote} />
-              ) : null}
-              {codRestriction && settings?.enable_cod !== false && settings?.enable_online_payment ? (
-                <PayBtn
-                  active={payment === "SPLIT"}
-                  onClick={() => setPayment("SPLIT")}
-                  label="50% online + 50% on delivery"
-                  hint={`Pay ${inr(Math.round(payable * 50) / 100)} now; the remaining balance is due to your rider.`}
-                  Icon={CircleDollarSign}
-                />
-              ) : null}
-              {settings?.enable_online_payment ? (
-                <>
-                  <PayBtn active={payment === "ONLINE" && onlineMethod === "UPI"} onClick={() => { setPayment("ONLINE"); setOnlineMethod("UPI"); }} label="UPI" hint={`Secure payment via ${settings.payment_gateway}`} Icon={Smartphone} />
-                  {payment === "ONLINE" && onlineMethod === "UPI" ? (
-                    <div className="flex flex-wrap gap-2 pl-1">
-                      {["Google Pay", "Paytm", "PhonePe"].map((app) => <span key={app} className="rounded-full border border-border bg-card px-3 py-1.5 text-[11px] font-bold text-foreground">{app}</span>)}
-                    </div>
-                  ) : null}
-                  <PayBtn active={payment === "ONLINE" && onlineMethod === "CARD"} onClick={() => { setPayment("ONLINE"); setOnlineMethod("CARD"); }} label="Credit or debit card" hint="Visa, Mastercard and more" Icon={CreditCard} />
-                </>
-              ) : (
-                <p className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">UPI and card payments are currently unavailable.</p>
-              )}
-              {walletBalance > 0 ? (
-                <button type="button" onClick={() => setUseWallet((active) => !active)} className={`flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-xs font-bold ${useWallet ? "border-primary text-primary" : "border-border text-muted-foreground"}`}>
-                  Use wallet balance ({inr(walletBalance)})<span>{useWallet ? "Selected" : "Not selected"}</span>
-                </button>
-              ) : null}
-            </section>
+  <div>
+    <h2 className="text-base font-black">Pay on Delivery</h2>
+...
+</section>
+```[span_3](start_span)[span_3](end_span)
+
+**ଲାଇନ୍ ୧୨୨୧ ରୁ ଲାଇନ୍ ୧୨୬୯** ପର୍ଯ୍ୟନ୍ତ ଥିବା ସେହି ପୂରା `<section>` କୁ ହଟାଇ ଦିଅନ୍ତୁ[span_4](start_span)[span_4](end_span), ଏବଂ ତା’ ସ୍ଥାନରେ ଆମର ନୂଆ Frosted Glass Accordion କୋଡ୍‌ଟି ପେଷ୍ଟ୍ କରନ୍ତୁ:
+
+```tsx
+{/* --- LIQUID GLASS FLIPKART STYLE PAYMENT SECTION --- */}
+<div className="space-y-3">
+  {/* 1. UPI Payment Accordion */}
+  <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
+    <div 
+      onClick={() => setPaymentAccordion(paymentAccordion === "upi" ? "" : "upi")}
+      className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/40"
+    >
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">⚡</span>
+        <div>
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-bold text-gray-800">UPI (Instant Pay)</h4>
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-700">Fastest</span>
+          </div>
+          <p className="text-[11px] text-gray-500">Google Pay, PhonePe, Paytm, BHIM</p>
+        </div>
+      </div>
+      <span className="text-xs text-gray-400 font-bold">{paymentAccordion === "upi" ? "▲" : "▼"}</span>
+    </div>
+
+    {paymentAccordion === "upi" && (
+      <div className="border-t border-white/60 bg-white/40 p-4 space-y-3">
+        <div className="grid grid-cols-3 gap-2">
+          {["Google Pay", "PhonePe", "Paytm"].map((app) => (
+            <button
+              key={app}
+              type="button"
+              onClick={() => { setPayment("ONLINE"); setOnlineMethod("UPI"); }}
+              className={`p-2.5 rounded-xl border text-xs font-bold transition-all shadow-xs ${payment === "ONLINE" && onlineMethod === "UPI" ? "border-primary bg-primary text-white" : "border-gray-200 bg-white text-gray-700"}`}
+            >
+              {app}
+            </button>
+          ))}
+        </div>
+        <div className="pt-2">
+          <input
+            type="text"
+            placeholder="Enter UPI ID (e.g. mobile@upi)"
+            value={upiIdInput}
+            onChange={(e) => setUpiIdInput(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs outline-none focus:border-primary"
+          />
+        </div>
+      </div>
+    )}
+  </div>
+
+  {/* 2. Scan & Pay QR */}
+  <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
+    <div 
+      onClick={() => setPaymentAccordion(paymentAccordion === "qr" ? "" : "qr")}
+      className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/40"
+    >
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">📷</span>
+        <div>
+          <h4 className="text-sm font-bold text-gray-800">Scan & Pay (QR Code)</h4>
+          <p className="text-[11px] text-gray-500">Scan using any UPI App</p>
+        </div>
+      </div>
+      <span className="text-xs text-gray-400 font-bold">{paymentAccordion === "qr" ? "▲" : "▼"}</span>
+    </div>
+
+    {paymentAccordion === "qr" && (
+      <div className="border-t border-white/60 bg-white/40 p-4 text-center">
+        <div className="mx-auto flex h-36 w-36 items-center justify-center rounded-2xl border-2 border-dashed border-orange-300 bg-white shadow-inner">
+          <span className="text-xs font-bold text-gray-400">QR Ready via Cashfree</span>
+        </div>
+        <p className="mt-2 text-[11px] text-gray-500">Payment screen will open scanner automatically</p>
+      </div>
+    )}
+  </div>
+
+  {/* 3. Cards (Debit / Credit / ATM) */}
+  <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
+    <div 
+      onClick={() => setPaymentAccordion(paymentAccordion === "card" ? "" : "card")}
+      className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/40"
+    >
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">💳</span>
+        <div>
+          <h4 className="text-sm font-bold text-gray-800">Credit / Debit / ATM Card</h4>
+          <p className="text-[11px] text-gray-500">Visa, Mastercard, RuPay</p>
+        </div>
+      </div>
+      <span className="text-xs text-gray-400 font-bold">{paymentAccordion === "card" ? "▲" : "▼"}</span>
+    </div>
+
+    {paymentAccordion === "card" && (
+      <div className="border-t border-white/60 bg-white/40 p-4 space-y-3">
+        <input
+          type="text"
+          maxLength={19}
+          placeholder="Card Number (XXXX XXXX XXXX XXXX)"
+          value={cardNumber}
+          onChange={(e) => { setPayment("ONLINE"); setOnlineMethod("CARD"); setCardNumber(e.target.value); }}
+          className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs outline-none focus:border-primary"
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="text"
+            placeholder="MM/YY"
+            maxLength={5}
+            value={expiry}
+            onChange={(e) => setExpiry(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs outline-none focus:border-primary"
+          />
+          <input
+            type="password"
+            placeholder="CVV"
+            maxLength={4}
+            value={cvv}
+            onChange={(e) => setCvv(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs outline-none focus:border-primary"
+          />
+        </div>
+      </div>
+    )}
+  </div>
+
+  {/* 4. Net Banking */}
+  <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
+    <div 
+      onClick={() => setPaymentAccordion(paymentAccordion === "netbanking" ? "" : "netbanking")}
+      className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/40"
+    >
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">🏛️</span>
+        <div>
+          <h4 className="text-sm font-bold text-gray-800">Net Banking</h4>
+          <p className="text-[11px] text-gray-500">SBI, HDFC, ICICI, Axis & more</p>
+        </div>
+      </div>
+      <span className="text-xs text-gray-400 font-bold">{paymentAccordion === "netbanking" ? "▲" : "▼"}</span>
+    </div>
+
+    {paymentAccordion === "netbanking" && (
+      <div className="border-t border-white/60 bg-white/40 p-4">
+        <select
+          value={selectedBank}
+          onChange={(e) => { setPayment("ONLINE"); setSelectedBank(e.target.value); }}
+          className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs outline-none focus:border-primary"
+        >
+          <option value="">-- Select Your Bank --</option>
+          <option value="SBI">State Bank of India (SBI)</option>
+          <option value="HDFC">HDFC Bank</option>
+          <option value="ICICI">ICICI Bank</option>
+          <option value="AXIS">Axis Bank</option>
+        </select>
+      </div>
+    )}
+  </div>
+
+  {/* 5. Pay Later */}
+  <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
+    <div 
+      onClick={() => setPaymentAccordion(paymentAccordion === "paylater" ? "" : "paylater")}
+      className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/40"
+    >
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">⏳</span>
+        <div>
+          <h4 className="text-sm font-bold text-gray-800">Pay Later</h4>
+          <p className="text-[11px] text-gray-500">Simpl, LazyPay, ICICI</p>
+        </div>
+      </div>
+      <span className="text-xs text-gray-400 font-bold">{paymentAccordion === "paylater" ? "▲" : "▼"}</span>
+    </div>
+
+    {paymentAccordion === "paylater" && (
+      <div className="border-t border-white/60 bg-white/40 p-4 text-center">
+        <p className="text-xs text-gray-600">Instant credit verified with your mobile: {form.mobile || "9583059787"}</p>
+      </div>
+    )}
+  </div>
+
+  {/* 6. Cash on Delivery (COD) */}
+  {settings?.enable_cod !== false && codPolicyChecked && !codPolicyError && !codRestriction && (
+    <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
+      <div 
+        onClick={() => { setPayment("COD"); setPaymentAccordion("cod"); }}
+        className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/40"
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">💵</span>
+          <div>
+            <h4 className="text-sm font-bold text-gray-800">Cash on Delivery (COD)</h4>
+            <p className="text-[11px] text-gray-500">Pay cash when food arrives</p>
+          </div>
+        </div>
+        <input 
+          type="radio" 
+          checked={payment === "COD"} 
+          onChange={() => setPayment("COD")} 
+          className="h-4 w-4 accent-primary"
+        />
+      </div>
+    </div>
+  )}
+</div>
+  
 
             <section className="card-soft p-4">
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">Order total</span><span className="font-bold">{inr(netTotal)}</span></div>
