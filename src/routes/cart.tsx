@@ -1217,19 +1217,6 @@ function Cart() {
               <p className="text-sm font-bold">Delivery notes</p>
               <p className="text-xs text-muted-foreground">{instructions || "No delivery notes added."}</p>
             </section>
-
-            <section className="card-soft space-y-3 p-4">
-  <div>
-    <h2 className="text-base font-black">Pay on Delivery</h2>
-...
-</section>
-```[span_3](start_span)[span_3](end_span)
-
-**ଲାଇନ୍ ୧୨୨୧ ରୁ ଲାଇନ୍ ୧୨୬୯** ପର୍ଯ୍ୟନ୍ତ ଥିବା ସେହି ପୂରା `<section>` କୁ ହଟାଇ ଦିଅନ୍ତୁ[span_4](start_span)[span_4](end_span), ଏବଂ ତା’ ସ୍ଥାନରେ ଆମର ନୂଆ Frosted Glass Accordion କୋଡ୍‌ଟି ପେଷ୍ଟ୍ କରନ୍ତୁ:
-
-```tsx
-{/* --- LIQUID GLASS FLIPKART STYLE PAYMENT SECTION --- */}
-<div className="space-y-3">
   {/* 1. UPI Payment Accordion */}
   <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
     <div 
