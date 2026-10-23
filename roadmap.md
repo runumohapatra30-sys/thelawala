@@ -1,4 +1,8 @@
 # Roadmap
+- [ ] Overlay home delivery controls on artwork and fill promotion posters edge to edge
+- [ ] Add an admin-uploaded 99 Store banner
+- [ ] Replace payment failure paragraph with an icon state and verify embedded checkout
+- [ ] Hide item-detail bottom menu, wrap stall names, and add four-photo galleries and real reviews
 - [ ] Match banner panel dimensions; add admin Spotlight/Best value switches and blended header artwork
 - [ ] Widen unified festival collections with food cutouts over uploaded artwork
 - [ ] Add live-weather rain animation beside delivery time and verify changed screens
