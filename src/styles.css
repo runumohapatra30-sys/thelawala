@@ -215,7 +215,9 @@
 .home-header-artwork img { display: block; width: 100%; height: auto; }
 .home-header-artwork > span { position: absolute; inset-inline: 0; bottom: 0; height: 22%; background: linear-gradient(transparent, var(--background)); }
 .home-artwork-header[data-artwork="true"][data-collapsed="false"] { position: relative; background: var(--background) !important; }
-.home-artwork-header[data-artwork="true"][data-collapsed="false"] > div:last-child { margin-top: -64px; background: linear-gradient(transparent, var(--background) 48px); }
+.home-artwork-header[data-artwork="true"][data-collapsed="false"] > .home-header-controls { position: absolute; inset: 0 0 auto; z-index: 1; }
+.home-artwork-header[data-artwork="true"][data-collapsed="false"] .home-delivery-row { padding: 8px; border-radius: 8px; background: color-mix(in oklab, var(--card) 90%, transparent); }
+.home-header-search { position: relative; }
 .rain-indicator { display: inline-flex; align-items: center; gap: 4px; color: var(--sky); }
 .rain-indicator svg { animation: rainfall 1.8s ease-in-out infinite; }
 @keyframes rainfall { 0%, 100% { transform: translateY(-2px); } 50% { transform: translateY(2px); } }

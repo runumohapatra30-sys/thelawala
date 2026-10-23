@@ -598,6 +598,7 @@ export type Database = {
       commerce_campaigns: {
         Row: {
           allowed_prices: number[]
+          banner_image_url: string | null
           created_at: string
           description: string | null
           id: string
@@ -608,6 +609,7 @@ export type Database = {
         }
         Insert: {
           allowed_prices?: number[]
+          banner_image_url?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -618,6 +620,7 @@ export type Database = {
         }
         Update: {
           allowed_prices?: number[]
+          banner_image_url?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -1016,6 +1019,7 @@ export type Database = {
           mrp: number
           name: string
           photo_url: string | null
+          photo_urls: string[]
           price: number
           unit: string | null
           updated_at: string
@@ -1031,6 +1035,7 @@ export type Database = {
           mrp?: number
           name: string
           photo_url?: string | null
+          photo_urls?: string[]
           price?: number
           unit?: string | null
           updated_at?: string
@@ -1046,6 +1051,7 @@ export type Database = {
           mrp?: number
           name?: string
           photo_url?: string | null
+          photo_urls?: string[]
           price?: number
           unit?: string | null
           updated_at?: string

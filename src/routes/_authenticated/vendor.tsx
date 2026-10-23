@@ -21,6 +21,8 @@ import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
 import { confirmOnboardingPayment, onboardingFee, startOnboardingPayment } from "@/lib/onboarding.functions";
 import { loadCashfreeSdk } from "@/lib/checkout";
 import { VendorSoundbox } from "@/components/VendorSoundbox";
+import { ItemPhotoEditor } from "@/components/ItemPhotoEditor";
+import { validateItemPhotoCount } from "@/lib/itemPhotos";
 import { VendorCampaignOptIn } from "@/components/VendorCampaignOptIn";
 
 export const Route = createFileRoute("/_authenticated/vendor")({
@@ -45,7 +47,7 @@ type Order = {
 type OrderItemName = { id: string; order_id: string; name: string };
 type Item = {
   id: string; name: string; price: number; mrp: number; in_stock: boolean;
-  photo_url: string | null; food_type: string; category_id: string | null;
+  photo_url: string | null; photo_urls: string[]; food_type: string; category_id: string | null;
 };
 type Category = { id: string; name: string; emoji: string | null };
 
@@ -84,7 +86,7 @@ function VendorPortal() {
   const [fssaiMsg, setFssaiMsg] = useState<string | null>(null);
   const [fssaiSaving, setFssaiSaving] = useState(false);
   const [dish, setDish] = useState({ ...EMPTY_DISH });
-  const [dishFile, setDishFile] = useState<File | null>(null);
+  const [dishFiles, setDishFiles] = useState<File[]>([]);
   const [dishSaving, setDishSaving] = useState(false);
   const [dishOpen, setDishOpen] = useState(false);
   const [slip, setSlip] = useState<Order | null>(null);
@@ -128,7 +130,7 @@ function VendorPortal() {
   }, [user?.id]);
 
   const loadItems = (vendorId: string) =>
-    supabase.from("menu_items").select("id,name,price,mrp,in_stock,photo_url,food_type,category_id").eq("vendor_id", vendorId)
+    supabase.from("menu_items").select("id,name,price,mrp,in_stock,photo_url,photo_urls,food_type,category_id").eq("vendor_id", vendorId)
       .then(({ data }) => setItems((data ?? []) as Item[]));
 
   useEffect(() => {
@@ -263,7 +265,9 @@ function VendorPortal() {
     }
     setDishSaving(true);
     try {
-      const photoUrl = dishFile ? await uploadDishPhoto(vendor.id, dishFile) : null;
+      if (!validateItemPhotoCount(dishFiles.length)) throw new Error("Choose up to four photos.");
+      const photoUrls = await Promise.all(dishFiles.map((file) => uploadDishPhoto(vendor.id, file)));
+      const photoUrl = photoUrls[0] ?? null;
       const { error } = await supabase.from("menu_items").insert({
         vendor_id: vendor.id,
         name: dish.name.trim(),
@@ -274,11 +278,12 @@ function VendorPortal() {
         details: dish.details.trim() || null,
         unit: dish.unit.trim() || null,
         photo_url: photoUrl,
+        photo_urls: photoUrls,
         in_stock: true,
       });
       if (error) throw error;
       setDish({ ...EMPTY_DISH });
-      setDishFile(null);
+      setDishFiles([]);
       setDishOpen(false);
       await loadItems(vendor.id);
       toast.success("Dish added to your menu!");
@@ -877,16 +882,9 @@ function VendorPortal() {
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">Dish photo</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setDishFile(e.target.files?.[0] ?? null)}
-                  className="w-full text-xs"
-                />
-                {dishFile ? (
-                  <img src={URL.createObjectURL(dishFile)} alt="Selected dish" className="mt-2 h-24 w-24 rounded-xl object-cover" />
-                ) : null}
+                <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">Dish photos · up to 4</span>
+                <input aria-label="New dish photos" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event) => { const files = Array.from(event.target.files ?? []); if (!validateItemPhotoCount(files.length)) { event.target.value = ""; toast.error("Choose up to four photos."); return; } setDishFiles(files); }} className="w-full text-xs" />
+                <p className="mt-2 text-xs text-muted-foreground">{dishFiles.length} photos selected</p>
               </label>
               <button
                 disabled={dishSaving}
@@ -899,36 +897,12 @@ function VendorPortal() {
           ) : null}
 
           {items.map((i) => (
-            <div key={i.id} className="mt-2 flex items-center gap-3">
-              <label className="relative shrink-0 cursor-pointer">
-                <img
-                  src={i.photo_url ?? "/food/food-tiffin.jpg"}
-                  alt={i.name}
-                  className="h-12 w-12 rounded-xl object-cover"
-                />
-                <span className="absolute inset-x-0 bottom-0 rounded-b-xl bg-black/55 text-center text-[8px] font-bold text-white">
-                  {i.photo_url ? "Change" : "Add photo"}
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={async (e) => {
-                    const f = e.target.files?.[0];
-                    e.target.value = "";
-                    if (!f || !vendor) return;
-                    try {
-                      const url = await uploadDishPhoto(vendor.id, f);
-                      const { error } = await supabase.from("menu_items").update({ photo_url: url }).eq("id", i.id);
-                      if (error) throw error;
-                      setItems((prev) => prev.map((x) => (x.id === i.id ? { ...x, photo_url: url } : x)));
-                      toast.success("Photo updated. Customers can see it now.");
-                    } catch {
-                      toast.error("Could not upload that photo. Please try again.");
-                    }
-                  }}
-                />
-              </label>
+            <div key={i.id} className="mt-2 flex flex-wrap items-center gap-3">
+              <ItemPhotoEditor primary={i.photo_url} gallery={i.photo_urls} upload={(file) => uploadDishPhoto(vendor.id, file)} save={async (urls) => {
+                const { error } = await supabase.from("menu_items").update({ photo_url: urls[0] ?? null, photo_urls: urls }).eq("id", i.id);
+                if (error) throw error;
+                setItems((current) => current.map((item) => item.id === i.id ? { ...item, photo_url: urls[0] ?? null, photo_urls: urls } : item));
+              }} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold">
                   <span className={i.food_type === "NONVEG" ? "text-destructive" : "text-primary"}>■</span> {i.name}

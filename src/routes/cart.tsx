@@ -14,6 +14,7 @@ import { useSession } from "@/lib/session";
 import { usePromotionalCredit } from "@/lib/promotionalCredit";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Banknote, Bike, BellOff, ChevronRight, ChevronsRight, CircleDollarSign, CreditCard, DoorOpen, MapPin, Phone, PhoneOff, Plus, ShieldCheck, ShoppingCart, Smartphone, Tag } from "lucide-react";
+import { CheckoutFeedback } from "@/components/CheckoutFeedback";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/cart")({
@@ -71,6 +72,7 @@ function Cart() {
   const [codPolicyChecked, setCodPolicyChecked] = useState(false);
   const [codPolicyError, setCodPolicyError] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [paymentState, setPaymentState] = useState<"failed" | "pending" | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [walletBalance, setWalletBalance] = useState(0);
   const [useWallet, setUseWallet] = useState(true);
@@ -465,6 +467,7 @@ function Cart() {
 
   function proceedToPayment() {
     setErr(null);
+    setPaymentState(null);
     if (!coords) {
       setPickerOpen(true);
       return;
@@ -489,6 +492,7 @@ function Cart() {
 
   async function place() {
     setErr(null);
+    setPaymentState(null);
     if (!coords) {
       setPickerOpen(true);
       return;
@@ -540,7 +544,7 @@ function Cart() {
       (line) => line.promotionalMinimum && regularSubtotal < line.promotionalMinimum,
     );
     if (lockedOffer) {
-      return setErr(`Add ${inr(lockedOffer.promotionalMinimum! - regularSubtotal)} more in regular menu items to keep the ₹1 offer.`);
+      return setErr(`Add ${inr((lockedOffer.promotionalMinimum ?? 0) - regularSubtotal)} more in regular menu items to keep the ₹1 offer.`);
     }
 
     const startPlacement = () => {
@@ -598,13 +602,15 @@ function Cart() {
         });
         if (!res.ok) {
           setBusy(false);
-          return setErr("Payment Failed! Please try again. Your items are still in the cart.");
+          setPaymentState(res.status === "PENDING" ? "pending" : "failed");
+          return;
         }
         paidRef = res.reference;
         startPlacement();
       } catch {
         setBusy(false);
-        return setErr("Payment Failed! Please try again. Your items are still in the cart.");
+        setPaymentState("failed");
+        return;
       }
     }
 
@@ -1144,13 +1150,13 @@ function Cart() {
           <span className="font-black text-destructive">NOTE: </span>Orders cannot be cancelled and are non-refundable once packed for delivery.
           <Link to="/terms" className="mt-1 block font-black text-primary underline">Read cancellation policy</Link>
         </div>
-        {err ? <p className="text-xs font-semibold text-destructive">{err}</p> : null}
+        <CheckoutFeedback message={err} paymentState={paymentState} />
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[520px]">
         <div className="border-t border-border bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(17,24,39,0.1)]">
           <button type="button" onClick={() => setCheckoutStep("payment")} className="mb-2 flex w-full items-center gap-3 rounded-lg border border-border bg-muted px-3 py-2.5 text-left">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-soft text-primary"><Banknote className="h-5 w-5" /></span>
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-soft text-primary">{payment === "COD" ? <Banknote className="h-5 w-5" /> : onlineMethod === "UPI" ? <Smartphone className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}</span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-xs font-black">{payment === "COD" ? "Cash/Pay on Delivery" : onlineMethod === "UPI" ? "UPI payment" : "Credit or debit card"}</span>
               <span className="block truncate text-[10px] text-muted-foreground">{payment === "COD" ? "Pay cash at the time of delivery." : `Pay securely with ${settings?.payment_gateway ?? "online payment"}.`}</span>
@@ -1269,7 +1275,7 @@ function Cart() {
               ) : null}
               <div className="mt-3 flex justify-between border-t border-border pt-3 text-base font-black"><span>{payment === "SPLIT" ? "Total remaining after wallet" : "To pay"}</span><span>{inr(payable)}</span></div>
             </section>
-            {err ? <p className="rounded-lg bg-destructive/10 p-3 text-xs font-semibold text-destructive">{err}</p> : null}
+            <CheckoutFeedback message={err} paymentState={paymentState} />
           </main>
           <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[520px] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <button type="button" disabled={busy || !!blockedReason || promotionalCredit.loading || ((payment === "ONLINE" || payment === "SPLIT") && !settings?.enable_online_payment)} onClick={() => void place()} className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-card disabled:opacity-50">

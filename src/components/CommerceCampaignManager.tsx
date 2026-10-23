@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { inr } from "@/lib/fees";
+import { uploadBannerImage } from "@/lib/marketing";
+import { Button } from "@/components/ui/button";
 import { customerPrice } from "@/lib/pricing";
 
 type Campaign = {
@@ -9,6 +11,7 @@ type Campaign = {
   slug: string;
   title: string;
   description: string | null;
+  banner_image_url: string | null;
   allowed_prices: number[];
   is_active: boolean;
 };
@@ -61,7 +64,7 @@ export function CommerceCampaignManager() {
     const [campaignResult, itemResult, vendorResult, creditResult] = await Promise.all([
       supabase
         .from("commerce_campaigns")
-        .select("id,slug,title,description,allowed_prices,is_active")
+        .select("id,slug,title,description,banner_image_url,allowed_prices,is_active")
         .order("title"),
       supabase.from("menu_items").select("id,vendor_id,name,price,mrp,in_stock").order("name"),
       supabase
@@ -362,6 +365,19 @@ export function CommerceCampaignManager() {
           Free-cash settings are unavailable. Apply the commerce campaigns migration.
         </p>
       )}
+
+      {campaigns.filter((campaign) => campaign.slug === "99-store").map((campaign) => <div key={campaign.id} className="space-y-2 border-y border-border py-4">
+        <p className="text-sm font-black">99 Store banner</p>
+        {campaign.banner_image_url ? <img src={campaign.banner_image_url} alt="99 Store banner preview" className="h-auto w-full rounded-lg" /> : null}
+        <label className="block text-xs font-bold">Upload banner<input aria-label="Upload 99 Store banner" type="file" accept="image/jpeg,image/png,image/webp" disabled={saving} className="mt-2 block w-full text-xs" onChange={async (event) => {
+          const file = event.target.files?.[0]; event.target.value = ""; if (!file) return;
+          setSaving(true);
+          try { const result = await uploadBannerImage(file); if ("error" in result) throw new Error(result.error); await updateCampaign(campaign, { banner_image_url: result.url }); }
+          catch { toast.error("Could not upload the 99 Store banner."); }
+          finally { setSaving(false); }
+        }} /></label>
+        {campaign.banner_image_url ? <Button variant="outline" size="sm" disabled={saving} onClick={() => void updateCampaign(campaign, { banner_image_url: null })}>Remove banner</Button> : null}
+      </div>)}
 
       <div className="space-y-3">
         <p className="text-sm font-black">99 Store and flash deals</p>
