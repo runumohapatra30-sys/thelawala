@@ -1323,7 +1323,162 @@ function Cart() {
           </motion.div>
         ) : null}
       </AnimatePresence>
+      {/* 1. Live Payment Processing (Orange Circular Spinner) */}
+      {busy && (
+        <div className="fixed inset-0 z-[120] flex flex-col items-center justify-center bg-black/60 p-6 backdrop-blur-sm">
+          <div className="flex flex-col items-center rounded-[32px] bg-white p-8 text-center shadow-2xl">
+            <div className="relative flex h-20 w-20 items-center justify-center">
+              <span className="absolute inset-0 rounded-full border-4 border-orange-100" />
+              <span className="absolute inset-0 animate-spin rounded-full border-4 border-[#ff6600] border-t-transparent" />
+              <span className="h-4 w-4 rounded-full bg-[#ff6600]" />
+            </div>
+            <h3 className="mt-5 text-lg font-black text-gray-900">Verifying Payment</h3>
+            <p className="mt-1 text-xs text-gray-500 max-w-[200px]">
+              Waiting for UPI confirmation. Please do not close or press back...
+            </p>
+          </div>
+        </div>
+      )}
 
+      {/* 2. Payment Failed Dialog (Order Not Placed) */}
+      {paymentState === "failed" && !busy && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-[340px] overflow-hidden rounded-[32px] bg-white p-6 text-center shadow-2xl">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-50 text-red-500">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+              </svg>
+            </div>
+            <h3 className="mt-4 text-xl font-black text-gray-900">Order Not Placed</h3>
+            <p className="mt-2 text-xs leading-relaxed text-gray-500">
+              Payment was declined or cancelled. If money was deducted, it will be refunded automatically by your bank.
+            </p>
+            <div className="mt-6 flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setPaymentState(null);
+                  void place();
+                }}
+                className="w-full rounded-2xl bg-[#ff6600] py-3.5 text-sm font-black text-white shadow-lg shadow-orange-500/25 active:scale-95 transition-all"
+              >
+                Retry Payment
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPaymentState(null);
+                  setPayment("COD");
+                }}
+                className="w-full rounded-2xl border border-gray-200 py-3 text-xs font-bold text-gray-700 active:scale-95 transition-all"
+              >
+                Change to Cash on Delivery
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Exact Matching Orange "Order Successful" Screen */}
+      {placementStage === "placing" && (
+        <div className="fixed inset-0 z-[130] flex flex-col bg-white overflow-y-auto">
+          {/* Header */}
+          <div className="flex items-center px-4 py-4">
+            <button
+              onClick={() => {
+                cart.clear();
+                void navigate({ to: "/" });
+              }}
+              className="flex items-center gap-1.5 text-sm font-black text-gray-900"
+            >
+              <ArrowLeft className="h-5 w-5" /> Order details
+            </button>
+          </div>
+
+          <div className="flex flex-col items-center px-6 pt-4 pb-8">
+            {/* Orange Success Circle Icon */}
+            <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-[#ff6600] bg-orange-50 text-[#ff6600]">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+
+            <h2 className="mt-4 text-2xl font-black text-gray-900">Order Successful</h2>
+            <p className="mt-1 text-xs text-gray-400 italic">"Hot &amp; fresh street food on its way"</p>
+            <span className="mt-2 text-xs font-bold text-[#ff6600]">
+              order ID: #{Date.now().toString().slice(-7)}
+            </span>
+
+            {/* Order Summary Section */}
+            <div className="mt-6 w-full max-w-sm">
+              <div className="flex items-center justify-between pb-2">
+                <h3 className="text-base font-black text-gray-900">Order summary</h3>
+                <span className="rounded-full bg-black px-3 py-1 text-[11px] font-bold text-white">
+                  Live
+                </span>
+              </div>
+
+              {/* Items List */}
+              <div className="space-y-3 py-3 border-b border-gray-100">
+                {lines.map((l) => (
+                  <div key={l.itemId} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={l.photo ?? "/food/food-tiffin.jpg"}
+                        alt={l.name}
+                        className="h-10 w-10 rounded-xl object-cover bg-gray-100"
+                      />
+                      <span className="font-bold text-gray-800 line-clamp-1 max-w-[140px]">{l.name}</span>
+                    </div>
+                    <span className="text-gray-400 font-medium">{l.qty}Qty</span>
+                    <span className="font-black text-gray-900">₹{l.price * l.qty}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bill Details */}
+              <div className="mt-4 space-y-2 text-xs text-gray-500">
+                <div className="flex justify-between">
+                  <span>Sub Total</span>
+                  <span className="font-bold text-gray-800">₹{bill?.foodTotal ?? 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Goods Tax</span>
+                  <span className="font-bold text-gray-800">₹{bill?.surgeFee ?? 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Platform fees</span>
+                  <span className="font-bold text-gray-800">₹{bill?.platformFee ?? 3}</span>
+                </div>
+                <div className="my-2 border-t border-gray-100" />
+                <div className="flex justify-between text-sm font-black text-gray-900">
+                  <span>Grand Total</span>
+                  <span>₹{payable}</span>
+                </div>
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Payment mode</span>
+                  <span className="font-bold text-[#ff6600]">{payment === "COD" ? "Cash" : "Prepaid"}</span>
+                </div>
+              </div>
+
+              {/* Orange Action Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  cart.clear();
+                  void navigate({ to: "/" });
+                }}
+                className="mt-8 w-full rounded-full bg-[#ff6600] py-4 text-sm font-black text-white shadow-lg shadow-orange-500/25 active:scale-95 transition-all text-center"
+              >
+                Continue to shop
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
     </Shell>
   );
 }
