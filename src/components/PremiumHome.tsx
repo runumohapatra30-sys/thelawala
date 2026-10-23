@@ -297,7 +297,7 @@ export function PremiumHome({
                         {vendors.slice(0, 8).map((vendor) => (
                           <button key={vendor.id} type="button" onClick={() => onVendor(vendor.id)} className="w-32 shrink-0 overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm">
                             <img src={vendor.photo_url ?? foodImage(vendor.stall_name)} alt="" className="h-20 w-full object-cover" />
-                            <span className="block truncate p-2 text-xs font-bold text-foreground">{vendor.stall_name}</span>
+                            <span className="block break-words p-2 text-xs font-bold text-foreground">{vendor.stall_name}</span>
                           </button>
                         ))}
                       </div>
@@ -363,7 +363,7 @@ export function PremiumHome({
                               </div>
                               <div className="min-w-0 flex-1 py-0.5 pr-7">
                                 <h3 className="line-clamp-2 text-sm font-extrabold leading-snug text-foreground">{item.name}</h3>
-                                <p className="mt-1 truncate text-[10px] font-semibold text-muted-foreground">{vendor?.stall_name ?? "Local stall"}</p>
+                                <p className="mt-1 break-words text-[10px] font-semibold text-muted-foreground">{vendor?.stall_name ?? "Local stall"}</p>
                                 <p className="mt-1 flex items-center gap-1 text-[10px] font-bold text-foreground">
                                   <Star className="h-3 w-3 fill-amber-400 text-amber-400" />{rating ? rating.toFixed(1) : "New"} <span className="font-medium text-muted-foreground">({ratingCounts[item.vendor_id] ?? 0})</span>
                                   <span className="mx-0.5 text-muted-foreground">·</span>{vendor?.default_prep_minutes ?? 15}-{(vendor?.default_prep_minutes ?? 15) + 5} min
@@ -464,7 +464,7 @@ export function PremiumHome({
               return (
                 <article key={deal.id} role="link" tabIndex={0} onClick={() => onItem(item.id)} onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onItem(item.id); } }} className="min-w-0 cursor-pointer rounded-3xl border border-border bg-white p-2.5 shadow-sm">
                   <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-brand-soft"><img src={deal.image_url ?? item.photo_url ?? foodImage(item.name)} alt={item.name} className="h-full w-full object-cover" /><OfferImageOverlay stallName={vendors.find((vendor) => vendor.id === item.vendor_id)?.stall_name ?? "Local stall"} offerPercent={Number(vendors.find((vendor) => vendor.id === item.vendor_id)?.offer_percent ?? 0)} offerLabel={vendors.find((vendor) => vendor.id === item.vendor_id)?.offer_label} offerPrice={offer} mrp={original} />{offer < original ? <span className="absolute left-2 top-2 rounded-md bg-success px-1.5 py-0.5 text-[9px] font-black text-success-foreground">SAVE {inr(original - offer)}</span> : null}</div>
-                  <button type="button" onClick={(event) => { event.stopPropagation(); onVendor(item.vendor_id); }} className="mt-2 block w-full truncate text-left text-[9px] font-bold text-muted-foreground">{vendors.find((vendor) => vendor.id === item.vendor_id)?.stall_name ?? "Local stall"}</button>
+                  <button type="button" onClick={(event) => { event.stopPropagation(); onVendor(item.vendor_id); }} className="mt-2 block w-full break-words text-left text-[9px] font-bold text-muted-foreground">{vendors.find((vendor) => vendor.id === item.vendor_id)?.stall_name ?? "Local stall"}</button>
                   <h2 className="truncate text-xs font-extrabold text-foreground">{item.name}</h2>
                   <div className="mt-2 flex items-center justify-between gap-1"><span className="text-xs font-black text-primary">{inr(offer)} {offer < original ? <span className="text-[9px] font-medium text-muted-foreground line-through">{inr(original)}</span> : null}</span>{line ? <span className="flex items-center gap-1 rounded-lg bg-primary p-1 text-primary-foreground"><button type="button" aria-label={`Remove one ${item.name}`} onClick={(event) => { event.stopPropagation(); onRemove(item.id); }}><Minus className="h-3 w-3" /></button><span className="text-[10px] font-black">{line.qty}</span><button type="button" aria-label={`Add one ${item.name}`} onClick={(event) => { event.stopPropagation(); onAdd(item, offer, offer === 1 ? 199 : undefined); }}><Plus className="h-3 w-3" /></button></span> : <button type="button" onClick={(event) => { event.stopPropagation(); onAdd(item, offer, offer === 1 ? 199 : undefined); }} className="rounded-lg bg-primary px-2.5 py-1.5 text-[9px] font-black text-primary-foreground">+ ADD</button>}</div>
                 </article>

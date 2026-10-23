@@ -175,7 +175,7 @@ function StallDetail() {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <h1 className="truncate text-2xl font-extrabold text-foreground">{vendor.stall_name}</h1>
+                <h1 className="break-words text-2xl font-extrabold leading-tight text-foreground">{vendor.stall_name}</h1>
                 {vendor.status === "APPROVED" ? <BadgeCheck className="h-5 w-5 shrink-0 text-[#25834A]" /> : null}
               </div>
               <p className="mt-1 text-sm font-medium text-muted-foreground">{vendor.address || "Local Favourite"}</p>

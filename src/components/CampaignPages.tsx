@@ -18,6 +18,7 @@ export function NinetyNineStorePage() {
   const navigate = useNavigate();
   const lines = useCart();
   const [entries, setEntries] = useState<CampaignCatalogEntry[]>([]);
+  const [banner, setBanner] = useState<string | null>(null);
   const [title, setTitle] = useState("Meals at ₹99 + Free Delivery");
   const [selected, setSelected] = useState("All");
   const [loading, setLoading] = useState(true);
@@ -28,7 +29,7 @@ export function NinetyNineStorePage() {
     void loadCommerceCampaign("99-store")
       .then(({ campaign, entries: loaded }) => {
         if (!alive) return;
-        if (campaign) setTitle(campaign.description || campaign.title);
+        if (campaign) { setTitle(campaign.description || campaign.title); setBanner(campaign.banner_image_url); }
         setEntries(campaign?.is_active ? loaded : []);
       })
       .catch((loadError: unknown) => {
@@ -75,24 +76,8 @@ export function NinetyNineStorePage() {
     <Shell>
       <PortalHeader title="99 Store" />
       <main className="space-y-5 px-4 pb-36 pt-3">
-        <section className="relative isolate overflow-hidden rounded-[1.8rem] bg-[radial-gradient(circle_at_85%_10%,#ffd86b,transparent_33%),linear-gradient(120deg,#0b5737,#1c9754_58%,#d5ec79)] p-5 text-white shadow-[0_18px_40px_-22px_rgba(20,91,52,.6)]">
-          <span className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full border-[22px] border-white/10" />
-          <div className="relative z-10 flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <span className="inline-flex rounded-full bg-white/15 px-2.5 py-1 text-[9px] font-black uppercase tracking-[.18em]">
-                Limited-time local deals
-              </span>
-              <h1 className="mt-3 font-display text-4xl font-black leading-none">99 store</h1>
-              <p className="mt-2 max-w-[250px] text-sm font-semibold text-white/90">{title}</p>
-              <p className="mt-3 flex items-center gap-1.5 text-[11px] font-bold">
-                <Bike className="h-4 w-4" /> Free delivery on campaign orders
-              </p>
-            </div>
-            <span className="grid h-20 w-20 shrink-0 rotate-[-8deg] place-items-center rounded-2xl border-4 border-[#fff2a2] bg-[linear-gradient(145deg,#fff36e,#ff9a25_62%,#ec4931)] text-center text-xl font-black leading-none text-[#7a2817] shadow-[0_8px_0_#a63428,0_14px_20px_#123d2b66]">
-              ₹<br />
-              99
-            </span>
-          </div>
+        <section className="-mx-4 bg-brand-soft">
+          {banner ? <img src={banner} alt="99 Store offers" className="block h-auto w-full" /> : <div className="px-5 py-8"><h1 className="text-3xl font-black text-foreground">99 Store</h1><p className="mt-2 text-sm font-semibold text-muted-foreground">{title}</p><p className="mt-3 flex items-center gap-1.5 text-xs font-bold text-primary"><Bike className="h-4 w-4" />Free delivery on campaign orders</p></div>}
         </section>
 
         <div
@@ -186,7 +171,7 @@ export function NinetyNineStorePage() {
                     <p className="line-clamp-2 min-h-8 text-[11px] font-black leading-tight">
                       {entry.item.name}
                     </p>
-                    <p className="mt-1 truncate text-[9px] font-medium text-muted-foreground">
+                    <p className="mt-1 break-words text-[9px] font-medium text-muted-foreground">
                       {entry.vendor.stall_name}
                     </p>
                     <div className="mt-2 flex items-center justify-between gap-1">

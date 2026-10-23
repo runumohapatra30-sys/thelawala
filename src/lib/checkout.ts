@@ -78,7 +78,7 @@ export async function startOnlinePayment(args: PayArgs): Promise<void> {
 
 export type PaymentOutcome =
   | { ok: true; reference: string }
-  | { ok: false; message: string };
+  | { ok: false; message: string; status: "PENDING" | "FAILED" };
 
 /**
  * Opens Cashfree's Drop checkout inside the app (UPI apps + QR in a modal),
@@ -103,6 +103,6 @@ export async function payInAppWithCashfree(args: Omit<PayArgs, "gateway">): Prom
   const verdict = await verifyCashfreePayment({ data: { cfOrderId } });
   if (verdict.status === "SUCCESS") return { ok: true, reference: verdict.reference };
   if (verdict.status === "PENDING")
-    return { ok: false, message: "Payment is still pending. Nothing was charged and your order was not placed." };
-  return { ok: false, message: result?.error?.message ?? "Payment failed or was cancelled. Your order was not placed." };
+    return { ok: false, status: "PENDING", message: "Payment is pending confirmation. Your order has not been placed." };
+  return { ok: false, status: "FAILED", message: result?.error?.message ?? "Payment failed or was cancelled. Your order was not placed." };
 }

@@ -5,6 +5,7 @@ export type CommerceCampaign = {
   slug: string;
   title: string;
   description: string | null;
+  banner_image_url: string | null;
   allowed_prices: number[];
   is_active: boolean;
 };
@@ -48,7 +49,7 @@ export async function loadCommerceCampaign(slug: string): Promise<{
 }> {
   const { data: campaignData, error: campaignError } = await supabase
     .from("commerce_campaigns")
-    .select("id,slug,title,description,allowed_prices,is_active")
+    .select("id,slug,title,description,banner_image_url,allowed_prices,is_active")
     .eq("slug", slug)
     .maybeSingle();
   if (campaignError) throw campaignError;
