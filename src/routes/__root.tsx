@@ -11,7 +11,8 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+
+import { useEffect, useState, type ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import appCss from "../styles.css?url";
@@ -158,6 +159,61 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <PwaUpdater />
+      <OfflineScreen />
+      
     </QueryClientProvider>
+  );
+}
+function OfflineScreen() {
+  const [isOffline, setIsOffline] = useState(false);
+  const [checking, setChecking] = useState(false);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    
+    if (typeof window !== "undefined") {
+      setIsOffline(!navigator.onLine);
+      window.addEventListener("online", handleOnline);
+      window.addEventListener("offline", handleOffline);
+    }
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  const handleRetry = () => {
+    if (navigator.onLine) {
+      window.location.reload();
+    } else {
+      setChecking(true);
+      setTimeout(() => setChecking(false), 800);
+    }
+  };
+
+  if (!isOffline) return null;
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "#fbeae5", zIndex: 999999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", fontFamily: "sans-serif" }}>
+      <div style={{ background: "#ffffff", width: "100%", maxWidth: "340px", borderRadius: "32px", padding: "48px 24px 40px 24px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", boxShadow: "0 12px 30px rgba(0,0,0,0.06)" }}>
+        <div style={{ width: "84px", height: "84px", background: "#fff2ec", borderRadius: "24px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "28px" }}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ff6600" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="1" y1="1" x2="23" y2="23"></line>
+            <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+            <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+            <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+            <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+            <line x1="12" y1="20" x2="12.01" y2="20"></line>
+          </svg>
+        </div>
+        <h2 style={{ fontSize: "20px", fontWeight: "700", color: "#1a1a1a", margin: "0 0 10px 0" }}>No internet connection</h2>
+        <p style={{ fontSize: "13px", color: "#737373", margin: "0 0 32px 0", lineHeight: "1.45", maxWidth: "230px" }}>Please check your internet connection and try again</p>
+        <button onClick={handleRetry} style={{ width: "100%", maxWidth: "200px", padding: "12px 20px", background: "#ff6600", color: "#ffffff", fontSize: "14px", fontWeight: "600", border: "none", borderRadius: "9999px", cursor: "pointer", boxShadow: "0 6px 16px rgba(255,102,0,0.3)" }}>
+          {checking ? "Checking..." : "Retry"}
+        </button>
+      </div>
+    </div>
   );
 }
