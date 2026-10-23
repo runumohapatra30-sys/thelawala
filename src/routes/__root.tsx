@@ -109,9 +109,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
       { rel: "apple-touch-icon", href: "/icons/icon-192.png" },
-      { rel: "manifest", href: "/manifest.webmanifest" },
+            { rel: "manifest", href: "/manifest.webmanifest" },
+    ],
+    scripts: [
+      {
+        src: "https://sdk.cashfree.com/js/v3/cashfree.js",
+      },
     ],
   }),
+  
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
