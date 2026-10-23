@@ -57,8 +57,8 @@ export function LiveHomeHeader({ address, avatarUrl, query, onQueryChange, onSea
   }, []);
   return <header data-collapsed={collapsed} data-artwork={Boolean(headerPhoto)} style={{ backgroundColor: tint.bg, transition: "background-color 0.3s ease" }} className="home-artwork-header sticky top-0 z-50 border-b border-border">
     {headerPhoto && !collapsed ? <div className="home-header-artwork"><img src={headerPhoto} alt="ThelaWala festive artwork" /><span aria-hidden="true" /></div> : null}
-    <div className={`relative px-4 transition-all duration-300 ${collapsed ? "pb-2 pt-2" : "pb-2.5 pt-3"}`}>
-      <div className="mb-2.5 flex items-center justify-between gap-3">
+    <div className={`home-header-controls relative px-4 transition-all duration-300 ${collapsed ? "pb-2 pt-2" : "pb-2.5 pt-3"}`}>
+      <div className="home-delivery-row mb-2.5 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2"><p style={{ color: tint.text, transition: "color 0.3s ease" }} className="text-[22px] font-extrabold leading-tight">15 mins</p><RainIndicator enabled={settings.rain_animation_enabled} /></div>
           <Link to="/cart" title={address ?? "Choose delivery location"} aria-label="Choose delivery location" className="mt-0.5 flex max-w-full items-center gap-0.5 text-[11px] font-semibold text-muted-foreground">
@@ -72,6 +72,8 @@ export function LiveHomeHeader({ address, avatarUrl, query, onQueryChange, onSea
           </Link>
         </div>
       </div>
+    </div>
+    <div className="home-header-search px-4 pb-2.5">
       <label className="flex h-11 min-w-0 items-center rounded-2xl border border-border bg-card px-3.5 shadow-sm focus-within:ring-2 focus-within:ring-primary/20">
         <Search className="mr-2 h-4 w-4 shrink-0 text-primary" />
         <input value={query} onFocus={onSearchFocus} onChange={(event) => onQueryChange(event.target.value)} aria-label="Search food and stalls" placeholder='Search for "Gupchup", "Dahi Bara"...' className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground" />

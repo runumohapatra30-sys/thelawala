@@ -10,7 +10,9 @@ export function AdminHomePresentation() {
   const controls = [{ key: "spotlight_enabled", label: "Local Spotlight" }, { key: "best_value_enabled", label: "Best value" }, { key: "rain_animation_enabled", label: "Live rain animation" }] as const;
   async function change(key: typeof controls[number]["key"], value: boolean) {
     setBusy(true);
-    const { error } = await supabase.from("app_visual_engine_settings").update({ [key]: value }).eq("id", 1).select("id").single();
+    const patch: Partial<Pick<typeof settings, typeof controls[number]["key"]>> = {};
+    patch[key] = value;
+    const { error } = await supabase.from("app_visual_engine_settings").update(patch).eq("id", 1).select("id").single();
     setBusy(false);
     if (error) toast.error("Could not save the home display setting.");
     else toast.success("Home display updated.");
