@@ -9,219 +9,60 @@ import { couponDiscount, findCoupon, listCoupons, PENDING_HOME_COUPON_KEY, type 
 import { computeBill, haversineKm, inr, type Settings } from "@/lib/fees";
 import { checkoutGate, minimumOrderValue, stallOfferDiscount } from "@/lib/pricing";
 import { payInAppWithCashfree } from "@/lib/checkout";
-import { codRestrictionUntil } from "@/lib/codPolicy";
 import { useSession } from "@/lib/session";
 import { usePromotionalCredit } from "@/lib/promotionalCredit";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Banknote, Bike, BellOff, ChevronRight, ChevronsRight, CircleDollarSign, CreditCard, DoorOpen, MapPin, Phone, PhoneOff, Plus, ShieldCheck, ShoppingCart, Smartphone, Tag } from "lucide-react";
-import { CheckoutFeedback } from "@/components/CheckoutFeedback";
-import { toast } from "sonner";
+import { 
+  ArrowLeft, ChevronDown, ChevronUp, ShieldCheck, CheckCircle2, 
+  MapPin, ShoppingCart, Tag, CreditCard, Banknote, Smartphone, Landmark, Check
+} from "lucide-react";
 
 export const Route = createFileRoute("/cart")({
-  head: () => ({
-    meta: [
-      { title: "Checkout — ThelaWala" },
-      {
-        name: "description",
-        content:
-          "Add your name, mobile, pincode and address, choose cash or online payment and place your ThelaWala order.",
-      },
-      { property: "og:title", content: "Checkout — ThelaWala" },
-      { property: "og:description", content: "Transparent bill with distance-based delivery fee." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
   component: Cart,
 });
 
 const otp = () => String(Math.floor(100000 + Math.random() * 900000));
-const pin4 = () => String(Math.floor(Math.random() * 10000)).padStart(4, "0");
-type PlacementStage = "idle" | "placing";
+const pin4 = () => String(Math.floor(1000 + Math.random() * 9000));
 
-function Cart() {
+export function Cart() {
   const navigate = useNavigate();
   const { user } = useSession();
   const userId = user?.id;
   const promotionalCredit = usePromotionalCredit(userId);
   const lines = useCart();
   const cartVendorId = lines[0]?.vendorId;
-  const { foodTotal, baseTotal, mrpTotal } = cartTotals(lines);
+  const { foodTotal, baseTotal } = cartTotals(lines);
+
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "payment">("cart");
-  const [placementStage, setPlacementStage] = useState<PlacementStage>("idle");
+  const [placementStage, setPlacementStage] = useState<"idle" | "placing">("idle");
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
 
-  const [settings, setSettings] = useState<Settings | null>(null);
-  const [vendor, setVendor] = useState<{
-    id: string;
-    stall_name: string;
-    lat: number;
-    lng: number;
-    offer_percent: number | null;
-    offer_label: string | null;
-  } | null>(null);
-  const [form, setForm] = useState({
-    full_name: "",
-    mobile: "",
-    pincode: "",
-    line: "",
-    landmark: "",
-  });
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [payment, setPayment] = useState<"COD" | "ONLINE" | "SPLIT">("ONLINE");
-  const [codRestriction, setCodRestriction] = useState<number | null>(null);
-  const [codPolicyChecked, setCodPolicyChecked] = useState(false);
-  const [codPolicyError, setCodPolicyError] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [paymentState, setPaymentState] = useState<"failed" | "pending" | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const [walletBalance, setWalletBalance] = useState(0);
-  const [useWallet, setUseWallet] = useState(true);
-  const [codeInput, setCodeInput] = useState("");
-  const [coupon, setCoupon] = useState<Coupon | null>(null);
-  const [couponMsg, setCouponMsg] = useState<string | null>(null);
-  const [offers, setOffers] = useState<Coupon[]>([]);
-  const [tip, setTip] = useState(0);
-  const [customTip, setCustomTip] = useState("");
-  const [otherTipActive, setOtherTipActive] = useState(false);
-  const [onlineMethod, setOnlineMethod] = useState<"UPI" | "CARD">("UPI");
-  const [paymentAccordion, setPaymentAccordion] = useState<string>("upi");
-  const [upiIdInput, setUpiIdInput] = useState("");
+  const [vendor, setVendor] = useState<{ id: string; stall_name: string; lat: number; lng: number } | null>(null);
+  const [form, setForm] = useState({ full_name: "", mobile: "", pincode: "", line: "", landmark: "" });
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>({ lat: 20.2961, lng: 85.8245 });
+
+  // Flipkart style Accordion states: 'upi' | 'card' | 'netbanking' | 'cod'
+  const [selectedAccordion, setSelectedAccordion] = useState<string>("upi");
+  const [selectedUpiApp, setSelectedUpiApp] = useState<string>("phonepe");
+  const [customUpiId, setCustomUpiId] = useState<string>("");
+
+  // Card fields
   const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
+  const [validThru, setValidThru] = useState("");
   const [cvv, setCvv] = useState("");
-  const [selectedBank, setSelectedBank] = useState("");
 
-  const [instructions, setInstructions] = useState("");
-  const [locating, setLocating] = useState(false);
-  const [saved, setSaved] = useState<SavedAddress[]>([]);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [addressConfirmOpen, setAddressConfirmOpen] = useState(false);
-  const [recommendations, setRecommendations] = useState<
-    Array<{
-      id: string;
-      vendor_id: string;
-      name: string;
-      photo_url: string | null;
-      unit: string | null;
-      price: number;
-      mrp: number;
-      in_stock: boolean;
-    }>
-  >([]);
-  const autoTried = useRef(false);
-  const coordsRef = useRef(coords);
-  const formRef = useRef(form);
-  coordsRef.current = coords;
-  formRef.current = form;
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [tip, setTip] = useState(0);
 
   useEffect(() => {
-    listCoupons().then((cs) => setOffers(cs.filter((c) => c.is_active).slice(0, 3)));
-  }, []);
-
-  useEffect(() => {
-    try {
-      const pendingCode = window.localStorage.getItem(PENDING_HOME_COUPON_KEY);
-      if (pendingCode) setCodeInput(pendingCode);
-    } catch {
-      // Continue without a home-modal coupon when browser storage is unavailable.
-    }
-  }, []);
-
-  useEffect(() => {
-    const guestName = localStorage.getItem("thelawala.guest_name");
-    const guestMobile = localStorage.getItem("thelawala.guest_mobile");
-    if (guestName || guestMobile)
-      setForm((current) => ({
-        ...current,
-        full_name: current.full_name || guestName || "",
-        mobile: current.mobile || guestMobile || "",
-      }));
-    const updateGuest = (event: Event) => {
-      const profile = (event as CustomEvent<{ name: string; mobile: string }>).detail;
-      setForm((current) => ({ ...current, full_name: profile.name, mobile: profile.mobile }));
-    };
-    window.addEventListener(GUEST_PROFILE_EVENT, updateGuest);
-    return () => window.removeEventListener(GUEST_PROFILE_EVENT, updateGuest);
-  }, []);
-
-  useEffect(() => {
-    supabase
-      .from("system_settings")
-      .select("*")
-      .maybeSingle()
-      .then(({ data }) => {
-        setSettings(data as Settings | null);
-        if (data && !data.enable_cod) setPayment("ONLINE");
-      });
-  }, []);
-
-  useEffect(() => {
-    if (!userId) return;
-    supabase
-      .from("wallets")
-      .select("balance,status")
-      .eq("user_id", userId)
-      .maybeSingle()
-      .then(({ data }) => setWalletBalance(data?.status === "ACTIVE" ? Number(data.balance) : 0));
-  }, [userId]);
-
-  useEffect(() => {
-    if (promotionalCredit.error) toast.error(promotionalCredit.error);
-  }, [promotionalCredit.error]);
-
-  useEffect(() => {
-    if (!userId) return;
-    let alive = true;
-    setCodPolicyChecked(false);
-    setCodPolicyError(false);
-    setCodRestriction(null);
-    const now = Date.now();
-    void supabase
-      .from("orders")
-      .select("cancelled_at")
-      .eq("user_id", userId)
-      .eq("payment_mode", "COD")
-      .eq("status", "CANCELLED")
-      .eq("cancelled_by", "CUSTOMER")
-      .gte("cancelled_at", new Date(now - 120 * 24 * 60 * 60 * 1000).toISOString())
-      .then(({ data, error }) => {
-        if (!alive) return;
-        if (error) {
-          console.error("Could not check COD cancellation history:", error);
-          setCodPolicyError(true);
-          setPayment("ONLINE");
-        } else {
-          const until = codRestrictionUntil(
-            (data ?? []).map((row) => row.cancelled_at).filter((value): value is string => Boolean(value)),
-            now,
-          );
-          setCodRestriction(until);
-          if (until) setPayment("ONLINE");
-        }
-        setCodPolicyChecked(true);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [userId]);
-
-  useEffect(() => {
-    const vid = cartVendorId;
-    if (!vid) return;
+    if (!cartVendorId) return;
     supabase
       .from("vendors")
-      .select("id,stall_name,lat,lng,offer_percent,offer_label")
-      .eq("id", vid)
+      .select("id,stall_name,lat,lng")
+      .eq("id", cartVendorId)
       .maybeSingle()
-      .then(({ data }) => setVendor(data));
-    supabase
-      .from("menu_items")
-      .select("id,vendor_id,name,photo_url,unit,price,mrp,in_stock")
-      .eq("vendor_id", vid)
-      .eq("in_stock", true)
-      .limit(12)
-      .then(({ data }) => setRecommendations((data ?? []) as typeof recommendations));
+      .then(({ data }) => setVendor(data as any));
   }, [cartVendorId]);
 
   useEffect(() => {
@@ -231,402 +72,87 @@ function Cart() {
       .select("*")
       .eq("user_id", userId)
       .order("is_default", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(2)
+      .limit(1)
+      .maybeSingle()
       .then(({ data }) => {
-        const list = (data ?? []) as SavedAddress[];
-        setSaved(list);
-        const first = list[0];
-        if (!first) return;
-        setForm({
-          full_name: first.full_name,
-          mobile: first.mobile,
-          pincode: first.pincode,
-          line: first.line,
-          landmark: first.landmark ?? "",
-        });
-        if (!coordsRef.current && Number(first.lat) && Number(first.lng))
-          setCoords({ lat: Number(first.lat), lng: Number(first.lng) });
+        if (data) {
+          setForm({
+            full_name: data.full_name || "",
+            mobile: data.mobile || "",
+            pincode: data.pincode || "",
+            line: data.line || "",
+            landmark: data.landmark || "",
+          });
+          if (data.lat && data.lng) setCoords({ lat: Number(data.lat), lng: Number(data.lng) });
+        }
       });
   }, [userId]);
 
-  useEffect(() => {
-    if (coordsRef.current) return;
-    try {
-      const raw = localStorage.getItem("tw_last_location");
-      if (!raw) return;
-      const saved = JSON.parse(raw) as {
-        lat: number;
-        lng: number;
-        line?: string;
-        pincode?: string;
-        landmark?: string;
-      };
-      if (!Number(saved.lat) || !Number(saved.lng)) return;
-      setCoords({ lat: Number(saved.lat), lng: Number(saved.lng) });
-      setForm((f) => ({
-        ...f,
-        line: f.line || saved.line || "",
-        pincode: f.pincode || saved.pincode || "",
-        landmark: f.landmark || saved.landmark || "",
-      }));
-    } catch {
-      /* optional */
-    }
-  }, []);
+  const deliveryFee = foodTotal > 0 ? 25 : 0;
+  const platformFee = foodTotal > 0 ? 3 : 0;
+  const codFee = selectedAccordion === "cod" ? 10 : 0; // Nominal COD handling fee
+  const payable = foodTotal + deliveryFee + platformFee + tip + codFee;
 
-  function pickSaved(a: SavedAddress) {
-    setForm({
-      full_name: a.full_name,
-      mobile: a.mobile,
-      pincode: a.pincode,
-      line: a.line,
-      landmark: a.landmark ?? "",
-    });
-    setCoords({ lat: Number(a.lat), lng: Number(a.lng) });
-    try {
-      localStorage.setItem(
-        "tw_last_location",
-        JSON.stringify({
-          lat: Number(a.lat),
-          lng: Number(a.lng),
-          line: a.line,
-          pincode: a.pincode,
-          landmark: a.landmark ?? "",
-        }),
-      );
-    } catch {
-      /* optional */
-    }
-    setPickerOpen(false);
-    setAddressConfirmOpen(true);
-  }
-
-  async function fillFromCoords(lat: number, lng: number, overwrite: boolean) {
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`,
-        { headers: { Accept: "application/json" } },
-      );
-      if (!res.ok) return;
-      const json = (await res.json()) as {
-        display_name?: string;
-        address?: Record<string, string>;
-      };
-      const a = json.address ?? {};
-      const line = [
-        a["house_number"],
-        a["road"],
-        a["neighbourhood"],
-        a["suburb"],
-        a["city_district"],
-        a["city"] ?? a["town"] ?? a["village"],
-      ]
-        .filter(Boolean)
-        .join(", ");
-      const pin = a["postcode"] ?? "";
-      setForm((f) => ({
-        ...f,
-        line: overwrite || !f.line ? line || json.display_name || f.line : f.line,
-        landmark: f.landmark || a["neighbourhood"] || a["suburb"] || "",
-        pincode: overwrite || !f.pincode ? pin || f.pincode : f.pincode,
-      }));
-    } catch {
-      /* best-effort */
-    }
-  }
-
-  function locate(overwrite = true) {
-    setLocating(true);
-    navigator.geolocation?.getCurrentPosition(
-      async (p) => {
-        setCoords({ lat: p.coords.latitude, lng: p.coords.longitude });
-        await fillFromCoords(p.coords.latitude, p.coords.longitude, overwrite);
-        setForm((f) => {
-          try {
-            localStorage.setItem(
-              "tw_last_location",
-              JSON.stringify({
-                lat: p.coords.latitude,
-                lng: p.coords.longitude,
-                line: f.line,
-                pincode: f.pincode,
-                landmark: f.landmark,
-              }),
-            );
-          } catch {
-            /* optional */
-          }
-          return f;
-        });
-        setLocating(false);
-        setPickerOpen(false);
-        setAddressConfirmOpen(true);
-      },
-      () => {
-        setLocating(false);
-        setErr("Could not read your location. Please allow location access.");
-      },
-      { enableHighAccuracy: true, timeout: 15000 },
-    );
-  }
-
-  useEffect(() => {
-    if (autoTried.current) return;
-    autoTried.current = true;
-    const t = setTimeout(() => {
-      if (!coordsRef.current) setPickerOpen(true);
-    }, 500);
-    return () => clearTimeout(t);
-  }, []);
-
-  const distanceKm =
-    vendor && coords
-      ? haversineKm(coords, { lat: Number(vendor.lat), lng: Number(vendor.lng) })
-      : 0;
-  const gate = vendor && coords ? checkoutGate(distanceKm, baseTotal) : ({ ok: true } as const);
-  const blockedReason = gate.ok ? null : gate.reason;
-  const minimumShortfall = blockedReason?.startsWith("Minimum order")
-    ? Math.max(0, minimumOrderValue(distanceKm) - baseTotal)
-    : 0;
-  const hasLocation = Boolean(vendor && coords);
-  const hasCampaignFreeDelivery = lines.some((line) => line.campaignSlug === "99-store" && line.freeDelivery);
-  const bill = hasLocation
-    ? computeBill({ settings, foodTotal, mrpTotal: foodTotal, distanceKm, freeDelivery: hasCampaignFreeDelivery })
-    : null;
-  const stallOff = stallOfferDiscount(foodTotal, vendor?.offer_percent);
-  const couponOff = coupon ? couponDiscount(coupon, foodTotal) : 0;
-  const freeCashApplied = promotionalCredit.eligible && promotionalCredit.settings
-    ? Math.min(
-        Number(promotionalCredit.settings.credit_amount),
-        Math.max(0, foodTotal - stallOff - couponOff),
-      )
-    : 0;
-  const netTotal = bill
-    ? Math.max(0, Math.round((bill.grandTotal - stallOff - couponOff - freeCashApplied + tip) * 100) / 100)
-    : 0;
-  const walletUse = bill && useWallet ? Math.min(walletBalance, netTotal) : 0;
-  const payable = bill ? Math.round((netTotal - walletUse) * 100) / 100 : 0;
-  const onlineDue = payment === "SPLIT" ? Math.round(payable * 50) / 100 : payable;
-  const standardDeliveryFee = bill ? 22 + Math.max(0, bill.distanceKm - 2) * 3.5 : 0;
-  const deliverySavings = bill ? Math.max(0, standardDeliveryFee - bill.deliveryFee) : 0;
-  const savings = Math.round((Math.max(0, mrpTotal - foodTotal) + stallOff + couponOff + freeCashApplied + deliverySavings) * 100) / 100;
-  const instructionOptions = [
-    { label: "Avoid ringing bell", Icon: BellOff },
-    { label: "Leave at the door", Icon: DoorOpen },
-    { label: "Leave with security", Icon: ShieldCheck },
-    { label: "Avoid calling", Icon: PhoneOff },
-  ];
-  const suggested = recommendations
-    .filter((item) => !lines.some((line) => line.itemId === item.id))
-    .slice(0, 6);
-
-  const applyCoupon = useCallback(async (code = codeInput) => {
-    setCouponMsg(null);
-    const res = await findCoupon(code, foodTotal);
-    if (res.error || !res.coupon) {
-      setCoupon(null);
-      return setCouponMsg(res.error ?? "This coupon code is not valid.");
-    }
-    setCoupon(res.coupon);
-    setCouponMsg(
-      `${res.coupon.code} applied · you save ${inr(couponDiscount(res.coupon, foodTotal))}`,
-    );
-  }, [codeInput, foodTotal]);
-
-  useEffect(() => {
-    let pendingCode: string | null = null;
-    try {
-      pendingCode = window.localStorage.getItem(PENDING_HOME_COUPON_KEY);
-      if (pendingCode && pendingCode === codeInput) window.localStorage.removeItem(PENDING_HOME_COUPON_KEY);
-      else pendingCode = null;
-    } catch {
-      // optional
-    }
-    if (pendingCode) void applyCoupon(pendingCode);
-  }, [applyCoupon, codeInput]);
-
-  if (lines.length === 0) {
-    return (
-      <Shell>
-        <PortalHeader title="Your cart" />
-        <section className="grid min-h-[55vh] place-items-center px-6 py-12 text-center">
-          <div>
-            <div className="relative mx-auto grid h-32 w-32 place-items-center rounded-full bg-brand-soft text-primary">
-              <ShoppingCart className="h-16 w-16" strokeWidth={1.6} />
-              <span className="absolute -right-1 top-1 text-4xl" aria-hidden="true">🛒</span>
-              <span className="absolute -bottom-1 left-1 text-3xl" aria-hidden="true">🍽️</span>
-            </div>
-            <h2 className="mt-6 font-display text-3xl text-primary">ThelaWala cart is empty</h2>
-            <p className="mx-auto mt-2 max-w-[260px] text-sm leading-relaxed text-muted-foreground">Add your favourite hot street food and it will appear here.</p>
-            <Link to="/" className="press mt-6 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-extrabold text-primary-foreground">Browse food</Link>
-          </div>
-        </section>
-      </Shell>
-    );
-  }
-
-  async function place() {
+  async function handleFinalPlaceOrder() {
     setErr(null);
-    setPaymentState(null);
-    if (!coords) {
-      setPickerOpen(true);
-      return;
-    }
     if (!user) {
       openLoginModal();
       return;
     }
-    if (!form.full_name || form.mobile.length < 10 || form.pincode.length < 6 || !form.line)
-      return setErr("Please fill name, 10-digit mobile, 6-digit pincode and full address.");
-    if (!coords)
-      return setErr("Tap “Use my current location” — every order needs your live location.");
-    if (blockedReason) return setErr(blockedReason);
-    if (!bill || !vendor) return;
-
-    if ((payment === "COD" || payment === "SPLIT") && payable > 0) {
-      const checkedAt = Date.now();
-      const { data: cancellations, error: cancellationError } = await supabase
-        .from("orders")
-        .select("cancelled_at")
-        .eq("user_id", user.id)
-        .eq("payment_mode", "COD")
-        .eq("status", "CANCELLED")
-        .eq("cancelled_by", "CUSTOMER")
-        .gte("cancelled_at", new Date(checkedAt - 120 * 24 * 60 * 60 * 1000).toISOString());
-      if (cancellationError) {
-        console.error("Could not verify COD eligibility before checkout:", cancellationError);
-        setPayment("ONLINE");
-        return setErr("We couldn't verify Cash on Delivery eligibility. Please use full online payment.");
-      }
-      const until = codRestrictionUntil(
-        (cancellations ?? []).map((row) => row.cancelled_at).filter((value): value is string => Boolean(value)),
-        checkedAt,
-      );
-      if (until) {
-        setCodRestriction(until);
-        if (payment === "COD") {
-          setPayment("ONLINE");
-          return setErr(`Cash on Delivery is paused until ${new Date(until).toLocaleDateString()}. Please choose split payment or pay online.`);
-        }
-      } else if (payment === "SPLIT") {
-        return setErr("The split payment option is only available while Cash on Delivery is restricted.");
-      }
+    if (!form.full_name || form.mobile.length < 10 || !form.line) {
+      setCheckoutStep("cart");
+      setErr("Maherbaani kari ne puru delivery address ane mobile number bhari dyo.");
+      return;
     }
 
-    const regularSubtotal = lines
-      .filter((line) => !line.promotionalMinimum)
-      .reduce((sum, line) => sum + line.price * line.qty, 0);
-    const lockedOffer = lines.find(
-      (line) => line.promotionalMinimum && regularSubtotal < line.promotionalMinimum,
-    );
-    if (lockedOffer) {
-      return setErr(`Add ${inr((lockedOffer.promotionalMinimum ?? 0) - regularSubtotal)} more in regular menu items to keep the ₹1 offer.`);
-    }
+    let paidReference: string | null = null;
 
-    const isOnlineCheckout = payment === "ONLINE" || payment === "SPLIT";
-    let paidRef: string | null = null;
-
-    // Step 1: Online payment triggers FIRST directly (without full-screen spinner)
-    if (payable > 0 && isOnlineCheckout) {
+    // Online Payments (UPI, Card, Netbanking) via Cashfree
+    if (selectedAccordion !== "cod" && payable > 0) {
       try {
-        const res = await payInAppWithCashfree({
-          amount: payment === "SPLIT" ? Math.round(payable * 50) / 100 : payable,
+        const paymentRes = await payInAppWithCashfree({
+          amount: payable,
           purpose: "ORDER",
           name: form.full_name,
           email: user.email ?? "",
           mobile: form.mobile,
         });
 
-        // Step 2: Full-screen verification spinner starts ONLY after Cashfree response returns
-        setBusy(true);
-
-        if (!res.ok) {
-          setBusy(false);
-          setPaymentState(res.status === "PENDING" ? "pending" : "failed");
+        if (!paymentRes.ok) {
+          setErr("Payment fail thayu chhe athva radd karva ma aavyu chhe. COD try karo!");
           return;
         }
-        paidRef = res.reference;
-      } catch {
-        setBusy(false);
-        setPaymentState("failed");
+        paidReference = paymentRes.reference;
+      } catch (e: any) {
+        setErr("Payment Gateway connect nathi thayu. Tame Cash on Delivery (COD) select kari shako chho!");
         return;
       }
-    } else {
-      setBusy(true);
     }
 
+    setBusy(true);
+
     try {
-      const { data: sameAddr } = await supabase
-        .from("addresses")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("line", form.line)
-        .eq("pincode", form.pincode)
-        .maybeSingle();
-
-      await supabase.from("addresses").update({ is_default: false }).eq("user_id", user.id);
-      if (sameAddr) {
-        await supabase
-          .from("addresses")
-          .update({ is_default: true, lat: coords.lat, lng: coords.lng })
-          .eq("id", sameAddr.id);
-      } else {
-        await supabase.from("addresses").insert({
-          user_id: user.id,
-          full_name: form.full_name,
-          mobile: form.mobile,
-          pincode: form.pincode,
-          line: form.line,
-          landmark: form.landmark || null,
-          lat: coords.lat,
-          lng: coords.lng,
-          is_default: true,
-        });
-        const { data: all } = await supabase
-          .from("addresses")
-          .select("id")
-          .eq("user_id", user.id)
-          .order("is_default", { ascending: false })
-          .order("created_at", { ascending: false });
-        const extra = (all ?? []).slice(2).map((a) => a.id);
-        if (extra.length) await supabase.from("addresses").delete().in("id", extra);
-      }
-
+      const orderCode = `TW${Date.now().toString().slice(-7)}`;
       const { data: order, error } = await supabase
         .from("orders")
         .insert({
-          code: `TW${Date.now().toString().slice(-7)}`,
+          code: orderCode,
           user_id: user.id,
-          vendor_id: vendor.id,
+          vendor_id: vendor?.id || lines[0]?.vendorId,
           customer_name: form.full_name,
           customer_mobile: form.mobile,
           address_line: form.landmark ? `${form.line}, ${form.landmark}` : form.line,
           pincode: form.pincode,
-          drop_lat: coords.lat,
-          drop_lng: coords.lng,
-          distance_km: bill.distanceKm,
-          food_total: bill.foodTotal,
-          base_food_total: Math.round(baseTotal * 100) / 100,
-          delivery_fee: bill.deliveryFee,
-          platform_fee: bill.platformFee,
-          handling_fee: bill.handlingFee,
-          packing_fee: bill.packingFee,
-          surge_fee: bill.surgeFee,
-          grand_total: netTotal,
-          coupon_code: coupon?.code ?? null,
-          discount_amount: Math.round((couponOff + stallOff + freeCashApplied) * 100) / 100,
-          wallet_paid: walletUse,
-          tip_amount: tip,
-          delivery_instructions: [
-            `KOT: ${lines.map((line) => `${line.qty}x ${line.name}${line.options?.length ? ` (${line.options.join(", ")})` : ""}`).join(", ")}`,
-            instructions.trim(),
-          ].filter(Boolean).join("\n") || null,
-          payment_mode: payable === 0 ? "WALLET" : payment === "SPLIT" ? "COD" : payment,
-          payment_status: payable === 0 || (payment === "ONLINE" && paidRef)
-            ? "PAID"
-            : payment === "SPLIT" && paidRef ? "PARTIAL" : "PENDING",
-          gateway_reference_id: paidRef,
+          drop_lat: coords?.lat ?? 20.2961,
+          drop_lng: coords?.lng ?? 85.8245,
+          distance_km: 2.5,
+          food_total: foodTotal,
+          delivery_fee: deliveryFee,
+          platform_fee: platformFee,
+          grand_total: payable,
+          payment_mode: selectedAccordion === "cod" ? "COD" : "ONLINE",
+          payment_status: selectedAccordion === "cod" ? "PENDING" : "PAID",
+          gateway_reference_id: paidReference,
           pickup_otp: otp(),
           delivery_otp: pin4(),
           status: "ORDER_PLACED",
@@ -636,7 +162,8 @@ function Cart() {
 
       if (error || !order) {
         setBusy(false);
-        return setErr(error?.message ?? "Could not place the order.");
+        setErr(error?.message || "Order place nathi thai shakyo.");
+        return;
       }
 
       await supabase.from("order_items").insert(
@@ -646,31 +173,10 @@ function Cart() {
           name: l.name,
           qty: l.qty,
           price: l.price,
-          mrp: l.mrp,
+          mrp: l.price,
           photo_url: l.photo,
-        })),
+        }))
       );
-
-      if (coupon && couponOff > 0) {
-        await supabase.from("coupon_redemptions").insert({
-          coupon_id: coupon.id,
-          user_id: user.id,
-          order_id: order.id,
-          amount: couponOff,
-        });
-      }
-
-      if (walletUse > 0) {
-        const { error: wErr } = await supabase.rpc("wallet_debit", {
-          _amount: walletUse,
-          _order_id: order.id,
-          _note: "Paid for order",
-        });
-        if (wErr) {
-          setBusy(false);
-          return setErr(wErr.message);
-        }
-      }
 
       setBusy(false);
       setCreatedOrderId(order.id);
@@ -678,804 +184,397 @@ function Cart() {
       cart.clear();
     } catch (e: any) {
       setBusy(false);
-      setErr(e?.message || "Something went wrong.");
+      setErr(e?.message || "Koi bhul aavi chhe.");
     }
+  }
+
+  if (lines.length === 0 && placementStage !== "placing") {
+    return (
+      <Shell>
+        <div className="flex min-h-[60vh] flex-col items-center justify-center p-6 text-center">
+          <div className="grid h-24 w-24 place-items-center rounded-full bg-orange-100 text-[#FF6600]">
+            <ShoppingCart className="h-12 w-12" />
+          </div>
+          <h2 className="mt-4 text-xl font-black">Your Cart is Empty</h2>
+          <p className="mt-1 text-xs text-gray-500">Tame ajuni koi food item add nathi kari.</p>
+          <Link to="/" className="mt-6 rounded-full bg-[#FF6600] px-6 py-3 text-xs font-black text-white">
+            Browse Menu
+          </Link>
+        </div>
+      </Shell>
+    );
   }
 
   return (
     <Shell>
       {checkoutStep === "cart" ? (
-        <>
-          <header className="sticky top-0 z-30 border-b border-border bg-background px-4 pb-3 pt-4">
-            <div className="flex items-center gap-3">
-              <Link to="/" aria-label="Back to home" className="press grid h-10 w-10 place-items-center rounded-full border border-border">
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
-              <div className="min-w-0 flex-1">
-                <h1 className="truncate text-lg font-black">Your Cart</h1>
-                <p className="truncate text-[11px] text-muted-foreground">{vendor?.stall_name ?? "ThelaWala"} · {lines.reduce((sum, line) => sum + line.qty, 0)} items</p>
-              </div>
-              <span className="shrink-0 rounded-full bg-brand-soft px-3 py-2 text-xs font-black text-primary">{inr(savings)} saved!</span>
+        <div className="min-h-screen bg-gray-50 pb-32">
+          {/* Header */}
+          <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-gray-100 bg-white px-4 py-3.5">
+            <Link to="/" className="grid h-9 w-9 place-items-center rounded-full bg-gray-100">
+              <ArrowLeft className="h-5 w-5 text-gray-700" />
+            </Link>
+            <div>
+              <h1 className="text-base font-black text-gray-900">Step 2 of 3: Cart</h1>
+              <p className="text-[11px] text-gray-500">{lines.length} items in your order</p>
             </div>
-            <ol aria-label="Checkout progress" className="mt-4 grid grid-cols-3 gap-2">
-              {(["Menu", "Cart", "Checkout"] as const).map((step, index) => (
-                <li key={step} className={`flex items-center gap-2 text-[11px] font-extrabold ${index <= 1 ? "text-primary" : "text-muted-foreground"}`}>
-                  <span className={`grid h-6 w-6 place-items-center rounded-full text-[10px] ${index === 1 ? "bg-primary text-white" : index === 0 ? "bg-brand-soft text-primary" : "bg-muted text-muted-foreground"}`}>{index === 0 ? "✓" : index + 1}</span>
-                  {step}
-                  {index < 2 ? <span className="h-px flex-1 bg-border" /> : null}
-                </li>
-              ))}
-            </ol>
           </header>
-          <div className="space-y-3 bg-muted/45 p-3 pb-48">
-            <div className="card-soft rise-in grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-black">Bhubaneswar</p>
-                <p className="truncate text-[11px] text-muted-foreground">
-                  {form.line || "Choose a delivery address"}
-                </p>
-              </div>
-              <a
-                href="#delivery-details"
-                className="press shrink-0 rounded-full border border-primary px-3 py-1.5 text-[11px] font-black text-primary"
-              >
-                Change
-              </a>
-            </div>
 
-            <div className="card-soft rise-in p-4">
-              <div className="flex items-center justify-between border-b border-dashed border-border pb-3">
-                <p className="text-base font-black">Your local order</p>
-                <span className="text-xs text-muted-foreground">{lines.reduce((sum, line) => sum + line.qty, 0)} items</span>
-              </div>
-              <div className="mt-3 space-y-3">
-                {lines.map((l) => (
-                  <div key={l.itemId} className="flex items-center gap-3 border-b border-border/70 pb-3 last:border-0 last:pb-0">
-                    <img
-                      src={l.photo ?? "/food/food-tiffin.jpg"}
-                      alt={l.name}
-                      className="h-16 w-16 shrink-0 rounded-2xl bg-muted object-cover"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-extrabold">{l.name}</p>
-                      <p className="line-clamp-2 text-[11px] font-medium leading-snug text-muted-foreground">{vendor?.stall_name ?? "Local stall"} · {l.unit || "Street food"}</p>
-                      <p className="mt-1 text-xs font-bold text-primary">{inr(l.price)} <span className="font-medium text-muted-foreground">each</span></p>
-                    </div>
-                    <div className="flex h-9 items-center gap-2 rounded-full border border-border bg-muted px-1.5 text-foreground">
-                      <button
-                        aria-label="Remove one"
-                        onClick={() => cart.remove(l.itemId)}
-                        className="grid h-7 w-7 place-items-center rounded-full bg-white font-bold text-primary shadow-sm"
-                      >
-                        −
-                      </button>
-                      <span className="min-w-3 text-center text-xs font-bold">{l.qty}</span>
-                      <button
-                        aria-label="Add one"
-                        onClick={() => cart.add(l)}
-                        className="grid h-7 w-7 place-items-center rounded-full bg-primary font-bold text-white"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <p className="min-w-14 text-right text-sm font-extrabold">{inr(l.price * l.qty)}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {suggested.length > 0 ? (
-              <section className="py-2">
-                <div className="mb-3 flex items-end justify-between">
-                  <div>
-                    <h2 className="text-base font-extrabold text-foreground">Popular with your order</h2>
-                    <p className="text-[11px] font-semibold text-muted-foreground">
-                      Popular add-ons from {vendor?.stall_name}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex snap-x gap-3 overflow-x-auto pb-2 no-scrollbar">
-                  {suggested.map((item) => (
-                    <article
-                      key={item.id}
-                      className="w-36 shrink-0 snap-start rounded-3xl border border-border bg-card p-2 shadow-sm"
-                    >
-                      <div className="product-tile relative aspect-square">
-                        <img
-                          src={item.photo_url ?? "/food/food-tiffin.jpg"}
-                          alt={item.name}
-                          className="h-full w-full object-contain p-2"
-                        />
-                        <button
-                          type="button"
-                          aria-label={`Add ${item.name}`}
-                          onClick={() =>
-                            cart.add({
-                              itemId: item.id,
-                              vendorId: item.vendor_id,
-                              name: item.name,
-                              photo: item.photo_url,
-                              unit: item.unit,
-                              base: Number(item.price),
-                              price: Number(item.price),
-                              mrp: Number(item.mrp),
-                            })
-                          }
-                          className="press absolute bottom-2 right-2 grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground shadow-card"
-                        >
-                          <Plus className="h-5 w-5" strokeWidth={2.4} />
-                        </button>
-                      </div>
-                      <p className="mt-2 line-clamp-2 min-h-9 text-xs font-extrabold leading-tight">
-                        {item.name}
-                      </p>
-                      <p className="mt-0.5 text-[10px] text-muted-foreground">{item.unit || "Street food"}</p>
-                      <p className="mt-1 text-sm font-black text-primary">
-                        {inr(Number(item.price))}{" "}
-                        {Number(item.mrp) > Number(item.price) ? (
-                          <span className="text-[10px] font-medium text-muted-foreground line-through">
-                            {inr(Number(item.mrp))}
-                          </span>
-                        ) : null}
-                      </p>
-                    </article>
-                  ))}
-                </div>
-              </section>
-            ) : null}
-
-            {freeCashApplied > 0 ? (
-              <div className="flex items-center justify-between rounded-2xl border border-[#e6c46d] bg-[linear-gradient(110deg,#fff8df,#fff)] px-4 py-3 shadow-sm">
-                <span>
-                  <span className="block text-sm font-black text-[#173665]">₹{freeCashApplied} Free Cash applied</span>
-                  <span className="text-[10px] font-semibold text-muted-foreground">Promotional credit on your food subtotal</span>
-                </span>
-                <span className="grid h-10 w-10 place-items-center rounded-full bg-[#f5d77e] text-lg shadow-inner">🪙</span>
-              </div>
-            ) : null}
-
-            <button onClick={() => setPickerOpen(true)} className="card-soft press rise-in flex w-full items-center gap-3 p-4 text-left">
-              <MapPin className="h-5 w-5 shrink-0 text-primary" />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-black">Bhubaneswar</p>
-                <p className="truncate text-[12px] text-muted-foreground">
-                  {coords ? form.line || "Selected location" : "Choose a delivery address"}
-                </p>
-              </div>
-              <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
-            </button>
-
-            {pickerOpen ? (
-              <div
-                className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/55"
-                onClick={() => setPickerOpen(false)}
-              >
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  className="rise-in w-full max-w-[480px] space-y-3 rounded-t-[2rem] bg-card p-5 pb-8"
-                >
-                  <div className="mx-auto h-1 w-10 rounded-full bg-border" />
-                  <p className="text-xl font-black">Choose delivery location</p>
-                  <p className="text-xs text-muted-foreground">
-                    Pick a saved location or use your current one.
-                  </p>
-                  {saved.map((a) => (
-                    <button
-                      key={a.id}
-                      onClick={() => pickSaved(a)}
-                      className="press flex w-full items-start gap-3 rounded-xl border border-border p-3 text-left"
-                    >
-                      <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                      <span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-black">{a.full_name} · {a.mobile}</span><span className="block truncate text-[11px] text-muted-foreground">{a.line}{a.landmark ? `, ${a.landmark}` : ""} — {a.pincode}</span></span>
-                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => {
-                      setPickerOpen(false);
-                      locate(true);
-                    }}
-                    className="press w-full rounded-2xl bg-primary py-3 text-sm font-black text-primary-foreground"
-                  >
-                    Use my current location
-                  </button>
-                  <button
-                    onClick={() => {
-                      setPickerOpen(false);
-                      setCoords(null);
-                      document
-                        .getElementById("delivery-details")
-                        ?.scrollIntoView({ behavior: "smooth" });
-                    }}
-                    className="press w-full rounded-2xl border border-border py-3 text-sm font-black"
-                  >
-                    Add a new address
-                  </button>
-                </div>
-              </div>
-            ) : null}
-
-            <div
-              id="delivery-details"
-              className="card-elevated rise-in space-y-2 border border-border p-3"
-            >
-              <p className="text-sm font-bold">Delivery details</p>
-              {(
-                [
-                  ["full_name", "Full name", "text"],
-                  ["mobile", "Mobile number", "tel"],
-                  ["pincode", "Pincode", "tel"],
-                  ["landmark", "Landmark (optional)", "text"],
-                ] as const
-              ).map(([k, label, type]) => (
-                <label key={k} className="block">
-                  <span className="mb-1 block text-xs font-semibold text-muted-foreground">
-                    {label}
-                  </span>
-                  <input
-                    type={type}
-                    value={form[k]}
-                    onChange={(e) => setForm({ ...form, [k]: e.target.value })}
-                    className="w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
-                  />
-                </label>
-              ))}
-              <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-muted-foreground">
-                  Full address
-                </span>
-                <textarea
-                  rows={2}
-                  value={form.line}
-                  onChange={(e) => setForm({ ...form, line: e.target.value })}
-                  className="w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
-                />
-              </label>
-              <button
-                onClick={() => locate(true)}
-                disabled={locating}
-                className="w-full rounded-xl border border-primary py-2.5 text-sm font-bold text-primary disabled:opacity-60"
-              >
-                {locating
-                  ? "Finding your address…"
-                  : coords
-                    ? `Location set (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}) · Update`
-                    : "Use my current location"}
-              </button>
-              {coords && vendor ? (
-                <p className="text-xs text-muted-foreground">
-                  {distanceKm} km from {vendor.stall_name} · minimum order{" "}
-                  {inr(minimumOrderValue(distanceKm))} · we deliver up to 15 km
-                </p>
-              ) : null}
-            </div>
-
-            <div className="card-soft rise-in space-y-3 p-4">
-              <p className="text-sm font-bold">Delivery notes</p>
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                {instructionOptions.map(({ label, Icon }) => {
-                  const active = instructions === label;
-                  return (
-                    <button
-                      key={label}
-                      type="button"
-                      onClick={() => setInstructions(active ? "" : label)}
-                      className={`press flex min-h-14 items-center gap-2 rounded-lg border p-2 text-left text-[11px] font-bold ${active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card"}`}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-              <textarea
-                rows={2}
-                value={instructions}
-                onChange={(e) => setInstructions(e.target.value)}
-                placeholder="Delivery instructions (e.g. ring the bell, less spicy)"
-                className="w-full rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
-              />
-            </div>
-
-            <div className="card-soft rise-in space-y-3 p-4">
-              <div className="flex items-center gap-3">
-                <span className="grid h-10 w-10 place-items-center rounded-full bg-brand text-brand-foreground"><Bike className="h-5 w-5" /></span>
-                <div><p className="text-[11px] font-black uppercase text-muted-foreground">Delivery tip</p><p className="text-sm font-bold">100% goes to your delivery partner</p></div>
-              </div>
-              <div className="grid grid-cols-4 gap-2">
-                {[10, 20, 30].map((amount) => (
-                  <button
-                    key={amount}
-                    onClick={() => { setTip(amount); setOtherTipActive(false); }}
-                    className={`press relative rounded-lg border px-2 py-2.5 text-xs font-black ${tip === amount && !otherTipActive ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground"}`}
-                  >
-                    ₹{amount}{amount === 20 ? <span className="absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-brand px-1.5 py-0.5 text-[8px] text-brand-foreground">Most tipped</span> : null}
-                  </button>
-                ))}
-                <button
-                  onClick={() => setOtherTipActive((active) => !active)}
-                  className={`press rounded-lg border px-2 py-2.5 text-xs font-black ${otherTipActive ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground"}`}
-                >Other</button>
-              </div>
-              {otherTipActive ? (
-                <label className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
-                  <span className="text-sm font-bold">₹</span>
-                  <input inputMode="numeric" value={customTip} onChange={(event) => { const value = event.target.value.replace(/\D/g, "").slice(0, 3); setCustomTip(value); setTip(Number(value) || 0); }} placeholder="Enter tip" className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
-                </label>
-              ) : null}
-            </div>
-
-            <div className="coupon-card rise-in p-4">
-              <p className="flex items-center gap-2 text-base font-black"><Tag className="h-5 w-5 text-primary" /> Use coupons</p>
-              <div className="mt-2 flex gap-2">
-                <input
-                  value={codeInput}
-                  onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
-                  placeholder="Enter coupon code"
-                  className="min-w-0 flex-1 rounded-xl border border-border px-3 py-2.5 text-sm uppercase outline-none focus:border-primary"
-                />
-                {coupon ? (
-                  <button
-                    onClick={() => {
-                      setCoupon(null);
-                      setCodeInput("");
-                      setCouponMsg(null);
-                    }}
-                    className="press shrink-0 rounded-xl border border-border px-3 text-xs font-black"
-                  >
-                    Remove
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => void applyCoupon()}
-                    className="press shrink-0 rounded-xl bg-primary px-4 text-xs font-black text-primary-foreground"
-                  >
-                    Apply
-                  </button>
-                )}
-              </div>
-              {couponMsg ? (
-                <p className={`mt-1.5 text-[11px] font-semibold ${coupon ? "text-primary" : "text-destructive"}`}>
-                  {couponMsg}
-                </p>
-              ) : null}
-              <div className="mt-2 flex flex-wrap gap-2">
-                {offers.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => {
-                      setCodeInput(c.code);
-                      setCoupon(null);
-                      setCouponMsg(null);
-                    }}
-                    className="press rounded-full border border-dashed border-primary px-2.5 py-1 text-[11px] font-black text-primary"
-                  >
-                    {c.code} · {c.description}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="rise-in border-y border-border px-1 py-4">
-              <p className="text-[11px] font-black uppercase tracking-wide text-muted-foreground">Bill details</p>
-              {bill ? (
-                <dl className="mt-2 space-y-1.5 text-sm">
-                  <Row label="Item Total" value={inr(bill.foodTotal)} />
-                  {stallOff > 0 ? (
-                    <Row
-                      label={`${vendor?.stall_name ?? "Stall"} offer (${Number(vendor?.offer_percent ?? 0)}% off)`}
-                      value={`− ${inr(stallOff)}`}
-                      good
-                    />
-                  ) : null}
-                  <Row label="Handling Fee" value={inr(bill.handlingFee)} />
-                  <Row
-                    label={`Delivery Partner Fee (${bill.distanceKm} km)`}
-                    value={bill.deliveryFee ? inr(bill.deliveryFee) : "FREE"}
-                  />
-                  <Row label="Platform Fee" value={inr(bill.platformFee)} />
-                  <Row label="GST and Charges" value={inr(bill.packingFee + bill.surgeFee)} />
-                  {couponOff > 0 ? (
-                    <Row label={`Coupon ${coupon?.code}`} value={`− ${inr(couponOff)}`} good />
-                  ) : null}
-                  {freeCashApplied > 0 ? <Row label={`${inr(freeCashApplied)} Free Cash applied`} value={`− ${inr(freeCashApplied)}`} good /> : null}
-                  {hasCampaignFreeDelivery ? <Row label="99 Store free delivery" value="FREE" good /> : null}
-                  {tip > 0 ? <Row label="Tip for delivery partner" value={inr(tip)} /> : null}
-                  {walletUse > 0 ? (
-                    <Row label="Paid from wallet" value={`− ${inr(walletUse)}`} good />
-                  ) : null}
-                  <div className="mt-3 flex justify-between border-t border-dashed border-border pt-3 text-base font-black">
-                    <span>To pay</span>
-                    <span>{inr(payable)}</span>
-                  </div>
-                  {savings > 0 ? (
-                    <div className="mt-3 rounded-lg bg-brand-soft px-3 py-2 text-xs font-black text-primary">
-                      You are saving {inr(savings)} on this order
-                    </div>
-                  ) : null}
-                </dl>
-              ) : !hasLocation ? (
-                <div className="mt-2 space-y-2">
-                  <p className="text-xs font-semibold text-muted-foreground">
-                    Choose a saved address or use your current location. Your delivery fee is worked out
-                    from the exact distance to the stall.
-                  </p>
-                  <button
-                    onClick={() => locate(true)}
-                    disabled={locating}
-                    className="press w-full rounded-xl bg-primary py-2.5 text-sm font-black text-primary-foreground disabled:opacity-60"
-                  >
-                    {locating ? "Finding your location…" : "Use my current location"}
-                  </button>
-                </div>
-              ) : (
-                <p className="mt-2 text-xs text-muted-foreground">Loading charges…</p>
-              )}
-            </div>
-
-            <div className="card-soft p-4 text-sm leading-relaxed text-muted-foreground">
-              <span className="font-black text-destructive">NOTE: </span>Orders cannot be cancelled and are non-refundable once packed for delivery.
-              <Link to="/terms" className="mt-1 block font-black text-primary underline">Read cancellation policy</Link>
-            </div>
-            <CheckoutFeedback message={err} paymentState={paymentState} />
-          </div>
-
-          <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[520px]">
-            <div className="border-t border-border bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(17,24,39,0.1)]">
-              <button type="button" onClick={() => setCheckoutStep("payment")} className="mb-2 flex w-full items-center gap-3 rounded-lg border border-border bg-muted px-3 py-2.5 text-left">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-soft text-primary">{payment === "COD" ? <Banknote className="h-5 w-5" /> : onlineMethod === "UPI" ? <Smartphone className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-xs font-black">{payment === "COD" ? "Cash/Pay on Delivery" : onlineMethod === "UPI" ? "UPI payment" : "Credit or debit card"}</span>
-                  <span className="block truncate text-[10px] text-muted-foreground">{payment === "COD" ? "Pay cash at the time of delivery." : `Pay securely with ${settings?.payment_gateway ?? "online payment"}.`}</span>
-                </span>
-                <span className="flex shrink-0 items-center gap-0.5 text-[11px] font-black text-primary">Change <ChevronRight className="h-3.5 w-3.5" /></span>
-              </button>
-              {blockedReason ? <p className="px-1 pb-2 text-[11px] font-bold text-destructive">{minimumShortfall > 0 ? `Add ${inr(minimumShortfall)} more to order` : blockedReason}</p> : null}
-              <button disabled={busy || !!blockedReason || !hasLocation || promotionalCredit.loading} onClick={() => void place()} className="press flex w-full items-center justify-between gap-3 rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-md disabled:opacity-50">
-                <span className="flex items-center gap-2"><ChevronsRight className="h-5 w-5" /><span className="text-sm font-black">{busy ? "Placing your order…" : minimumShortfall > 0 ? `Add ${inr(minimumShortfall)} more to order` : payment === "COD" ? "Place Cash Order" : `Pay with ${onlineMethod}`}</span></span>
-                <span className="shrink-0 text-base font-black">{bill ? inr(payable) : "—"}</span>
-              </button>
-            </div>
-          </div>
-        </>
-      ) : (
-        <>
-          <header className="sticky top-0 z-30 bg-background px-4 py-4">
-            <div className="flex items-center gap-3">
-              <button type="button" onClick={() => setCheckoutStep("cart")} aria-label="Back to your cart" className="press grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border">
-                <ArrowLeft className="h-5 w-5" />
-              </button>
-              <div className="min-w-0 flex-1">
-                <h1 className="truncate text-lg font-black">Pay on Delivery &amp; UPI</h1>
-                <p className="text-[11px] text-muted-foreground">Choose how you&apos;d like to pay</p>
-              </div>
-            </div>
-            <ol aria-label="Checkout progress" className="mt-4 grid grid-cols-3 gap-2">
-              {(["Menu", "Cart", "Checkout"] as const).map((step, index) => (
-                <li key={step} className={`flex items-center gap-2 text-[11px] font-extrabold ${index < 2 ? "text-primary" : "text-muted-foreground"}`}>
-                  <span className={`grid h-6 w-6 place-items-center rounded-full text-[10px] ${index < 2 ? "bg-brand-soft text-primary" : "bg-primary text-white"}`}>{index < 2 ? "✓" : index + 1}</span>
-                  {step}
-                  {index < 2 ? <span className="h-px flex-1 bg-border" /> : null}
-                </li>
-              ))}
-            </ol>
-          </header>
-          <main className="space-y-3 bg-muted/45 p-3 pb-36">
-            <section className="card-soft space-y-3 p-4">
-              <div className="flex items-start gap-3">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand text-brand-foreground"><MapPin className="h-5 w-5" /></span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-black leading-snug">{form.full_name || "Delivery details"}{form.mobile ? ` · ${form.mobile}` : ""}</p>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">{form.line}{form.pincode ? ` · ${form.pincode}` : ""}</p>
-                  {form.landmark ? <p className="truncate text-[11px] text-muted-foreground">{form.landmark}</p> : null}
-                </div>
-                <button type="button" onClick={() => { setCheckoutStep("cart"); setTimeout(() => document.getElementById("delivery-details")?.scrollIntoView({ behavior: "smooth" }), 0); }} className="text-xs font-black text-primary">Edit</button>
-              </div>
-            </section>
-
-            <section className="card-soft space-y-2 p-4">
-              <p className="text-sm font-bold">Delivery notes</p>
-              <p className="text-xs text-muted-foreground">{instructions || "No delivery notes added."}</p>
-            </section>
-
-            {/* 1. UPI Payment Accordion */}
-            <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
-              <div 
-                onClick={() => setPaymentAccordion(paymentAccordion === "upi" ? "" : "upi")}
-                className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/40"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">⚡</span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-bold text-gray-800">UPI (Instant Pay)</h4>
-                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-700">Fastest</span>
-                    </div>
-                    <p className="text-[11px] text-gray-500">Google Pay, PhonePe, Paytm, BHIM</p>
-                  </div>
-                </div>
-                <span className="text-xs text-gray-400 font-bold">{paymentAccordion === "upi" ? "▲" : "▼"}</span>
-              </div>
-
-              {paymentAccordion === "upi" && (
-                <div className="border-t border-white/60 bg-white/40 p-4 space-y-3">
-                  <div className="grid grid-cols-3 gap-2">
-                    {["Google Pay", "PhonePe", "Paytm"].map((app) => (
-                      <button
-                        key={app}
-                        type="button"
-                        onClick={() => { setPayment("ONLINE"); setOnlineMethod("UPI"); }}
-                        className={`p-2.5 rounded-xl border text-xs font-bold transition-all shadow-xs ${payment === "ONLINE" && onlineMethod === "UPI" ? "border-primary bg-primary text-white" : "border-gray-200 bg-white text-gray-700"}`}
-                      >
-                        {app}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="pt-2">
-                    <input
-                      type="text"
-                      placeholder="Enter UPI ID (e.g. mobile@upi)"
-                      value={upiIdInput}
-                      onChange={(e) => setUpiIdInput(e.target.value)}
-                      className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs outline-none focus:border-primary"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 2. Scan & Pay QR */}
-            <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
-              <div 
-                onClick={() => setPaymentAccordion(paymentAccordion === "qr" ? "" : "qr")}
-                className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/40"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">📷</span>
-                  <div>
-                    <h4 className="text-sm font-bold text-gray-800">Scan & Pay (QR Code)</h4>
-                    <p className="text-[11px] text-gray-500">Scan using any UPI App</p>
-                  </div>
-                </div>
-                <span className="text-xs text-gray-400 font-bold">{paymentAccordion === "qr" ? "▲" : "▼"}</span>
-              </div>
-
-              {paymentAccordion === "qr" && (
-                <div className="border-t border-white/60 bg-white/40 p-4 text-center">
-                  <div className="mx-auto flex h-36 w-36 items-center justify-center rounded-2xl border-2 border-dashed border-orange-300 bg-white shadow-inner">
-                    <span className="text-xs font-bold text-gray-400">QR Ready via Cashfree</span>
-                  </div>
-                  <p className="mt-2 text-[11px] text-gray-500">Payment screen will open scanner automatically</p>
-                </div>
-              )}
-            </div>
-
-            {/* 3. Cards */}
-            <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
-              <div 
-                onClick={() => setPaymentAccordion(paymentAccordion === "card" ? "" : "card")}
-                className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/40"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">💳</span>
-                  <div>
-                    <h4 className="text-sm font-bold text-gray-800">Credit / Debit / ATM Card</h4>
-                    <p className="text-[11px] text-gray-500">Visa, Mastercard, RuPay</p>
-                  </div>
-                </div>
-                <span className="text-xs text-gray-400 font-bold">{paymentAccordion === "card" ? "▲" : "▼"}</span>
-              </div>
-
-              {paymentAccordion === "card" && (
-                <div className="border-t border-white/60 bg-white/40 p-4 space-y-3">
-                  <input
-                    type="text"
-                    maxLength={19}
-                    placeholder="Card Number (XXXX XXXX XXXX XXXX)"
-                    value={cardNumber}
-                    onChange={(e) => { setPayment("ONLINE"); setOnlineMethod("CARD"); setCardNumber(e.target.value); }}
-                    className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs outline-none focus:border-primary"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      placeholder="MM/YY"
-                      maxLength={5}
-                      value={expiry}
-                      onChange={(e) => setExpiry(e.target.value)}
-                      className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs outline-none focus:border-primary"
-                    />
-                    <input
-                      type="password"
-                      placeholder="CVV"
-                      maxLength={4}
-                      value={cvv}
-                      onChange={(e) => setCvv(e.target.value)}
-                      className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs outline-none focus:border-primary"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 4. Net Banking */}
-            <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
-              <div 
-                onClick={() => setPaymentAccordion(paymentAccordion === "netbanking" ? "" : "netbanking")}
-                className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/40"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">🏛️</span>
-                  <div>
-                    <h4 className="text-sm font-bold text-gray-800">Net Banking</h4>
-                    <p className="text-[11px] text-gray-500">SBI, HDFC, ICICI, Axis & more</p>
-                  </div>
-                </div>
-                <span className="text-xs text-gray-400 font-bold">{paymentAccordion === "netbanking" ? "▲" : "▼"}</span>
-              </div>
-
-              {paymentAccordion === "netbanking" && (
-                <div className="border-t border-white/60 bg-white/40 p-4">
-                  <select
-                    value={selectedBank}
-                    onChange={(e) => { setPayment("ONLINE"); setSelectedBank(e.target.value); }}
-                    className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs outline-none focus:border-primary"
-                  >
-                    <option value="">-- Select Your Bank --</option>
-                    <option value="SBI">State Bank of India (SBI)</option>
-                    <option value="HDFC">HDFC Bank</option>
-                    <option value="ICICI">ICICI Bank</option>
-                    <option value="AXIS">Axis Bank</option>
-                  </select>
-                </div>
-              )}
-            </div>
-
-            {/* 5. Pay Later */}
-            <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
-              <div 
-                onClick={() => setPaymentAccordion(paymentAccordion === "paylater" ? "" : "paylater")}
-                className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/40"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">⏳</span>
-                  <div>
-                    <h4 className="text-sm font-bold text-gray-800">Pay Later</h4>
-                    <p className="text-[11px] text-gray-500">Simpl, LazyPay, ICICI</p>
-                  </div>
-                </div>
-                <span className="text-xs text-gray-400 font-bold">{paymentAccordion === "paylater" ? "▲" : "▼"}</span>
-              </div>
-
-              {paymentAccordion === "paylater" && (
-                <div className="border-t border-white/60 bg-white/40 p-4 text-center">
-                  <p className="text-xs text-gray-600">Instant credit verified with your mobile: {form.mobile || "9583059787"}</p>
-                </div>
-              )}
-            </div>
-
-            {/* 6. Cash on Delivery (COD) */}
-            {settings?.enable_cod !== false && codPolicyChecked && !codPolicyError && !codRestriction && (
-              <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
-                <div 
-                  onClick={() => { setPayment("COD"); setPaymentAccordion("cod"); }}
-                  className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/40"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">💵</span>
-                    <div>
-                      <h4 className="text-sm font-bold text-gray-800">Cash on Delivery (COD)</h4>
-                      <p className="text-[11px] text-gray-500">Pay cash when food arrives</p>
-                    </div>
-                  </div>
-                  <input 
-                    type="radio" 
-                    checked={payment === "COD"} 
-                    onChange={() => setPayment("COD")} 
-                    className="h-4 w-4 accent-primary"
-                  />
-                </div>
+          <main className="p-4 space-y-4 max-w-lg mx-auto">
+            {err && (
+              <div className="rounded-xl bg-red-50 p-3 text-xs font-bold text-red-600 border border-red-200">
+                {err}
               </div>
             )}
 
-            <section className="card-soft p-4">
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Order total</span><span className="font-bold">{inr(netTotal)}</span></div>
-              {freeCashApplied > 0 ? <div className="mt-2 flex justify-between text-sm"><span className="text-muted-foreground">{inr(freeCashApplied)} Free Cash applied</span><span className="font-bold text-primary">− {inr(freeCashApplied)}</span></div> : null}
-              {promotionalCredit.error ? <p role="status" className="mt-2 text-[11px] font-semibold text-[#735519]">Free Cash could not be verified; no credit has been applied.</p> : null}
-              {promotionalCredit.loading ? <p aria-live="polite" className="mt-2 text-[11px] font-semibold text-muted-foreground">Checking your Free Cash eligibility…</p> : null}
-              {walletUse > 0 ? <div className="mt-2 flex justify-between text-sm"><span className="text-muted-foreground">Wallet balance</span><span className="font-bold text-primary">− {inr(walletUse)}</span></div> : null}
-              {payment === "SPLIT" ? (
-                <>
-                  <div className="mt-2 flex justify-between text-sm"><span className="text-muted-foreground">Pay online now</span><span className="font-bold">{inr(onlineDue)}</span></div>
-                  <div className="mt-2 flex justify-between text-sm"><span className="text-muted-foreground">Due on delivery</span><span className="font-bold">{inr(payable - onlineDue)}</span></div>
-                </>
-              ) : null}
-              <div className="mt-3 flex justify-between border-t border-border pt-3 text-base font-black"><span>{payment === "SPLIT" ? "Total remaining after wallet" : "To pay"}</span><span>{inr(payable)}</span></div>
-            </section>
-            <CheckoutFeedback message={err} paymentState={paymentState} />
+            {/* Cart Items */}
+            <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm divide-y divide-gray-100">
+              {lines.map((l) => (
+                <div key={l.itemId} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                  <div className="flex items-center gap-3">
+                    {l.photo && <img src={l.photo} alt={l.name} className="h-12 w-12 rounded-xl object-cover" />}
+                    <div>
+                      <p className="text-xs font-bold text-gray-900 line-clamp-1">{l.name}</p>
+                      <p className="text-xs font-black text-[#FF6600]">₹{l.price}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2.5 rounded-lg bg-orange-50 px-2 py-1 text-xs font-black text-[#FF6600]">
+                    <button onClick={() => cart.remove(l.itemId)}>−</button>
+                    <span>{l.qty}</span>
+                    <button onClick={() => cart.add(l)}>+</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Delivery Details */}
+            <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm space-y-3">
+              <h3 className="text-xs font-black uppercase tracking-wider text-gray-400">Delivery Address</h3>
+              <input
+                type="text"
+                placeholder="Receiver's Full Name"
+                value={form.full_name}
+                onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                className="w-full rounded-xl border border-gray-200 p-2.5 text-xs outline-none focus:border-[#FF6600]"
+              />
+              <input
+                type="tel"
+                placeholder="10-digit Mobile Number"
+                value={form.mobile}
+                onChange={(e) => setForm({ ...form, mobile: e.target.value })}
+                className="w-full rounded-xl border border-gray-200 p-2.5 text-xs outline-none focus:border-[#FF6600]"
+              />
+              <textarea
+                placeholder="House / Flat / Street address in Bhubaneswar"
+                value={form.line}
+                onChange={(e) => setForm({ ...form, line: e.target.value })}
+                className="w-full rounded-xl border border-gray-200 p-2.5 text-xs outline-none focus:border-[#FF6600]"
+                rows={2}
+              />
+            </div>
+
+            {/* Price Details */}
+            <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm space-y-2 text-xs">
+              <div className="flex justify-between text-gray-600">
+                <span>Food Subtotal</span>
+                <span className="font-bold text-gray-900">₹{foodTotal}</span>
+              </div>
+              <div className="flex justify-between text-gray-600">
+                <span>Delivery Fee</span>
+                <span className="font-bold text-gray-900">₹{deliveryFee}</span>
+              </div>
+              <div className="flex justify-between text-gray-600">
+                <span>Platform Fee</span>
+                <span className="font-bold text-gray-900">₹{platformFee}</span>
+              </div>
+              <div className="border-t border-gray-100 pt-2 flex justify-between text-sm font-black text-gray-900">
+                <span>Total Amount</span>
+                <span className="text-[#FF6600]">₹{payable}</span>
+              </div>
+            </div>
           </main>
-          <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[520px] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            <button type="button" disabled={busy || !!blockedReason || promotionalCredit.loading || ((payment === "ONLINE" || payment === "SPLIT") && !settings?.enable_online_payment)} onClick={() => void place()} className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-card disabled:opacity-50">
-              <span><span className="block text-[10px] font-bold opacity-75">{busy ? "SECURELY PROCESSING" : payment === "SPLIT" ? "PAY ONLINE NOW" : "TOTAL TO PAY"}</span><span className="text-lg font-black">{inr(onlineDue)}</span></span>
-              <span className="flex items-center gap-2 text-sm font-black">{busy ? "Please wait…" : minimumShortfall > 0 ? `Add ${inr(minimumShortfall)} more to order` : payment === "COD" ? `Pay ${inr(payable)} with Cash` : payment === "SPLIT" ? `Pay 50% now via ${onlineMethod}` : `Pay ${inr(payable)} with ${onlineMethod}`}<ChevronRight className="h-4 w-4" /></span>
+
+          {/* Bottom Proceed Bar */}
+          <div className="fixed inset-x-0 bottom-0 z-30 bg-white border-t border-gray-100 p-3 shadow-lg max-w-lg mx-auto">
+            <button
+              onClick={() => {
+                if (!form.full_name || form.mobile.length < 10 || !form.line) {
+                  setErr("Krupa kari ne pehla delivery address puro lakho.");
+                  return;
+                }
+                setErr(null);
+                setCheckoutStep("payment");
+              }}
+              className="w-full rounded-2xl bg-[#FF6600] py-4 text-sm font-black text-white shadow-lg shadow-orange-500/25 active:scale-95 flex items-center justify-between px-6"
+            >
+              <span>Total: ₹{payable}</span>
+              <span>Select Payment Method →</span>
             </button>
           </div>
-        </>
-      )}
-
-      {addressConfirmOpen ? (
-        <div className="fixed inset-0 z-[60] grid place-items-center bg-foreground/60 p-5" onClick={() => setAddressConfirmOpen(false)}>
-          <div className="rise-in w-full max-w-sm rounded-2xl bg-card p-5 shadow-card" onClick={(e) => e.stopPropagation()}>
-            <p className="text-2xl font-black">Confirm details</p>
-            <div className="mt-4 flex gap-3"><MapPin className="mt-0.5 h-5 w-5 text-primary" /><div><p className="font-black">Bhubaneswar</p><p className="text-sm text-muted-foreground">{form.line}{form.landmark ? `, ${form.landmark}` : ""} — {form.pincode}</p></div></div>
-            <div className="mt-4 flex gap-3"><Phone className="mt-0.5 h-5 w-5 text-primary" /><p className="font-black">{form.full_name || "Receiver"}, {form.mobile || "add mobile number"}</p></div>
-            <div className="mt-5 grid grid-cols-2 gap-2"><button onClick={() => { setAddressConfirmOpen(false); document.getElementById("delivery-details")?.scrollIntoView({ behavior: "smooth" }); }} className="press rounded-xl bg-brand-soft py-3 text-sm font-black text-primary">Edit details</button><button onClick={() => setAddressConfirmOpen(false)} className="press rounded-xl bg-primary py-3 text-sm font-black text-primary-foreground">Confirm</button></div>
-          </div>
         </div>
-      ) : null}
-
-      {/* 1. Live Payment Processing (Orange Circular Spinner) */}
-      {busy && (
-        <div className="fixed inset-0 z-[120] flex flex-col items-center justify-center bg-black/60 p-6 backdrop-blur-sm">
-          <div className="flex flex-col items-center rounded-[32px] bg-white p-8 text-center shadow-2xl">
-            <div className="relative flex h-20 w-20 items-center justify-center">
-              <span className="absolute inset-0 rounded-full border-4 border-orange-100" />
-              <span className="absolute inset-0 animate-spin rounded-full border-4 border-[#ff6600] border-t-transparent" />
-              <span className="h-4 w-4 rounded-full bg-[#ff6600]" />
+      ) : (
+        /* FLIPKART STYLE STEP 3: PAYMENTS ACCORDION VIEW */
+        <div className="min-h-screen bg-gray-50 pb-28">
+          <header className="sticky top-0 z-30 flex items-center justify-between border-b border-gray-100 bg-white px-4 py-3.5">
+            <div className="flex items-center gap-3">
+              <button onClick={() => setCheckoutStep("cart")} className="grid h-9 w-9 place-items-center rounded-full bg-gray-100">
+                <ArrowLeft className="h-5 w-5 text-gray-700" />
+              </button>
+              <div>
+                <p className="text-[11px] font-bold text-gray-400">Step 3 of 3</p>
+                <h1 className="text-base font-black text-gray-900">Payments</h1>
+              </div>
             </div>
-            <h3 className="mt-5 text-lg font-black text-gray-900">Verifying Payment</h3>
-            <p className="mt-1 text-xs text-gray-500 max-w-[200px]">
-              Waiting for UPI confirmation. Please do not close or press back...
-            </p>
-          </div>
-        </div>
-      )}
+            <span className="flex items-center gap-1 text-[11px] font-bold text-gray-500">
+              <ShieldCheck className="h-4 w-4 text-emerald-600" /> 100% Secure
+            </span>
+          </header>
 
-      {/* 2. Payment Failed Dialog */}
-      {paymentState === "failed" && !busy && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-[340px] overflow-hidden rounded-[32px] bg-white p-6 text-center shadow-2xl">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-50 text-red-500">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="15" y1="9" x2="9" y2="15" />
-                <line x1="9" y1="9" x2="15" y2="15" />
-              </svg>
+          <main className="p-4 space-y-3 max-w-lg mx-auto">
+            {/* Total Amount Header Card */}
+            <div className="flex items-center justify-between rounded-2xl bg-blue-50/60 border border-blue-100 p-4">
+              <div>
+                <span className="text-xs font-bold text-gray-500">Total Amount</span>
+                <p className="text-xl font-black text-blue-950">₹{payable}</p>
+              </div>
+              <span className="rounded-full bg-blue-100 px-3 py-1 text-[11px] font-bold text-blue-800">
+                {lines.length} Items
+              </span>
             </div>
-            <h3 className="mt-4 text-xl font-black text-gray-900">Order Not Placed</h3>
-            <p className="mt-2 text-xs leading-relaxed text-gray-500">
-              Payment was declined or cancelled. If money was deducted, it will be refunded automatically by your bank.
-            </p>
-            <div className="mt-6 flex flex-col gap-2.5">
+
+            {err && (
+              <div className="rounded-xl bg-red-50 p-3 text-xs font-bold text-red-600 border border-red-200">
+                {err}
+              </div>
+            )}
+
+            {/* 1. UPI ACCORDION */}
+            <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
               <button
                 type="button"
-                onClick={() => {
-                  setPaymentState(null);
-                  void place();
-                }}
-                className="w-full rounded-2xl bg-[#ff6600] py-3.5 text-sm font-black text-white shadow-lg shadow-orange-500/25 active:scale-95 transition-all"
+                onClick={() => setSelectedAccordion("upi")}
+                className="w-full flex items-center justify-between p-4 text-left"
               >
-                Retry Payment
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100/70 text-lg">⚡</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-black text-gray-900">UPI</h4>
+                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-700">Instant</span>
+                    </div>
+                    <p className="text-[10px] text-gray-500">Pay by any UPI app (PhonePe, GPay, Paytm)</p>
+                  </div>
+                </div>
+                {selectedAccordion === "upi" ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
               </button>
+
+              {selectedAccordion === "upi" && (
+                <div className="border-t border-gray-100 bg-gray-50/70 p-4 space-y-3">
+                  <div className="space-y-2">
+                    {/* PhonePe Option with Logo styling */}
+                    <label 
+                      onClick={() => setSelectedUpiApp("phonepe")} 
+                      className="flex items-center justify-between p-3 rounded-xl bg-white border border-gray-200 cursor-pointer shadow-xs"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-7 w-7 rounded-full bg-[#5f259f] flex items-center justify-center text-white text-[10px] font-black">
+                          पे
+                        </div>
+                        <span className="text-xs font-bold text-gray-800">PhonePe UPI</span>
+                      </div>
+                      <input 
+                        type="radio" 
+                        name="upi_method" 
+                        checked={selectedUpiApp === "phonepe"} 
+                        onChange={() => setSelectedUpiApp("phonepe")} 
+                        className="accent-[#FF6600]"
+                      />
+                    </label>
+
+                    {/* Google Pay Option */}
+                    <label 
+                      onClick={() => setSelectedUpiApp("gpay")} 
+                      className="flex items-center justify-between p-3 rounded-xl bg-white border border-gray-200 cursor-pointer shadow-xs"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-7 w-7 rounded-full bg-white border border-gray-200 flex items-center justify-center text-xs font-black text-blue-600">
+                          G
+                        </div>
+                        <span className="text-xs font-bold text-gray-800">Google Pay</span>
+                      </div>
+                      <input 
+                        type="radio" 
+                        name="upi_method" 
+                        checked={selectedUpiApp === "gpay"} 
+                        onChange={() => setSelectedUpiApp("gpay")} 
+                        className="accent-[#FF6600]"
+                      />
+                    </label>
+
+                    {/* Paytm Option */}
+                    <label 
+                      onClick={() => setSelectedUpiApp("paytm")} 
+                      className="flex items-center justify-between p-3 rounded-xl bg-white border border-gray-200 cursor-pointer shadow-xs"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-7 w-7 rounded-full bg-[#002e6e] flex items-center justify-center text-white text-[9px] font-black">
+                          Pay
+                        </div>
+                        <span className="text-xs font-bold text-gray-800">Paytm UPI</span>
+                      </div>
+                      <input 
+                        type="radio" 
+                        name="upi_method" 
+                        checked={selectedUpiApp === "paytm"} 
+                        onChange={() => setSelectedUpiApp("paytm")} 
+                        className="accent-[#FF6600]"
+                      />
+                    </label>
+
+                    {/* WhatsApp Pay */}
+                    <label 
+                      onClick={() => setSelectedUpiApp("whatsapp")} 
+                      className="flex items-center justify-between p-3 rounded-xl bg-white border border-gray-200 cursor-pointer shadow-xs"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-7 w-7 rounded-full bg-[#25D366] flex items-center justify-center text-white text-[10px] font-bold">
+                          💬
+                        </div>
+                        <span className="text-xs font-bold text-gray-800">WhatsApp Payment</span>
+                      </div>
+                      <input 
+                        type="radio" 
+                        name="upi_method" 
+                        checked={selectedUpiApp === "whatsapp"} 
+                        onChange={() => setSelectedUpiApp("whatsapp")} 
+                        className="accent-[#FF6600]"
+                      />
+                    </label>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleFinalPlaceOrder}
+                    disabled={busy}
+                    className="w-full rounded-xl bg-[#FFC200] py-3.5 text-xs font-black text-black shadow-sm active:scale-95 transition-all"
+                  >
+                    {busy ? "Connecting UPI..." : `Pay ₹${payable}`}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* 2. CREDIT / DEBIT / ATM CARD ACCORDION */}
+            <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
               <button
                 type="button"
-                onClick={() => {
-                  setPaymentState(null);
-                  setPayment("COD");
-                }}
-                className="w-full rounded-2xl border border-gray-200 py-3 text-xs font-bold text-gray-700 active:scale-95 transition-all"
+                onClick={() => setSelectedAccordion("card")}
+                className="w-full flex items-center justify-between p-4 text-left"
               >
-                Change to Cash on Delivery
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                    <CreditCard className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h4 className="text-xs font-black text-gray-900">Credit / Debit / ATM Card</h4>
+                    <p className="text-[10px] text-gray-500">Visa, MasterCard, RuPay</p>
+                  </div>
+                </div>
+                {selectedAccordion === "card" ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
               </button>
+
+              {selectedAccordion === "card" && (
+                <div className="border-t border-gray-100 bg-gray-50/70 p-4 space-y-3">
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-500">Card Number</label>
+                    <input
+                      type="text"
+                      placeholder="XXXX XXXX XXXX XXXX"
+                      maxLength={19}
+                      value={cardNumber}
+                      onChange={(e) => setCardNumber(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs outline-none focus:border-[#FF6600]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-500">Valid Thru</label>
+                      <input
+                        type="text"
+                        placeholder="MM / YY"
+                        maxLength={5}
+                        value={validThru}
+                        onChange={(e) => setValidThru(e.target.value)}
+                        className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs outline-none focus:border-[#FF6600]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-500">CVV</label>
+                      <input
+                        type="password"
+                        placeholder="CVV"
+                        maxLength={4}
+                        value={cvv}
+                        onChange={(e) => setCvv(e.target.value)}
+                        className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs outline-none focus:border-[#FF6600]"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleFinalPlaceOrder}
+                    disabled={busy}
+                    className="w-full rounded-xl bg-[#FFC200] py-3.5 text-xs font-black text-black shadow-sm active:scale-95 transition-all"
+                  >
+                    {busy ? "Processing..." : `Pay ₹${payable}`}
+                  </button>
+                </div>
+              )}
             </div>
-          </div>
+
+            {/* 3. CASH ON DELIVERY ACCORDION (FULLY FUNCTIONAL) */}
+            <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+              <button
+                type="button"
+                onClick={() => setSelectedAccordion("cod")}
+                className="w-full flex items-center justify-between p-4 text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                    <Banknote className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h4 className="text-xs font-black text-gray-900">Cash on Delivery (COD)</h4>
+                    <p className="text-[10px] text-gray-500">Pay cash when food is delivered</p>
+                  </div>
+                </div>
+                {selectedAccordion === "cod" ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
+              </button>
+
+              {selectedAccordion === "cod" && (
+                <div className="border-t border-gray-100 bg-gray-50/70 p-4 space-y-3">
+                  <p className="text-[11px] text-gray-500 leading-relaxed">
+                    Street food delivered fresh to your doorstep. Keep cash ready for payment!
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleFinalPlaceOrder}
+                    disabled={busy}
+                    className="w-full rounded-xl bg-[#FFC200] py-3.5 text-xs font-black text-black shadow-sm active:scale-95 transition-all"
+                  >
+                    {busy ? "Placing Order..." : "Place Order"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </main>
         </div>
       )}
 
-      {/* 3. Orange Order Successful Screen */}
+      {/* MATCHING FULL SCREEN ORANGE ORDER SUCCESSFUL DIALOG */}
       {placementStage === "placing" && (
-        <div className="fixed inset-0 z-[130] flex flex-col bg-white overflow-y-auto">
-          <div className="flex items-center px-4 py-4">
+        <div className="fixed inset-0 z-[150] flex flex-col bg-white overflow-y-auto">
+          <div className="flex items-center px-4 py-4 border-b border-gray-100">
             <button
               onClick={() => {
                 cart.clear();
@@ -1487,69 +586,29 @@ function Cart() {
             </button>
           </div>
 
-          <div className="flex flex-col items-center px-6 pt-4 pb-8">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-[#ff6600] bg-orange-50 text-[#ff6600]">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+          <div className="flex flex-col items-center px-6 pt-6 pb-10">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-[#FF6600] bg-orange-50 text-[#FF6600]">
+              <Check className="h-10 w-10" strokeWidth={3} />
             </div>
 
             <h2 className="mt-4 text-2xl font-black text-gray-900">Order Successful</h2>
-            <p className="mt-1 text-xs text-gray-400 italic">"Hot &amp; fresh street food on its way"</p>
-            <span className="mt-2 text-xs font-bold text-[#ff6600]">
+            <p className="mt-1 text-xs text-gray-400 italic">"Hot & fresh street food on its way"</p>
+            <span className="mt-2 text-xs font-bold text-[#FF6600]">
               order ID: #{createdOrderId ? createdOrderId.slice(-7) : Date.now().toString().slice(-7)}
             </span>
 
-            <div className="mt-6 w-full max-w-sm">
-              <div className="flex items-center justify-between pb-2">
-                <h3 className="text-base font-black text-gray-900">Order summary</h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (createdOrderId) {
-                      void navigate({ to: `/orders/${createdOrderId}` });
-                    }
-                  }}
-                  className="rounded-full bg-black px-3.5 py-1 text-[11px] font-bold text-white shadow-sm"
-                >
-                  Track Order
-                </button>
+            <div className="mt-6 w-full max-w-sm rounded-2xl bg-gray-50 p-4 border border-gray-100">
+              <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                <h3 className="text-sm font-black text-gray-900">Order summary</h3>
+                <span className="rounded-full bg-black px-3 py-1 text-[10px] font-bold text-white">
+                  {selectedAccordion === "cod" ? "COD" : "Prepaid"}
+                </span>
               </div>
 
-              <div className="space-y-3 py-3 border-b border-gray-100">
-                {lines.map((l) => (
-                  <div key={l.itemId} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={l.photo ?? "/food/food-tiffin.jpg"}
-                        alt={l.name}
-                        className="h-10 w-10 rounded-xl object-cover bg-gray-100"
-                      />
-                      <span className="font-bold text-gray-800 line-clamp-1 max-w-[140px]">{l.name}</span>
-                    </div>
-                    <span className="text-gray-400 font-medium">{l.qty}Qty</span>
-                    <span className="font-black text-gray-900">₹{l.price * l.qty}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-4 space-y-2 text-xs text-gray-500">
+              <div className="mt-3 space-y-1.5 text-xs text-gray-600">
                 <div className="flex justify-between">
-                  <span>Sub Total</span>
-                  <span className="font-bold text-gray-800">₹{bill?.foodTotal ?? 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Platform fees</span>
-                  <span className="font-bold text-gray-800">₹{bill?.platformFee ?? 3}</span>
-                </div>
-                <div className="my-2 border-t border-gray-100" />
-                <div className="flex justify-between text-sm font-black text-gray-900">
                   <span>Grand Total</span>
-                  <span>₹{payable}</span>
-                </div>
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>Payment mode</span>
-                  <span className="font-bold text-[#ff6600]">{payment === "COD" ? "Cash" : "Prepaid"}</span>
+                  <span className="font-black text-gray-900">₹{payable}</span>
                 </div>
               </div>
 
@@ -1559,7 +618,7 @@ function Cart() {
                   cart.clear();
                   void navigate({ to: "/" });
                 }}
-                className="mt-8 w-full rounded-full bg-[#ff6600] py-4 text-sm font-black text-white shadow-lg shadow-orange-500/25 active:scale-95 transition-all text-center"
+                className="mt-6 w-full rounded-full bg-[#FF6600] py-3.5 text-xs font-black text-white shadow-lg shadow-orange-500/25 active:scale-95 transition-all text-center"
               >
                 Continue to shop
               </button>
@@ -1568,38 +627,5 @@ function Cart() {
         </div>
       )}
     </Shell>
-  );
-}
-
-function PayBtn({
-  active,
-  onClick,
-  label,
-  hint,
-  Icon,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  hint: string;
-  Icon?: import("react").ComponentType<{ className?: string }>;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-xl border px-3 py-2.5 text-left ${active ? "border-primary" : "border-border"}`}
-    >
-      <p className={`flex items-center gap-1.5 text-sm font-bold ${active ? "text-primary" : ""}`}>{Icon ? <Icon className="h-4 w-4" /> : null}{label}</p>
-      <p className="text-[11px] text-muted-foreground">{hint}</p>
-    </button>
-  );
-}
-
-function Row({ label, value, good }: { label: string; value: string; good?: boolean }) {
-  return (
-    <div className="flex justify-between">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className={good ? "font-semibold text-primary" : ""}>{value}</dd>
-    </div>
   );
 }
