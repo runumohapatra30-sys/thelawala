@@ -17,3 +17,7 @@
 - Keep independent home-panel visibility in protected visual settings and header artwork in app_theme_config; presentation switches must never affect catalog data.
 - Load food background removal only in the browser, queue catalog cutouts, and persist admin-approved foreground uploads in campaign promo-card JSON to avoid reprocessing them.
 - Rain UI uses current Bhubaneswar Open-Meteo conditions, not promotional weather tags, so an active rain campaign cannot fabricate live weather.
+
+- Mount the launch splash once in the root so route navigation never replays it; preload images without blocking catalog rendering.
+- Render custom payments with Cashfree-managed Elements and its supported bank identifiers; never collect raw card details or infer success from browser callbacks.
+- Snapshot the placed order summary before clearing the cart so confirmation remains accurate after local cart cleanup.

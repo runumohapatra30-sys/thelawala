@@ -7,7 +7,7 @@ import { GUEST_PROFILE_EVENT, LoginModal, OPEN_LOGIN_EVENT } from "@/components/
 import { useSession } from "@/lib/session";
 import { CART_CONFLICT_EVENT, type CartConflictDetail, cart, useCart } from "@/lib/cart";
 import { useAuthBranding } from "@/lib/authBranding";
-import brandLogo from "@/assets/thelawala-logo.jpeg.asset.json";
+import brandLogo from "@/assets/thelawala-brand.jpeg.asset.json";
 import { toast } from "sonner";
 import {
   AlertDialog,

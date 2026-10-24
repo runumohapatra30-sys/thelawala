@@ -19,6 +19,11 @@
  */
 
 @theme inline {
+  --color-launch: #ff6600;
+  --color-confirmation: #ff6600;
+  --color-confirmation-foreground: #ffffff;
+  --color-track: #181818;
+  --color-track-foreground: #ffffff;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

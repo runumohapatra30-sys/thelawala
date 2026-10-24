@@ -11,17 +11,10 @@ export type PayArgs = {
   mobile: string;
 };
 
-type CashfreeResult = { error?: { message?: string }; paymentDetails?: { paymentMessage?: string } };
-
-type CashfreeSdk = {
-  checkout: (opts: { paymentSessionId: string; redirectTarget?: string | "_modal" }) => Promise<CashfreeResult>;
-};
-
-declare global {
-  interface Window {
-    Cashfree?: (opts: { mode: "production" | "sandbox" }) => CashfreeSdk;
-  }
-}
+import { loadCashfreeSdk } from "@/lib/cashfreeSdk";
+import { openCashfreePayment } from "@/lib/openCashfreePayment";
+import { confirmedPayment } from "@/lib/paymentOutcome";
+export { loadCashfreeSdk } from "@/lib/cashfreeSdk";
 
 function submitForm(action: string, fields: Record<string, string>) {
   const form = document.createElement("form");
@@ -36,19 +29,6 @@ function submitForm(action: string, fields: Record<string, string>) {
   }
   document.body.appendChild(form);
   form.submit();
-}
-
-export async function loadCashfreeSdk(): Promise<NonNullable<Window["Cashfree"]>> {
-  if (window.Cashfree) return window.Cashfree;
-  await new Promise<void>((resolve, reject) => {
-    const el = document.createElement("script");
-    el.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
-    el.onload = () => resolve();
-    el.onerror = () => reject(new Error("Payment page could not load. Please check your internet and try again."));
-    document.head.appendChild(el);
-  });
-  if (!window.Cashfree) throw new Error("Payment page could not load. Please try again.");
-  return window.Cashfree;
 }
 
 /** Opens the online payment page for whichever gateway the admin turned on. */
@@ -84,7 +64,7 @@ export type PaymentOutcome =
  * Opens Cashfree's Drop checkout inside the app (UPI apps + QR in a modal),
  * then confirms the real status with Cashfree before anything is placed.
  */
-export async function payInAppWithCashfree(args: Omit<PayArgs, "gateway">): Promise<PaymentOutcome> {
+export async function payInAppWithCashfree(args: Omit<PayArgs, "gateway"> & { onVerifying?: () => void }): Promise<PaymentOutcome> {
   const payload = {
     amount: args.amount,
     purpose: args.purpose,
@@ -96,12 +76,11 @@ export async function payInAppWithCashfree(args: Omit<PayArgs, "gateway">): Prom
   };
 
   const { paymentSessionId, cfOrderId, live } = await createCashfreePayment({ data: payload });
-  const factory = await loadCashfreeSdk();
-  const cashfree = factory({ mode: live ? "production" : "sandbox" });
-  const result = await cashfree.checkout({ paymentSessionId, redirectTarget: "_modal" });
+  const result = await openCashfreePayment({ totalAmount: args.amount, paymentSessionId, isProduction: live });
+  args.onVerifying?.();
 
   const verdict = await verifyCashfreePayment({ data: { cfOrderId } });
-  if (verdict.status === "SUCCESS") return { ok: true, reference: verdict.reference };
+  if (confirmedPayment(verdict.status, verdict.amount, args.amount)) return { ok: true, reference: verdict.reference };
   if (verdict.status === "PENDING")
     return { ok: false, status: "PENDING", message: "Payment is pending confirmation. Your order has not been placed." };
   return { ok: false, status: "FAILED", message: result?.error?.message ?? "Payment failed or was cancelled. Your order was not placed." };
