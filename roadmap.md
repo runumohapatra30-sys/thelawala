@@ -1,4 +1,7 @@
 # Roadmap
+- [ ] Add uploaded opening video splash and replace brand logo
+- [ ] Keep checkout intact with side-by-side COD/online and functional secure payment methods
+- [ ] Preserve confirmation items/bill after cart clearing and verify launch/payment screens
 - [ ] Overlay home delivery controls on artwork and fill promotion posters edge to edge
 - [ ] Add an admin-uploaded 99 Store banner
 - [ ] Replace payment failure paragraph with an icon state and verify embedded checkout
