@@ -14,6 +14,8 @@ import { useSession } from "@/lib/session";
 import { usePromotionalCredit } from "@/lib/promotionalCredit";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Banknote, Bike, BellOff, ChevronRight, ChevronsRight, CircleDollarSign, CreditCard, DoorOpen, MapPin, Phone, PhoneOff, Plus, ShieldCheck, ShoppingCart, Smartphone, Tag } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import type { CartLine } from "@/lib/cart";
 import { CheckoutFeedback } from "@/components/CheckoutFeedback";
 import { toast } from "sonner";
 
@@ -37,7 +39,8 @@ export const Route = createFileRoute("/cart")({
 
 const otp = () => String(Math.floor(100000 + Math.random() * 900000));
 const pin4 = () => String(Math.floor(Math.random() * 10000)).padStart(4, "0");
-type PlacementStage = "idle" | "placing";
+type PlacementStage = "idle" | "success";
+type PlacedSummary = { id: string; items: CartLine[]; total: number; mode: string; rows: { label: string; amount: number }[] };
 
 function Cart() {
   const navigate = useNavigate();
@@ -49,7 +52,9 @@ function Cart() {
   const { foodTotal, baseTotal, mrpTotal } = cartTotals(lines);
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "payment">("cart");
   const [placementStage, setPlacementStage] = useState<PlacementStage>("idle");
-  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
+  const [placedSummary, setPlacedSummary] = useState<PlacedSummary | null>(null);
+  const [paymentOpening, setPaymentOpening] = useState(false);
+  const placementLock = useRef(false);
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [vendor, setVendor] = useState<{
@@ -85,13 +90,6 @@ function Cart() {
   const [customTip, setCustomTip] = useState("");
   const [otherTipActive, setOtherTipActive] = useState(false);
   const [onlineMethod, setOnlineMethod] = useState<"UPI" | "CARD">("UPI");
-  const [paymentAccordion, setPaymentAccordion] = useState<string>("upi");
-  const [upiIdInput, setUpiIdInput] = useState("");
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvv, setCvv] = useState("");
-  const [selectedBank, setSelectedBank] = useState("");
-
   const [instructions, setInstructions] = useState("");
   const [locating, setLocating] = useState(false);
   const [saved, setSaved] = useState<SavedAddress[]>([]);
@@ -139,7 +137,8 @@ function Cart() {
       }));
     const updateGuest = (event: Event) => {
       const profile = (event as CustomEvent<{ name: string; mobile: string }>).detail;
-      setForm((current) => ({ ...current, full_name: profile.name, mobile: profile.mobile }));
+      if (!profile) return;
+      setForm((current) => ({ ...current, full_name: profile.name ?? current.full_name, mobile: profile.mobile ?? current.mobile }));
     };
     window.addEventListener(GUEST_PROFILE_EVENT, updateGuest);
     return () => window.removeEventListener(GUEST_PROFILE_EVENT, updateGuest);
@@ -446,7 +445,7 @@ function Cart() {
     if (pendingCode) void applyCoupon(pendingCode);
   }, [applyCoupon, codeInput]);
 
-  if (lines.length === 0) {
+  if (lines.length === 0 && !placedSummary) {
     return (
       <Shell>
         <PortalHeader title="Your cart" />
@@ -467,6 +466,13 @@ function Cart() {
   }
 
   async function place() {
+    if (placementLock.current) return;
+    placementLock.current = true;
+    setPaymentOpening(true);
+    try { await placeOrder(); } finally { placementLock.current = false; setPaymentOpening(false); }
+  }
+
+  async function placeOrder() {
     setErr(null);
     setPaymentState(null);
     if (!coords) {
@@ -536,6 +542,7 @@ function Cart() {
           name: form.full_name,
           email: user.email ?? "",
           mobile: form.mobile,
+          onVerifying: () => { setPaymentOpening(false); setBusy(true); },
         });
 
         // Step 2: Full-screen verification spinner starts ONLY after Cashfree response returns
@@ -673,8 +680,20 @@ function Cart() {
       }
 
       setBusy(false);
-      setCreatedOrderId(order.id);
-      setPlacementStage("placing");
+      setPlacedSummary({ id: order.id, items: lines.map(line => ({ ...line })), total: netTotal,
+        mode: payment === "COD" ? "Cash on Delivery" : payment === "SPLIT" ? "Part prepaid" : "Prepaid",
+        rows: [
+          { label: "Sub Total", amount: bill.foodTotal },
+          { label: "Delivery", amount: bill.deliveryFee },
+          { label: "Packing", amount: bill.packingFee },
+          { label: "Platform fees", amount: bill.platformFee },
+          { label: "Handling", amount: bill.handlingFee },
+          { label: "Surge", amount: bill.surgeFee },
+          { label: "Discounts & Free Cash", amount: -(couponOff + stallOff + freeCashApplied) },
+          { label: "Rider gift", amount: tip },
+        ],
+      });
+      setPlacementStage("success");
       cart.clear();
     } catch (e: any) {
       setBusy(false);
@@ -1122,17 +1141,13 @@ function Cart() {
 
           <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[520px]">
             <div className="border-t border-border bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(17,24,39,0.1)]">
-              <button type="button" onClick={() => setCheckoutStep("payment")} className="mb-2 flex w-full items-center gap-3 rounded-lg border border-border bg-muted px-3 py-2.5 text-left">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-soft text-primary">{payment === "COD" ? <Banknote className="h-5 w-5" /> : onlineMethod === "UPI" ? <Smartphone className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-xs font-black">{payment === "COD" ? "Cash/Pay on Delivery" : onlineMethod === "UPI" ? "UPI payment" : "Credit or debit card"}</span>
-                  <span className="block truncate text-[10px] text-muted-foreground">{payment === "COD" ? "Pay cash at the time of delivery." : `Pay securely with ${settings?.payment_gateway ?? "online payment"}.`}</span>
-                </span>
-                <span className="flex shrink-0 items-center gap-0.5 text-[11px] font-black text-primary">Change <ChevronRight className="h-3.5 w-3.5" /></span>
-              </button>
+              <div className="mb-3 grid grid-cols-2 gap-2" role="group" aria-label="Checkout payment choices">
+                <Button variant={payment === "COD" ? "default" : "outline"} disabled={settings?.enable_cod === false || !codPolicyChecked || codPolicyError || !!codRestriction || paymentOpening} className="h-auto whitespace-normal px-2 py-3 text-xs" onClick={() => setPayment("COD")}><Banknote />Cash on Delivery</Button>
+                <Button variant={payment === "ONLINE" ? "default" : "outline"} disabled={!settings?.enable_online_payment || paymentOpening} className="h-auto whitespace-normal px-2 py-3 text-xs" onClick={() => setPayment("ONLINE")}><Smartphone />Online Payment</Button>
+              </div>
               {blockedReason ? <p className="px-1 pb-2 text-[11px] font-bold text-destructive">{minimumShortfall > 0 ? `Add ${inr(minimumShortfall)} more to order` : blockedReason}</p> : null}
-              <button disabled={busy || !!blockedReason || !hasLocation || promotionalCredit.loading} onClick={() => void place()} className="press flex w-full items-center justify-between gap-3 rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-md disabled:opacity-50">
-                <span className="flex items-center gap-2"><ChevronsRight className="h-5 w-5" /><span className="text-sm font-black">{busy ? "Placing your order…" : minimumShortfall > 0 ? `Add ${inr(minimumShortfall)} more to order` : payment === "COD" ? "Place Cash Order" : `Pay with ${onlineMethod}`}</span></span>
+              <button disabled={busy || paymentOpening || !!blockedReason || !hasLocation || promotionalCredit.loading} onClick={() => void place()} className="press flex w-full items-center justify-between gap-3 rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-md disabled:opacity-50">
+                <span className="flex items-center gap-2"><ChevronsRight className="h-5 w-5" /><span className="text-sm font-black">{busy ? "Placing your order…" : minimumShortfall > 0 ? `Add ${inr(minimumShortfall)} more to order` : payment === "COD" ? "Place Cash Order" : `Pay Online`}</span></span>
                 <span className="shrink-0 text-base font-black">{bill ? inr(payable) : "—"}</span>
               </button>
             </div>
@@ -1178,206 +1193,10 @@ function Cart() {
               <p className="text-xs text-muted-foreground">{instructions || "No delivery notes added."}</p>
             </section>
 
-            {/* 1. UPI Payment Accordion */}
-            <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
-              <div 
-                onClick={() => setPaymentAccordion(paymentAccordion === "upi" ? "" : "upi")}
-                className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/40"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">⚡</span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-bold text-gray-800">UPI (Instant Pay)</h4>
-                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-700">Fastest</span>
-                    </div>
-                    <p className="text-[11px] text-gray-500">Google Pay, PhonePe, Paytm, BHIM</p>
-                  </div>
-                </div>
-                <span className="text-xs text-gray-400 font-bold">{paymentAccordion === "upi" ? "▲" : "▼"}</span>
-              </div>
-
-              {paymentAccordion === "upi" && (
-                <div className="border-t border-white/60 bg-white/40 p-4 space-y-3">
-                  <div className="grid grid-cols-3 gap-2">
-                    {["Google Pay", "PhonePe", "Paytm"].map((app) => (
-                      <button
-                        key={app}
-                        type="button"
-                        onClick={() => { setPayment("ONLINE"); setOnlineMethod("UPI"); }}
-                        className={`p-2.5 rounded-xl border text-xs font-bold transition-all shadow-xs ${payment === "ONLINE" && onlineMethod === "UPI" ? "border-primary bg-primary text-white" : "border-gray-200 bg-white text-gray-700"}`}
-                      >
-                        {app}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="pt-2">
-                    <input
-                      type="text"
-                      placeholder="Enter UPI ID (e.g. mobile@upi)"
-                      value={upiIdInput}
-                      onChange={(e) => setUpiIdInput(e.target.value)}
-                      className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs outline-none focus:border-primary"
-                    />
-                  </div>
-                </div>
-              )}
+            <div className="grid grid-cols-2 gap-3" role="group" aria-label="Payment method">
+              <Button variant={payment === "COD" ? "default" : "outline"} disabled={settings?.enable_cod === false || !codPolicyChecked || codPolicyError || !!codRestriction} className="h-auto flex-col whitespace-normal py-4" onClick={() => setPayment("COD")}><Banknote />Cash on Delivery</Button>
+              <Button variant={payment === "ONLINE" ? "default" : "outline"} disabled={!settings?.enable_online_payment} className="h-auto flex-col whitespace-normal py-4" onClick={() => setPayment("ONLINE")}><Smartphone />Online Payment</Button>
             </div>
-
-            {/* 2. Scan & Pay QR */}
-            <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
-              <div 
-                onClick={() => setPaymentAccordion(paymentAccordion === "qr" ? "" : "qr")}
-                className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/40"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">📷</span>
-                  <div>
-                    <h4 className="text-sm font-bold text-gray-800">Scan & Pay (QR Code)</h4>
-                    <p className="text-[11px] text-gray-500">Scan using any UPI App</p>
-                  </div>
-                </div>
-                <span className="text-xs text-gray-400 font-bold">{paymentAccordion === "qr" ? "▲" : "▼"}</span>
-              </div>
-
-              {paymentAccordion === "qr" && (
-                <div className="border-t border-white/60 bg-white/40 p-4 text-center">
-                  <div className="mx-auto flex h-36 w-36 items-center justify-center rounded-2xl border-2 border-dashed border-orange-300 bg-white shadow-inner">
-                    <span className="text-xs font-bold text-gray-400">QR Ready via Cashfree</span>
-                  </div>
-                  <p className="mt-2 text-[11px] text-gray-500">Payment screen will open scanner automatically</p>
-                </div>
-              )}
-            </div>
-
-            {/* 3. Cards */}
-            <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
-              <div 
-                onClick={() => setPaymentAccordion(paymentAccordion === "card" ? "" : "card")}
-                className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/40"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">💳</span>
-                  <div>
-                    <h4 className="text-sm font-bold text-gray-800">Credit / Debit / ATM Card</h4>
-                    <p className="text-[11px] text-gray-500">Visa, Mastercard, RuPay</p>
-                  </div>
-                </div>
-                <span className="text-xs text-gray-400 font-bold">{paymentAccordion === "card" ? "▲" : "▼"}</span>
-              </div>
-
-              {paymentAccordion === "card" && (
-                <div className="border-t border-white/60 bg-white/40 p-4 space-y-3">
-                  <input
-                    type="text"
-                    maxLength={19}
-                    placeholder="Card Number (XXXX XXXX XXXX XXXX)"
-                    value={cardNumber}
-                    onChange={(e) => { setPayment("ONLINE"); setOnlineMethod("CARD"); setCardNumber(e.target.value); }}
-                    className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs outline-none focus:border-primary"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      placeholder="MM/YY"
-                      maxLength={5}
-                      value={expiry}
-                      onChange={(e) => setExpiry(e.target.value)}
-                      className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs outline-none focus:border-primary"
-                    />
-                    <input
-                      type="password"
-                      placeholder="CVV"
-                      maxLength={4}
-                      value={cvv}
-                      onChange={(e) => setCvv(e.target.value)}
-                      className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs outline-none focus:border-primary"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 4. Net Banking */}
-            <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
-              <div 
-                onClick={() => setPaymentAccordion(paymentAccordion === "netbanking" ? "" : "netbanking")}
-                className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/40"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">🏛️</span>
-                  <div>
-                    <h4 className="text-sm font-bold text-gray-800">Net Banking</h4>
-                    <p className="text-[11px] text-gray-500">SBI, HDFC, ICICI, Axis & more</p>
-                  </div>
-                </div>
-                <span className="text-xs text-gray-400 font-bold">{paymentAccordion === "netbanking" ? "▲" : "▼"}</span>
-              </div>
-
-              {paymentAccordion === "netbanking" && (
-                <div className="border-t border-white/60 bg-white/40 p-4">
-                  <select
-                    value={selectedBank}
-                    onChange={(e) => { setPayment("ONLINE"); setSelectedBank(e.target.value); }}
-                    className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs outline-none focus:border-primary"
-                  >
-                    <option value="">-- Select Your Bank --</option>
-                    <option value="SBI">State Bank of India (SBI)</option>
-                    <option value="HDFC">HDFC Bank</option>
-                    <option value="ICICI">ICICI Bank</option>
-                    <option value="AXIS">Axis Bank</option>
-                  </select>
-                </div>
-              )}
-            </div>
-
-            {/* 5. Pay Later */}
-            <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
-              <div 
-                onClick={() => setPaymentAccordion(paymentAccordion === "paylater" ? "" : "paylater")}
-                className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/40"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">⏳</span>
-                  <div>
-                    <h4 className="text-sm font-bold text-gray-800">Pay Later</h4>
-                    <p className="text-[11px] text-gray-500">Simpl, LazyPay, ICICI</p>
-                  </div>
-                </div>
-                <span className="text-xs text-gray-400 font-bold">{paymentAccordion === "paylater" ? "▲" : "▼"}</span>
-              </div>
-
-              {paymentAccordion === "paylater" && (
-                <div className="border-t border-white/60 bg-white/40 p-4 text-center">
-                  <p className="text-xs text-gray-600">Instant credit verified with your mobile: {form.mobile || "9583059787"}</p>
-                </div>
-              )}
-            </div>
-
-            {/* 6. Cash on Delivery (COD) */}
-            {settings?.enable_cod !== false && codPolicyChecked && !codPolicyError && !codRestriction && (
-              <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/70 shadow-sm backdrop-blur-md">
-                <div 
-                  onClick={() => { setPayment("COD"); setPaymentAccordion("cod"); }}
-                  className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/40"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">💵</span>
-                    <div>
-                      <h4 className="text-sm font-bold text-gray-800">Cash on Delivery (COD)</h4>
-                      <p className="text-[11px] text-gray-500">Pay cash when food arrives</p>
-                    </div>
-                  </div>
-                  <input 
-                    type="radio" 
-                    checked={payment === "COD"} 
-                    onChange={() => setPayment("COD")} 
-                    className="h-4 w-4 accent-primary"
-                  />
-                </div>
-              </div>
-            )}
-
             <section className="card-soft p-4">
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">Order total</span><span className="font-bold">{inr(netTotal)}</span></div>
               {freeCashApplied > 0 ? <div className="mt-2 flex justify-between text-sm"><span className="text-muted-foreground">{inr(freeCashApplied)} Free Cash applied</span><span className="font-bold text-primary">− {inr(freeCashApplied)}</span></div> : null}
@@ -1395,9 +1214,9 @@ function Cart() {
             <CheckoutFeedback message={err} paymentState={paymentState} />
           </main>
           <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[520px] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            <button type="button" disabled={busy || !!blockedReason || promotionalCredit.loading || ((payment === "ONLINE" || payment === "SPLIT") && !settings?.enable_online_payment)} onClick={() => void place()} className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-card disabled:opacity-50">
+            <button type="button" disabled={busy || paymentOpening || !!blockedReason || promotionalCredit.loading || ((payment === "ONLINE" || payment === "SPLIT") && !settings?.enable_online_payment)} onClick={() => void place()} className="press flex w-full items-center justify-between rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-card disabled:opacity-50">
               <span><span className="block text-[10px] font-bold opacity-75">{busy ? "SECURELY PROCESSING" : payment === "SPLIT" ? "PAY ONLINE NOW" : "TOTAL TO PAY"}</span><span className="text-lg font-black">{inr(onlineDue)}</span></span>
-              <span className="flex items-center gap-2 text-sm font-black">{busy ? "Please wait…" : minimumShortfall > 0 ? `Add ${inr(minimumShortfall)} more to order` : payment === "COD" ? `Pay ${inr(payable)} with Cash` : payment === "SPLIT" ? `Pay 50% now via ${onlineMethod}` : `Pay ${inr(payable)} with ${onlineMethod}`}<ChevronRight className="h-4 w-4" /></span>
+              <span className="flex items-center gap-2 text-sm font-black">{busy ? "Please wait…" : minimumShortfall > 0 ? `Add ${inr(minimumShortfall)} more to order` : payment === "COD" ? `Pay ${inr(payable)} with Cash` : payment === "SPLIT" ? `Pay 50% now via ${onlineMethod}` : `Pay ${inr(payable)} Online`}<ChevronRight className="h-4 w-4" /></span>
             </button>
           </div>
         </>
@@ -1414,159 +1233,20 @@ function Cart() {
         </div>
       ) : null}
 
-      {/* 1. Live Payment Processing (Orange Circular Spinner) */}
-      {busy && (
-        <div className="fixed inset-0 z-[120] flex flex-col items-center justify-center bg-black/60 p-6 backdrop-blur-sm">
-          <div className="flex flex-col items-center rounded-[32px] bg-white p-8 text-center shadow-2xl">
-            <div className="relative flex h-20 w-20 items-center justify-center">
-              <span className="absolute inset-0 rounded-full border-4 border-orange-100" />
-              <span className="absolute inset-0 animate-spin rounded-full border-4 border-[#ff6600] border-t-transparent" />
-              <span className="h-4 w-4 rounded-full bg-[#ff6600]" />
-            </div>
-            <h3 className="mt-5 text-lg font-black text-gray-900">Verifying Payment</h3>
-            <p className="mt-1 text-xs text-gray-500 max-w-[200px]">
-              Waiting for UPI confirmation. Please do not close or press back...
-            </p>
-          </div>
+      {busy && <div role="status" aria-label="Verifying payment and placing order" className="fixed inset-0 z-[170] grid place-items-center bg-foreground/60 p-6 backdrop-blur-sm"><div className="rounded-lg bg-card p-8 text-center"><span className="mx-auto block h-14 w-14 animate-spin rounded-full border-4 border-brand-soft border-t-primary" /><h3 className="mt-5 text-lg font-bold">{payment === "COD" ? "Placing your order" : "Confirming payment"}</h3><p className="mt-2 text-xs text-muted-foreground">Please wait a moment.</p></div></div>}
+
+      {paymentState === "failed" && !busy && <div role="dialog" aria-label="Order not placed" className="fixed inset-0 z-[160] grid place-items-center bg-foreground/60 p-5"><div className="w-full max-w-sm rounded-lg bg-card p-6 text-center"><span className="text-5xl" aria-hidden="true">❌</span><h3 className="mt-4 text-xl font-bold">Order not placed</h3><Button className="mt-5 w-full" onClick={() => { setPaymentState(null); void place(); }}>Retry payment</Button><Button variant="outline" className="mt-2 w-full" onClick={() => setPaymentState(null)}>Back to checkout</Button></div></div>}
+
+      {placementStage === "success" && placedSummary && <div role="dialog" aria-label="Order successful" className="fixed inset-0 z-[180] overflow-y-auto bg-background text-foreground">
+        <div className="mx-auto flex min-h-svh max-w-[520px] flex-col px-5 py-5">
+          <Button variant="ghost" className="self-start px-0" onClick={() => void navigate({ to: "/" })}><ArrowLeft />Order details</Button>
+          <div className="flex flex-col items-center py-7"><div className="grid h-16 w-16 place-items-center rounded-full border-4 border-confirmation text-confirmation"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="m5 12 4 4 10-10" /></svg></div><h2 className="mt-5 text-2xl font-extrabold">Order Successful</h2><p className="mt-3 text-xs font-bold text-confirmation">order ID: #{placedSummary.id.slice(-7)}</p></div>
+          <div className="flex items-center justify-between"><h3 className="text-lg font-bold">Order summary</h3><Button asChild className="rounded-full bg-track text-track-foreground hover:bg-track/90"><Link to="/orders/$id" params={{ id: placedSummary.id }}>Track Order</Link></Button></div>
+          <div className="mt-4 space-y-4 border-b border-border pb-5">{placedSummary.items.map(item => <div key={item.itemId} className="grid grid-cols-[40px_minmax(0,1fr)_auto_auto] items-center gap-3 text-xs"><img src={item.photo ?? "/food/food-tiffin.jpg"} alt={item.name} className="h-10 w-10 rounded-lg object-cover" /><span className="font-bold">{item.name}</span><span className="text-muted-foreground">{item.qty} Qty</span><span className="font-bold">{inr(item.price * item.qty)}</span></div>)}</div>
+          <dl className="space-y-3 py-5 text-sm">{placedSummary.rows.filter(row => row.amount !== 0).map(row => <div key={row.label} className="flex justify-between"><dt className="text-muted-foreground">{row.label}</dt><dd>{inr(row.amount)}</dd></div>)}<div className="flex justify-between border-t border-border pt-4 font-bold"><dt>Grand Total</dt><dd>{inr(placedSummary.total)}</dd></div><div className="flex justify-between text-xs"><dt>Payment mode</dt><dd className="font-bold">{placedSummary.mode}</dd></div></dl>
+          <Button className="mt-auto h-12 w-full rounded-full bg-confirmation text-confirmation-foreground hover:bg-confirmation/90" onClick={() => void navigate({ to: "/" })}>Continue to shop</Button>
         </div>
-      )}
-
-      {/* 2. Payment Failed Dialog */}
-      {paymentState === "failed" && !busy && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-[340px] overflow-hidden rounded-[32px] bg-white p-6 text-center shadow-2xl">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-50 text-red-500">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="15" y1="9" x2="9" y2="15" />
-                <line x1="9" y1="9" x2="15" y2="15" />
-              </svg>
-            </div>
-            <h3 className="mt-4 text-xl font-black text-gray-900">Order Not Placed</h3>
-            <p className="mt-2 text-xs leading-relaxed text-gray-500">
-              Payment was declined or cancelled. If money was deducted, it will be refunded automatically by your bank.
-            </p>
-            <div className="mt-6 flex flex-col gap-2.5">
-              <button
-                type="button"
-                onClick={() => {
-                  setPaymentState(null);
-                  void place();
-                }}
-                className="w-full rounded-2xl bg-[#ff6600] py-3.5 text-sm font-black text-white shadow-lg shadow-orange-500/25 active:scale-95 transition-all"
-              >
-                Retry Payment
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setPaymentState(null);
-                  setPayment("COD");
-                }}
-                className="w-full rounded-2xl border border-gray-200 py-3 text-xs font-bold text-gray-700 active:scale-95 transition-all"
-              >
-                Change to Cash on Delivery
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 3. Orange Order Successful Screen */}
-      {placementStage === "placing" && (
-        <div className="fixed inset-0 z-[130] flex flex-col bg-white overflow-y-auto">
-          <div className="flex items-center px-4 py-4">
-            <button
-              onClick={() => {
-                cart.clear();
-                void navigate({ to: "/" });
-              }}
-              className="flex items-center gap-1.5 text-sm font-black text-gray-900"
-            >
-              <ArrowLeft className="h-5 w-5" /> Order details
-            </button>
-          </div>
-
-          <div className="flex flex-col items-center px-6 pt-4 pb-8">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-[#ff6600] bg-orange-50 text-[#ff6600]">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </div>
-
-            <h2 className="mt-4 text-2xl font-black text-gray-900">Order Successful</h2>
-            <p className="mt-1 text-xs text-gray-400 italic">"Hot &amp; fresh street food on its way"</p>
-            <span className="mt-2 text-xs font-bold text-[#ff6600]">
-              order ID: #{createdOrderId ? createdOrderId.slice(-7) : Date.now().toString().slice(-7)}
-            </span>
-
-            <div className="mt-6 w-full max-w-sm">
-              <div className="flex items-center justify-between pb-2">
-                <h3 className="text-base font-black text-gray-900">Order summary</h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (createdOrderId) {
-                      void navigate({ to: `/orders/${createdOrderId}` });
-                    }
-                  }}
-                  className="rounded-full bg-black px-3.5 py-1 text-[11px] font-bold text-white shadow-sm"
-                >
-                  Track Order
-                </button>
-              </div>
-
-              <div className="space-y-3 py-3 border-b border-gray-100">
-                {lines.map((l) => (
-                  <div key={l.itemId} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={l.photo ?? "/food/food-tiffin.jpg"}
-                        alt={l.name}
-                        className="h-10 w-10 rounded-xl object-cover bg-gray-100"
-                      />
-                      <span className="font-bold text-gray-800 line-clamp-1 max-w-[140px]">{l.name}</span>
-                    </div>
-                    <span className="text-gray-400 font-medium">{l.qty}Qty</span>
-                    <span className="font-black text-gray-900">₹{l.price * l.qty}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-4 space-y-2 text-xs text-gray-500">
-                <div className="flex justify-between">
-                  <span>Sub Total</span>
-                  <span className="font-bold text-gray-800">₹{bill?.foodTotal ?? 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Platform fees</span>
-                  <span className="font-bold text-gray-800">₹{bill?.platformFee ?? 3}</span>
-                </div>
-                <div className="my-2 border-t border-gray-100" />
-                <div className="flex justify-between text-sm font-black text-gray-900">
-                  <span>Grand Total</span>
-                  <span>₹{payable}</span>
-                </div>
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>Payment mode</span>
-                  <span className="font-bold text-[#ff6600]">{payment === "COD" ? "Cash" : "Prepaid"}</span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  cart.clear();
-                  void navigate({ to: "/" });
-                }}
-                className="mt-8 w-full rounded-full bg-[#ff6600] py-4 text-sm font-black text-white shadow-lg shadow-orange-500/25 active:scale-95 transition-all text-center"
-              >
-                Continue to shop
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>}
     </Shell>
   );
 }
