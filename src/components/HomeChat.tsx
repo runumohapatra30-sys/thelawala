@@ -30,7 +30,6 @@ export function HomeChat({ userId, cartVisible }: { userId?: string | null; cart
     setMsgs(next);
     setBusy(true);
 
-    // Simulated instant AI concierge response
     setTimeout(() => {
       setMsgs([
         ...next,
