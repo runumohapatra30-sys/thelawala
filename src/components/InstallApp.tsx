@@ -9,6 +9,13 @@ export function InstallPWA() {
       e.preventDefault();
       setDeferredPrompt(e);
       setShowButton(true);
+
+      // Optionally try to auto-trigger once if allowed by browser
+      try {
+        (e as any).prompt();
+      } catch (err) {
+        console.log("Auto prompt deferred to user action");
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -33,7 +40,7 @@ export function InstallPWA() {
   return (
     <button
       onClick={handleInstallClick}
-      className="fixed bottom-20 right-4 z-50 flex items-center gap-2 bg-[#FF6600] text-white px-4 py-3 rounded-full shadow-lg font-bold text-xs animate-bounce"
+      className="fixed bottom-20 right-4 z-50 flex items-center gap-2 bg-[#FF6600] text-white px-4 py-3 rounded-full shadow-2xl font-bold text-xs animate-bounce border-2 border-white"
     >
       📥 Install ThelaWala App
     </button>
