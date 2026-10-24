@@ -35,7 +35,7 @@ export function HomeChat({ userId, cartVisible }: { userId?: string | null; cart
         ...next,
         {
           role: "assistant",
-          content: `Thank you for your query: "${text}". Our support assistant is checking your order details right now!`
+          content: `Thank you for your query: "${text}". Our customer support assistant is checking your order details right now!`
         }
       ]);
       setBusy(false);
