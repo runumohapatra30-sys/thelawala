@@ -43,10 +43,14 @@ export function SplashScreen() {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: reducedMotion ? 0 : 0.55 }}
-          className="fixed inset-0 z-[1000] grid place-items-center overflow-hidden bg-launch"
+          className="fixed inset-0 z-[1000] grid place-items-center overflow-hidden bg-launch cursor-pointer"
           onClick={() => setVisible(false)}
         >
-          {!reducedMotion && (
+          {/* 
+            동영상이 재생될 때는 비디오만 깔끔하게 보여주고, 
+            애니메이션 감소 모드(reducedMotion)일 때만 로고를 보여줍니다.
+          */}
+          {!reducedMotion ? (
             <video
               src={video.url}
               autoPlay
@@ -54,18 +58,18 @@ export function SplashScreen() {
               playsInline
               preload="auto"
               onEnded={() => setVisible(false)}
-              className="absolute inset-0 h-full w-full object-contain"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            <motion.img
+              src={logo.url}
+              alt="ThelaWala"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6 }}
+              className="relative w-64 max-w-[70vw] object-contain drop-shadow-md"
             />
           )}
-
-          <motion.img
-            src={logo.url}
-            alt="ThelaWala"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: reducedMotion ? 0 : 0.6 }}
-            className="relative w-64 max-w-[70vw] object-contain"
-          />
         </motion.div>
       )}
     </AnimatePresence>
