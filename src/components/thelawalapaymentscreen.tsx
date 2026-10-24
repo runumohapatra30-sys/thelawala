@@ -41,12 +41,12 @@ export function ThelaWalaPaymentScreen({ totalAmount, paymentSessionId, onSucces
       const row = document.createElement('div'); row.className = 'payment-secure-field';
       if (label) { const text = document.createElement('p'); text.textContent = label; text.className = 'mb-2 text-xs font-semibold'; row.append(text); }
       const host = document.createElement('div'); row.append(host); container.append(row);
-      const element = currentSdk.create(type, { values });
+      const element = currentSdk.create(type, values ? { values } : {});
       element.on('loaderror', () => setError('This option is unavailable here. Use Other payment options below.'));
       element.mount(host); elements.push(element); return element;
     }
     if (active === 'upi') {
-      for (const [id, name] of [['gpay', 'Google Pay'], ['phonepe', 'PhonePe'], ['paytm', 'Paytm'], ['default', 'Other UPI apps']]) {
+      for (const [id, name] of [['gpay', 'Google Pay'], ['phonepe', 'PhonePe'], ['paytm', 'Paytm'], ['default', 'Other UPI apps']] as const) {
         const element = add('upiApp', { upiApp: id, buttonText: name, buttonIcon: true });
         element?.on('click', () => { void pay(element); });
       }
