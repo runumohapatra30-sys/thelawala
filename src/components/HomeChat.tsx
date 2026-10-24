@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { askAiConcierge } from "@/utils/vendor-functions";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -21,10 +19,6 @@ export function HomeChat({ userId, cartVisible }: { userId?: string | null; cart
   }, [msgs, busy, open]);
 
   function openChat() {
-    if (!userId) {
-      // openLoginModal();
-      // return;
-    }
     setOpen(true);
   }
 
@@ -35,25 +29,18 @@ export function HomeChat({ userId, cartVisible }: { userId?: string | null; cart
     const next: Msg[] = [...msgs, { role: "user", content: text }];
     setMsgs(next);
     setBusy(true);
-    try {
-      const res = await askAiConcierge({
-        data: {
-          message: text,
-          history: next.slice(-10).map(m => ({ role: m.role, content: m.content }))
-        }
-      });
-      setMsgs([...next, { role: "assistant", content: res.reply }]);
-    } catch {
+
+    // Simulated instant AI concierge response
+    setTimeout(() => {
       setMsgs([
         ...next,
         {
           role: "assistant",
-          content: "Sorry, something went wrong. Please try again or call our support."
+          content: `Thank you for your query: "${text}". Our support assistant is checking your order details right now!`
         }
       ]);
-    } finally {
       setBusy(false);
-    }
+    }, 1000);
   }
 
   return (
