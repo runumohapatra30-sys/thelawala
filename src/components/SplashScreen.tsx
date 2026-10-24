@@ -1,4 +1,4 @@
-Dekha ta import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import logo from '@/assets/thelawala-brand.jpeg.asset.json';
 import video from '@/assets/thelawala-opening.mp4.asset.json';
