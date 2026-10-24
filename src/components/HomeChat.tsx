@@ -35,7 +35,7 @@ export function HomeChat({ userId, cartVisible }: { userId?: string | null; cart
         ...next,
         {
           role: "assistant",
-          content: `Thank you for your query: "${text}". Our customer support assistant is checking your order details right now!`
+          content: `Thank you for your message: "${text}". Our support team is checking your order status right now!`
         }
       ]);
       setBusy(false);
@@ -44,7 +44,6 @@ export function HomeChat({ userId, cartVisible }: { userId?: string | null; cart
 
   return (
     <>
-      {/* Floating Chat Button with Orange Glow Theme */}
       <button
         onClick={openChat}
         aria-label="Chat with ThelaWala Care"
@@ -58,12 +57,10 @@ export function HomeChat({ userId, cartVisible }: { userId?: string | null; cart
         </svg>
       </button>
 
-      {/* Chat Window with Liquid Glass Concierge Theme */}
       {open && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center sm:items-center bg-black/40 backdrop-blur-sm p-0 sm:p-4">
           <div className="w-full sm:max-w-md h-[85vh] sm:h-[600px] glass-concierge rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom duration-300">
             
-            {/* Header */}
             <div className="bg-orange-500/90 backdrop-blur-md px-4 py-3.5 flex items-center justify-between border-b border-orange-400/30 text-white">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner font-bold text-lg">
@@ -84,7 +81,6 @@ export function HomeChat({ userId, cartVisible }: { userId?: string | null; cart
               </button>
             </div>
 
-            {/* Messages Body */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {msgs.map((m, i) => (
                 <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -111,7 +107,6 @@ export function HomeChat({ userId, cartVisible }: { userId?: string | null; cart
               <div ref={endRef} />
             </div>
 
-            {/* Input Footer */}
             <div className="p-3 bg-white/70 backdrop-blur-md border-t border-orange-100 flex items-center gap-2">
               <input
                 type="text"
