@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { openLoginModal } from "@/components/LoginModal";
-import { askHomeBot } from "@/lib/homebot.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { askAiConcierge } from "@/utils/vendor-functions";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-export function HomeChat({ userId, cartVisible }: { userId: string | undefined; cartVisible: boolean }) {
+export function HomeChat({ userId, cartVisible }: { userId?: string | null; cartVisible?: boolean }) {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([
     {
       role: "assistant",
-      content: "ନମସ୍କାର! 👋 I'm ThelaWala Care. Ask me about your order, bill, refund or anything else!",
-    },
+      content: "ନମସ୍କାର! 👋 I'm ThelaWala Care. Ask me about your order, bill, refund or anything else!"
+    }
   ]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -22,8 +22,8 @@ export function HomeChat({ userId, cartVisible }: { userId: string | undefined; 
 
   function openChat() {
     if (!userId) {
-      openLoginModal();
-      return;
+      // openLoginModal();
+      // return;
     }
     setOpen(true);
   }
@@ -36,17 +36,20 @@ export function HomeChat({ userId, cartVisible }: { userId: string | undefined; 
     setMsgs(next);
     setBusy(true);
     try {
-      const res = await askHomeBot({
+      const res = await askAiConcierge({
         data: {
           message: text,
-          history: next.slice(-12).map((m) => ({ role: m.role, content: m.content })),
-        },
+          history: next.slice(-10).map(m => ({ role: m.role, content: m.content }))
+        }
       });
-      setMsgs((m) => [...m, { role: "assistant", content: res.reply }]);
+      setMsgs([...next, { role: "assistant", content: res.reply }]);
     } catch {
-      setMsgs((m) => [
-        ...m,
-        { role: "assistant", content: "Sorry, something went wrong. Please call care on 9078492360." },
+      setMsgs([
+        ...next,
+        {
+          role: "assistant",
+          content: "Sorry, something went wrong. Please try again or call our support."
+        }
       ]);
     } finally {
       setBusy(false);
@@ -55,80 +58,95 @@ export function HomeChat({ userId, cartVisible }: { userId: string | undefined; 
 
   return (
     <>
+      {/* Floating Chat Button with Orange Glow Theme */}
       <button
         onClick={openChat}
         aria-label="Chat with ThelaWala Care"
-        className={`press pop-in fixed ${cartVisible ? "bottom-[180px]" : "bottom-[110px]"} right-4 z-40 grid h-14 w-14 place-items-center rounded-full bg-primary text-2xl shadow-[0_16px_32px_-12px_var(--color-primary)]`}
+        className={`fixed z-40 right-4 ${
+          cartVisible ? "bottom-[130px]" : "bottom-[80px]"
+        } w-14 h-14 rounded-full orange-glow-btn flex items-center justify-center text-white shadow-xl transition-all duration-300 hover:scale-105 active:scale-95`}
       >
-        💬
-        <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full border-2 border-card bg-destructive" />
+        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-green-500 border-2 border-white animate-pulse" />
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
       </button>
 
-      {open ? (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/40" onClick={() => setOpen(false)}>
-          <div
-            className="rise-in mx-auto flex h-[75dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-[2rem] bg-card shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="brand-header flex items-center gap-3 px-5 py-4">
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-card/25 text-xl">🤖</span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[15px] font-extrabold leading-tight">ThelaWala Care</p>
-                <p className="flex items-center gap-1 text-[11px] font-semibold opacity-85">
-                  <span className="live-dot" /> Online · replies instantly
-                </p>
+      {/* Chat Window with Liquid Glass Concierge Theme */}
+      {open && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center sm:items-center bg-black/40 backdrop-blur-sm p-0 sm:p-4">
+          <div className="w-full sm:max-w-md h-[85vh] sm:h-[600px] glass-concierge rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom duration-300">
+            
+            {/* Header */}
+            <div className="bg-orange-500/90 backdrop-blur-md px-4 py-3.5 flex items-center justify-between border-b border-orange-400/30 text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner font-bold text-lg">
+                  🤖
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm tracking-wide">ThelaWala Care</h3>
+                  <p className="text-[11px] text-orange-100 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" /> Online · replies instantly
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setOpen(false)}
-                aria-label="Close chat"
-                className="press grid h-9 w-9 place-items-center rounded-full bg-card/25 text-lg font-bold"
+                className="w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center text-white transition-colors"
               >
                 ✕
               </button>
             </div>
 
-            <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-              {msgs.map((m, i) =>
-                m.role === "assistant" ? (
-                  <div key={i} className="mr-10 text-[13px] leading-relaxed text-foreground">
-                    {m.content}
+            {/* Messages Body */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {msgs.map((m, i) => (
+                <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-sm ${
+                      m.role === "user"
+                        ? "bg-orange-500 text-white rounded-br-none shadow-orange-500/20"
+                        : "glass-chat-bubble text-gray-800 rounded-bl-none border border-orange-100"
+                    }`}
+                  >
+                    <p className="leading-relaxed">{m.content}</p>
                   </div>
-                ) : (
-                  <div key={i} className="ml-10 flex justify-end">
-                    <div className="rounded-2xl rounded-br-md bg-primary px-3.5 py-2 text-[13px] font-medium text-primary-foreground">
-                      {m.content}
-                    </div>
+                </div>
+              ))}
+              {busy && (
+                <div className="flex justify-start">
+                  <div className="glass-chat-bubble rounded-2xl px-4 py-3 text-xs text-gray-500 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-orange-500 animate-bounce" />
+                    <span className="w-2 h-2 rounded-full bg-orange-500 animate-bounce [animation-delay:0.2s]" />
+                    <span className="w-2 h-2 rounded-full bg-orange-500 animate-bounce [animation-delay:0.4s]" />
                   </div>
-                ),
+                </div>
               )}
-              {busy ? <p className="text-[12px] font-semibold text-muted-foreground">Typing…</p> : null}
               <div ref={endRef} />
             </div>
 
-            <div className="flex items-center gap-2 border-t border-border px-4 py-3">
+            {/* Input Footer */}
+            <div className="p-3 bg-white/70 backdrop-blur-md border-t border-orange-100 flex items-center gap-2">
               <input
+                type="text"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") void send();
-                }}
-                placeholder="Ask about your order…"
-                className="min-w-0 flex-1 rounded-full bg-muted px-4 py-2.5 text-sm outline-none"
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && send()}
+                placeholder="Ask about your order..."
+                className="flex-1 bg-white/80 border border-orange-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-gray-800 placeholder:text-gray-400"
               />
               <button
-                onClick={() => void send()}
+                onClick={send}
                 disabled={busy || !input.trim()}
-                aria-label="Send message"
-                className="press grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground disabled:opacity-40"
+                className="w-10 h-10 rounded-full orange-glow-btn flex items-center justify-center text-white disabled:opacity-50 transition-all shrink-0"
               >
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-                  <path d="M4 12l16-8-5 16-3.5-6L4 12z" />
-                </svg>
+                ➤
               </button>
             </div>
+
           </div>
         </div>
-      ) : null}
+      )}
     </>
   );
 }
