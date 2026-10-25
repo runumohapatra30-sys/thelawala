@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { GoogleButton } from "@/components/LoginModal";
-import { ThelaLogo } from "@/components/Shell";
 import { useAuthBranding } from "@/lib/authBranding";
 import { ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";

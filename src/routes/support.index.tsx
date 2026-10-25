@@ -4,6 +4,7 @@ import { LoginButton, PortalHeader, Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/lib/session";
 import { ThaliwalaLoader } from "@/components/ThaliwalaLoader";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/support/")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -40,25 +41,23 @@ function SupportHome() {
   const [orders, setOrders] = useState<{ id: string; code: string }[]>([]);
   const [orderId, setOrderId] = useState<string>(order ?? "");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("support_tickets")
-      .select("id,code,subject,status,created_at,order_id")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => setTickets((data ?? []) as Ticket[]));
-    supabase
-      .from("orders")
-      .select("id,code")
-      .order("created_at", { ascending: false })
-      .limit(15)
-      .then(({ data }) => setOrders(data ?? []));
+    if (!user) { setTickets([]); setOrders([]); return; }
+    let alive = true;
+    const refresh = () => supabase.from("support_tickets").select("id,code,subject,status,created_at,order_id").eq("user_id", user.id).order("created_at", { ascending: false }).then(({ data, error }) => { if (!alive) return; if (error) setError("Could not load your tickets."); else setTickets(data ?? []); });
+    void refresh();
+    void supabase.from("orders").select("id,code").eq("user_id", user.id).order("created_at", { ascending: false }).limit(15).then(({ data }) => { if (alive) setOrders(data ?? []); });
+    const channel = supabase.channel(`care-ticket-list-${crypto.randomUUID()}`).on("postgres_changes", { event: "*", schema: "public", table: "support_tickets", filter: `user_id=eq.${user.id}` }, () => { void refresh(); }).subscribe();
+    const timer = window.setInterval(() => { void refresh(); }, 15000);
+    return () => { alive = false; window.clearInterval(timer); void supabase.removeChannel(channel); };
   }, [user?.id]);
 
   const start = async (issue: (typeof ISSUES)[number]) => {
     if (!user || busy) return;
     setBusy(true);
+    setError(null);
     const { data, error } = await supabase
       .from("support_tickets")
       .insert({
@@ -70,17 +69,10 @@ function SupportHome() {
       .select("id,code")
       .single();
     if (error || !data) {
+      setError("Ticket was not created. Please try again.");
       setBusy(false);
       return;
     }
-    await supabase.from("support_messages").insert([
-      {
-        ticket_id: data.id,
-        sender_role: "bot",
-        body: `Namaskar! Ticket ${data.code} is open for "${issue.label}". Tell me what happened and I will check your order details right away.`,
-      },
-      { ticket_id: data.id, sender_role: "customer", sender_id: user.id, body: issue.ask },
-    ]);
     navigate({ to: "/support/$id", params: { id: data.id } });
   };
 
@@ -88,6 +80,7 @@ function SupportHome() {
     <Shell>
       <PortalHeader title="Help & support" subtitle="Order help, refunds and tickets" />
       <div className="space-y-3 p-4">
+        {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
         {loading ? <ThaliwalaLoader /> : !user ? (
           <div className="py-16 text-center">
             <p className="text-sm text-muted-foreground">Sign in to chat with ThelaWala Care.</p>
@@ -114,7 +107,7 @@ function SupportHome() {
               </label>
               <div className="mt-2 grid gap-2">
                 {ISSUES.map((i) => (
-                  <button
+                  <Button
                     key={i.key}
                     disabled={busy}
                     onClick={() => start(i)}
@@ -122,7 +115,7 @@ function SupportHome() {
                   >
                     {i.label}
                     <span className="text-primary">›</span>
-                  </button>
+                  </Button>
                 ))}
               </div>
             </section>
