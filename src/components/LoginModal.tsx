@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { lovable } from "@/integrations/lovable";
 import { useAuthBranding } from "@/lib/authBranding";
+import brand from "@/assets/thelawala-brand.jpeg.asset.json";
 
 export const OPEN_LOGIN_EVENT = "thelawala:open-login";
 export const GUEST_PROFILE_EVENT = "thelawala:guest-profile";
@@ -106,7 +107,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
         aria-modal="true"
         aria-labelledby="login-modal-title"
         onClick={(event) => event.stopPropagation()}
-        className="w-full max-w-[460px] rounded-[2rem] bg-card p-5 shadow-2xl"
+        className="liquid-glass w-full max-w-[460px] rounded-[2rem] p-5"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -141,13 +142,7 @@ function LoginBrandHeader() {
     <>
       <div className="mb-3 flex items-center gap-2">
         <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-xl bg-brand-soft p-1.5">
-          {branding.logoUrl ? (
-            <img src={branding.logoUrl} alt="" className="h-full w-full object-contain" />
-          ) : (
-            <span className="grid h-full w-full place-items-center rounded-lg bg-primary text-[10px] font-black text-primary-foreground">
-              TW
-            </span>
-          )}
+          <img src={branding.logoUrl || brand.url} alt="ThelaWala" className="h-full w-full object-contain" />
         </span>
         <span className="text-sm font-extrabold text-foreground">{branding.brandTitle}</span>
       </div>

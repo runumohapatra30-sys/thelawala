@@ -1,4 +1,8 @@
 # Roadmap
+- [ ] Replace unrelated chat recommendations with grounded ThelaWala information, live products and support ticket receipts
+- [ ] Repair admin replies and live customer ticket status tracking
+- [ ] Blend admin login photography with ThelaWala branding and subtle liquid glass; check mobile flows
+- [ ] Enhance opening video resolution while preserving full playback
 - [ ] Add uploaded opening video splash and replace brand logo
 - [ ] Keep checkout intact with side-by-side COD/online and functional secure payment methods
 - [ ] Preserve confirmation items/bill after cart clearing and verify launch/payment screens

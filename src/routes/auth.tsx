@@ -2,10 +2,10 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { GoogleButton } from "@/components/LoginModal";
-import { ThelaLogo } from "@/components/Shell";
 import { useAuthBranding } from "@/lib/authBranding";
 import { ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import brand from "@/assets/thelawala-brand.jpeg.asset.json";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -74,29 +74,23 @@ export function AuthPage() {
   return (
     <div className="min-h-screen bg-brand-soft">
       <div className="mx-auto flex min-h-screen w-full max-w-[480px] flex-col bg-card">
-        <div className="relative flex min-h-[56vh] flex-col justify-between overflow-hidden bg-foreground p-6 text-primary-foreground">
+        <div className="auth-photo-stage flex flex-col justify-between overflow-hidden bg-card p-6 text-card-foreground">
           <img
             src={branding.loginHeroImage}
             alt=""
             className="absolute inset-0 h-full w-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-foreground/40 via-transparent to-card" />
+          <div className="auth-photo-fade absolute inset-0" />
           <div className="relative z-10 flex justify-end">
             <Link
               to="/"
-              className="press rounded-full bg-card/90 px-3 py-1.5 text-xs font-bold text-card-foreground"
+              className="press liquid-glass rounded-full px-3 py-2 text-xs font-bold text-card-foreground"
             >
               Back
             </Link>
           </div>
           <div className="relative z-10">
-            <div className="mb-3 grid h-14 w-14 place-items-center overflow-hidden rounded-2xl bg-card p-2 shadow-sm">
-              {branding.logoUrl ? (
-                <img src={branding.logoUrl} alt="" className="h-full w-full object-contain" />
-              ) : (
-                <ThelaLogo className="h-10 w-10" />
-              )}
-            </div>
+            <img src={branding.logoUrl || brand.url} alt="ThelaWala" className="auth-brand-logo mb-3" />
             <h1 className="text-3xl font-black text-foreground">{branding.brandTitle}</h1>
             <p className="mt-1 text-sm font-medium text-muted-foreground">
               Local favourites, delivered with care.

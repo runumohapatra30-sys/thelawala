@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { PortalHeader, Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
-import { askSupportBot } from "@/lib/support.functions";
+import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/support/$id")({
@@ -32,7 +32,7 @@ function SupportChat() {
   const [error, setError] = useState<string | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const autoRef = useRef<string | null>(null);
+
 
   const loadMsgs = () =>
     supabase
@@ -44,59 +44,38 @@ function SupportChat() {
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("support_tickets")
-      .select("id,code,subject,status,order_id,resolution_note")
-      .eq("id", id)
-      .maybeSingle()
-      .then(({ data }) => setTicket(data as Ticket | null));
-    loadMsgs();
+    let alive = true;
+    const refresh = async () => {
+      const [{ data, error: ticketError }, { data: messages, error: messageError }] = await Promise.all([
+        supabase.from("support_tickets").select("id,code,subject,status,order_id,resolution_note").eq("id", id).eq("user_id", user.id).maybeSingle(),
+        supabase.from("support_messages").select("id,sender_role,body,created_at").eq("ticket_id", id).order("created_at", { ascending: true }),
+      ]);
+      if (!alive) return;
+      if (ticketError || messageError) { setError("Could not load ticket updates. Please try again."); return; }
+      setTicket(data); setMsgs(messages ?? []);
+      if (!data) setError("This ticket is not available for your account.");
+    };
+    void refresh();
+    const channel = supabase.channel(`customer-care-${crypto.randomUUID()}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_messages", filter: `ticket_id=eq.${id}` }, () => { void refresh(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_tickets", filter: `id=eq.${id}` }, () => { void refresh(); })
+      .subscribe();
+    const timer = window.setInterval(() => { void refresh(); }, 15000);
+    return () => { alive = false; window.clearInterval(timer); void supabase.removeChannel(channel); };
   }, [id, user?.id]);
 
   useEffect(() => {
     boxRef.current?.scrollTo({ top: boxRef.current.scrollHeight });
-    inputRef.current?.focus();
-  }, [msgs.length, sending]);
-
-  useEffect(() => {
-    const last = msgs[msgs.length - 1];
-    if (!last || last.sender_role !== "customer" || sending) return;
-    if (autoRef.current === last.id) return;
-    autoRef.current = last.id;
-    void ask();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [msgs]);
-
-
-  const ask = async () => {
-    const last = [...msgs].reverse().find((m) => m.sender_role === "customer");
-    if (!last || sending) return;
-    setSending(true);
-    setError(null);
-    try {
-      await askSupportBot({ data: { ticketId: id, message: last.body } });
-      await loadMsgs();
-    } catch {
-      setError("ThelaWala Care is busy right now. Please try again, or call 9078492360.");
-    }
-    setSending(false);
-  };
+  }, [msgs.length]);
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     const body = text.trim();
-    if (!body || !user || sending) return;
-    setText("");
-    setSending(true);
-    setError(null);
-    await supabase.from("support_messages").insert({ ticket_id: id, sender_role: "customer", sender_id: user.id, body });
-    await loadMsgs();
-    try {
-      await askSupportBot({ data: { ticketId: id, message: body } });
-      await loadMsgs();
-    } catch {
-      setError("ThelaWala Care is busy right now. Please try again, or call 9078492360.");
-    }
+    if (!body || !user || !ticket || sending) return;
+    setSending(true); setError(null);
+    const { error: insertError } = await supabase.from("support_messages").insert({ ticket_id: id, sender_role: "customer", sender_id: user.id, body });
+    if (insertError) setError("Message was not sent. Please try again.");
+    else { setText(""); await loadMsgs(); }
     setSending(false);
   };
 
@@ -124,6 +103,8 @@ function SupportChat() {
           </div>
         ) : null}
 
+        {!user ? <Link to="/auth" className="text-sm font-bold text-primary">Sign in to track your ticket</Link> : null}
+        {ticket ? <p className="text-xs text-muted-foreground">Receipt saved · Sent to admin care team · {ticket.status === "RESOLVED" ? "Resolved" : "Awaiting care-team resolution"}</p> : null}
         {ticket?.resolution_note ? (
           <p className="rounded-xl bg-primary/10 px-3 py-2 text-xs font-semibold text-primary">
             Care team: {ticket.resolution_note}
@@ -147,7 +128,7 @@ function SupportChat() {
               </div>
             </div>
           ))}
-          {sending ? <p className="animate-pulse text-xs text-muted-foreground">ThelaWala Care is typing…</p> : null}
+          {sending ? <p className="animate-pulse text-xs text-muted-foreground">Sending your message…</p> : null}
         </div>
 
         {error ? <p className="text-xs font-semibold text-destructive">{error}</p> : null}
@@ -160,13 +141,13 @@ function SupportChat() {
             placeholder="Type your message…"
             className="flex-1 rounded-xl border border-border px-3 py-3 text-sm outline-none focus:border-primary"
           />
-          <button
+          <Button
             type="submit"
-            disabled={sending || !text.trim()}
+            disabled={sending || !ticket || !text.trim()}
             className="rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
           >
             Send
-          </button>
+          </Button>
         </form>
 
         <a href="tel:9078492360" className="text-center text-xs font-bold text-primary">
