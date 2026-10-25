@@ -44,7 +44,49 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+export default { 
+  const ASSET_LINKS = JSON.stringify([
+  {
+    relation: ["delegate_permission/common.handle_all_urls"],
+    target: {
+      namespace: "android_app",
+      package_name: "app.lovable.thelawala.twa",
+      sha256_cert_fingerprints: [
+        "93:0A:67:23:0E:E3:5A:63:1E:A1:BD:9B:6E:0E:FC:48:ED:43:79:B0:48:9F:01:56:E2:A0:47:EC:FB:59:13:96",
+      ],
+    },
+  },
+]);
+
 export default {
+  async fetch(request: Request, env: unknown, ctx: unknown) {
+    const url = new URL(request.url);
+
+    // Serve Digital Asset Links for Android TWA verification
+    if (url.pathname === "/.well-known/assetlinks.json") {
+      return new Response(ASSET_LINKS, {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          "cache-control": "public, max-age=86400",
+        },
+      });
+    }
+
+    try {
+      const handler = await getServerEntry();
+      const response = await handler.fetch(request, env, ctx);
+      return await normalizeCatastrophicSsrResponse(response);
+    } catch (error) {
+      console.error(error);
+      return new Response(renderErrorPage(), {
+        status: 500,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+  },
+};
+
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
