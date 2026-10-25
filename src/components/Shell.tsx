@@ -82,7 +82,7 @@ export function Shell({ children, hideNavigation = false }: { children: ReactNod
       <div className={`mx-auto min-h-screen w-full max-w-[520px] bg-background shadow-[0_0_48px_color-mix(in_oklab,var(--color-foreground)_8%,transparent)] ${navigationHidden ? "" : "pb-36"}`}>
         {children}
       </div>
-      {!navigationHidden ? <nav aria-label="Main navigation" className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+12px)] z-40 mx-auto flex h-[74px] w-[calc(100%-24px)] max-w-[480px] items-center justify-between rounded-full border border-white/70 bg-white/90 px-2 shadow-[0_18px_45px_-20px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+      {!navigationHidden ? <nav aria-label="Main navigation" className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+12px)] z-40 mx-auto flex h-[74px] w-[calc(100%-24px)] max-w-[480px] items-center justify-between rounded-full liquid-glass px-2">
         <div className="grid h-full w-[calc(50%-34px)] grid-cols-3">
           {NAV.slice(0, 3).map((n) => {
           const active =

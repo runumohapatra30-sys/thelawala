@@ -300,7 +300,6 @@
 @utility glass-panel {
   background: color-mix(in oklab, var(--color-card) 88%, transparent);
   backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
   border: 1px solid color-mix(in oklab, white 60%, transparent);
   box-shadow: 0 22px 45px -20px rgba(15, 23, 42, 0.35);
 }
@@ -308,14 +307,12 @@
 @utility glass-chip {
   background: color-mix(in oklab, white 34%, transparent);
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   border: 1px solid color-mix(in oklab, white 55%, transparent);
 }
 
 @utility festive-glass-chip {
   background: color-mix(in oklab, var(--color-card) 24%, transparent);
   backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   border: 1px solid color-mix(in oklab, var(--color-card) 42%, transparent);
   box-shadow: 0 10px 30px -18px color-mix(in oklab, var(--color-foreground) 65%, transparent);
 }
@@ -669,7 +666,6 @@
 .glass-card {
   background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
 }
@@ -677,6 +673,17 @@
 .glass-dark {
   background: rgba(17, 25, 40, 0.75);
   backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
+
+@utility liquid-glass {
+  background: color-mix(in oklab, var(--card) 92%, transparent);
+  backdrop-filter: blur(20px) saturate(125%);
+  border: 1px solid color-mix(in oklab, var(--card) 65%, var(--border));
+  box-shadow: var(--shadow-soft);
+}
+.care-chat-sheet { height: min(88dvh, 760px); padding-bottom: env(safe-area-inset-bottom); }
+.auth-photo-stage { position: relative; min-height: 60svh; }
+.auth-photo-fade { background: linear-gradient(180deg, color-mix(in oklab, var(--foreground) 18%, transparent), transparent 40%, var(--card) 99%); }
+.auth-brand-logo { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; box-shadow: var(--shadow-soft); }
+@media (max-width: 640px) { input, textarea, select { font-size: 16px; } }

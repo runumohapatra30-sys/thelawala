@@ -21,3 +21,6 @@
 - Mount the launch splash once in the root so route navigation never replays it; preload images without blocking catalog rendering.
 - Render custom payments with Cashfree-managed Elements and its supported bank identifiers; never collect raw card details or infer success from browser callbacks.
 - Snapshot the placed order summary before clearing the cart so confirmation remains accurate after local cart cleanup.
+
+- Route home care intents through a browser-safe classifier and use real approved catalog rows and owner-scoped support tickets; deterministic routing prevents unrelated recommendations and invented receipts.
+- Refresh ticket messages separately from expansion state, and subscribe with unique channels on customer/admin support views so replies and resolution reports update without stale toggles.
