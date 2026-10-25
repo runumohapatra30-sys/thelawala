@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import logo from '@/assets/thelawala-brand.jpeg.asset.json';
-import video from '@/assets/thelawala-opening.mp4.asset.json';
+import video from '@/assets/thelawala-opening-4k.mp4.asset.json';
 
 const IMAGES = [
   logo.url,
@@ -26,7 +26,6 @@ export function SplashScreen() {
       void image.decode().catch(() => {});
     }
 
-    // Allow buffering without cutting off normal-speed video playback.
     const timer = setTimeout(() => {
       setVisible(false);
     }, reducedMotion ? 2800 : 15000);
@@ -46,7 +45,6 @@ export function SplashScreen() {
           className="fixed inset-0 z-[1000] grid place-items-center overflow-hidden bg-launch cursor-pointer"
           onClick={() => setVisible(false)}
         >
-          {/* Preserve the full opening frame rather than cropping on phones. */}
           {!reducedMotion ? (
             <video
               src={video.url}
