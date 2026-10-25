@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.lovable.thelawala.twa",
+      "sha256_cert_fingerprints": [
+        "93:0A:67:23:0E:E3:5A:63:1E:A1:BD:9B:6E:0E:FC:48:ED:43:79:B0:48:9F:01:56:E2:A0:47:EC:FB:59:13:96"
+      ]
+    }
+  }
+]
