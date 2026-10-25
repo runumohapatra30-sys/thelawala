@@ -83,7 +83,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "ThelaWala — Bhubaneswar Street Food" },
       { name: "description", content: "Fresh street food delivered across Bhubaneswar." },
       { name: "author", content: "ThelaWala" },
@@ -94,7 +94,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Lovable" },
       { name: "theme-color", content: "#0A4D3C" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-title", content: "Thaleewala" },
+      { name: "apple-mobile-web-app-title", content: "ThelaWala" },
       { name: "apple-mobile-web-app-status-bar-style", content: "default" },
     ],
     links: [
