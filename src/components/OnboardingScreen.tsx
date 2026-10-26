@@ -1,77 +1,107 @@
-import React, { useState } from 'react';
+import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
-const onboardingData = [
+type Props = { onComplete: () => void };
+
+// Replace slide1Img, slide2Img, slide3Img with the data URIs in the file card above
+const slides = [
   {
+    image: slide1Img,
     title: "Easily track your package",
-    description: "Getting location updates from our couriers",
-    image: "https://images.unsplash.com/photo-1526367460882-16d1241af130?w=500&auto=format&fit=crop&q=60",
+    detail: "Getting location updates from our couriers",
   },
   {
+    image: slide2Img,
     title: "Fast delivery in your area",
-    description: "Your package will come right to your door as soon as possible",
-    image: "https://images.unsplash.com/photo-1617347454431-f49d7ff5c3b1?w=500&auto=format&fit=crop&q=60",
+    detail: "Your package will come right to your door as soon as possible",
   },
   {
+    image: slide3Img,
     title: "Delivering your package carefully",
-    description: "We care about your package as you do",
-    image: "https://images.unsplash.com/photo-1586880244406-556ebe37a282?w=500&auto=format&fit=crop&q=60",
+    detail: "We care about your package as you do",
   },
 ];
 
-export default function OnboardingScreen() {
-  const [currentIndex, setCurrentIndex] = useState(0);
+export function OnboardingScreen({ onComplete }: Props) {
+  const [index, setIndex] = useState(0);
+  const slide = slides[index]!;
 
-  const handleNext = () => {
-    if (currentIndex < onboardingData.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      window.location.href = '/home';
+  function next() {
+    if (index < slides.length - 1) {
+      setIndex((curr) => curr + 1);
+      return;
     }
-  };
+
+    try {
+      window.localStorage.setItem("thelawala_onboarding_completed", "1");
+    } catch {
+      // ignore
+    }
+    onComplete();
+  }
 
   return (
-    <div className="flex flex-col justify-between items-center min-h-screen bg-white p-6 max-w-md mx-auto">
-      <div className="w-full flex justify-end pt-4">
-        <button onClick={() => { window.location.href = '/home'; }} className="text-gray-400 text-sm font-medium">
-          Skip
-        </button>
-      </div>
-
-      <div className="flex flex-col items-center text-center my-auto">
-        <div className="w-72 h-72 mb-8 flex items-center justify-center">
-          <img 
-            src={onboardingData[currentIndex].image} 
-            alt="Onboarding" 
-            className="max-h-full object-contain"
-          />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          {onboardingData.title}
-        </h2>
-        <p className="text-gray-500 text-sm px-4">
-          {onboardingData[currentIndex].description}
-        </p>
-      </div>
-
-      <div className="w-full pb-8">
-        <div className="flex justify-center space-x-2 mb-6">
-          {onboardingData.map((_, index) => (
-            <div
+    <main className="fixed inset-0 z-[100] flex min-h-[100svh] flex-col bg-white px-6 pt-[max(24px,env(safe-area-inset-top))] pb-[max(24px,env(safe-area-inset-bottom))]">
+      <section className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-between py-4">
+        {/* Main Illustration & Text */}
+        <div className="flex flex-1 flex-col items-center justify-center text-center">
+          <AnimatePresence mode="wait">
+            <motion.div
               key={index}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                currentIndex === index ? 'w-6 bg-orange-500' : 'w-2 bg-gray-300'
-              }`}
-            />
-          ))}
+              initial={{ opacity: 0, x: 26 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -26 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="flex w-full flex-col items-center"
+            >
+              <div className="mb-10 flex h-[260px] w-full items-center justify-center">
+                <img
+                  src={slide.image}
+                  alt={slide.title}
+                  className="max-h-[240px] w-auto max-w-[280px] object-contain drop-shadow-sm"
+                />
+              </div>
+
+              <h1 className="max-w-[320px] text-[24px] font-bold leading-tight text-[#1E1E1E]">
+                {slide.title}
+              </h1>
+
+              <p className="mt-3 max-w-[280px] text-[13px] leading-5 text-[#9E9E9E]">
+                {slide.detail}
+              </p>
+            </motion.div>
+          </AnimatePresence>
         </div>
 
-        <button
-          onClick={handleNext}
-          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3.5 rounded-xl shadow-lg transition-all"
-        >
-          {currentIndex === onboardingData.length - 1 ? 'Get Started' : 'Next'}
-        </button>
-      </div>
-    </div>
+        {/* Bottom Navigation */}
+        <div className="w-full pb-4">
+          {/* Indicators */}
+          <div
+            className="mb-8 flex items-center justify-center gap-1.5"
+            aria-label={`Page ${index + 1} of ${slides.length}`}
+          >
+            {slides.map((_, dot) => (
+              <span
+                key={dot}
+                className={`h-[6px] rounded-full transition-all duration-200 ${
+                  dot === index
+                    ? "w-7 bg-[#FF6500]"
+                    : "w-[6px] bg-[#E0E0E0]"
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Next Button */}
+          <button
+            type="button"
+            onClick={next}
+            className="h-[52px] w-full rounded-[14px] bg-[#FF6500] text-[15px] font-semibold text-white shadow-md active:scale-[0.98] transition-all hover:bg-[#F25C00]"
+          >
+            {index === slides.length - 1 ? "Next" : "Next"}
+          </button>
+        </div>
+      </section>
+    </main>
   );
 }
