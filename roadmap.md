@@ -1,4 +1,10 @@
 # Roadmap
+- [ ] Replace launch video with uploaded full-screen photo and sequential delivery onboarding
+- [ ] Match concierge chat reference while preserving grounded products, cart, ticket receipts and tracking
+- [ ] Add order-linked refund requests in care chat and automatic refunds under confirmed eligibility terms
+- [ ] Replace old login styling with supplied orange reference and existing sign-in options
+- [ ] Match tracking reference with real map, rider details and order data
+- [ ] Deliver customer order-status push alerts and supported stall-offer actions
 - [ ] Replace unrelated chat recommendations with grounded ThelaWala information, live products and support ticket receipts
 - [ ] Repair admin replies and live customer ticket status tracking
 - [ ] Blend admin login photography with ThelaWala branding and subtle liquid glass; check mobile flows
