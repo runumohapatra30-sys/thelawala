@@ -2,23 +2,16 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { GoogleButton } from "@/components/LoginModal";
-import { useAuthBranding } from "@/lib/authBranding";
-import { ArrowDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import brand from "@/assets/thelawala-brand.jpeg.asset.json";
+import { ArrowLeft, ShieldCheck, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in — ThelaWala" },
-      { name: "description", content: "Continue to ThelaWala with one-tap Google sign-in." },
+      { name: "description", content: "Continue to ThelaWala with fast Google sign-in." },
       { property: "og:title", content: "Sign in — ThelaWala" },
-      {
-        property: "og:description",
-        content: "Sign in to ThelaWala for local street food delivery in Bhubaneswar.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:description", content: "Street food delivery in Bhubaneswar." },
     ],
   }),
   component: AuthPage,
@@ -26,126 +19,87 @@ export const Route = createFileRoute("/auth")({
 
 export function AuthPage() {
   const navigate = useNavigate();
-  const branding = useAuthBranding();
 
-  async function goAfterLogin() {
-    const { data: u } = await supabase.auth.getUser();
-    const uid = u.user?.id;
-    if (!uid) return navigate({ to: "/" });
-
-    let saved: string | null = null;
-    try {
-      saved = sessionStorage.getItem("thelawala.redirect");
-      sessionStorage.removeItem("thelawala.redirect");
-    } catch {
-      saved = null;
+  async function checkExistingUser() {
+    const { data } = await supabase.auth.getUser();
+    if (data?.user?.id) {
+      navigate({ to: "/" });
     }
-
-    const [{ data: vendor }, { data: partner }, { data: adminRole }] = await Promise.all([
-      supabase.from("vendors").select("id").eq("owner_id", uid).maybeSingle(),
-      supabase.from("delivery_partners").select("id").eq("user_id", uid).maybeSingle(),
-      supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", uid)
-        .eq("role", "admin")
-        .maybeSingle(),
-    ]);
-
-    if (saved?.startsWith("/vendor")) return navigate({ to: "/vendor" });
-    if (saved?.startsWith("/rider") || saved?.startsWith("/delivery"))
-      return navigate({ to: "/rider" });
-    if (saved?.startsWith("/admin") || adminRole) return navigate({ to: "/admin" });
-    if (vendor) return navigate({ to: "/vendor" });
-    if (partner) return navigate({ to: "/rider" });
-    navigate({ to: "/" });
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data, error }) => {
-      if (error) {
-        await supabase.auth.signOut({ scope: "local" });
-        return;
-      }
-      if (data.session) goAfterLogin();
-    });
-  }, [navigate]);
+    void checkExistingUser();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-brand-soft">
-      <div className="mx-auto flex min-h-screen w-full max-w-[480px] flex-col bg-card">
-        <div className="auth-photo-stage flex flex-col justify-between overflow-hidden bg-card p-6 text-card-foreground">
+    <main className="relative flex min-h-[100svh] flex-col justify-between bg-gradient-to-b from-[#FFF5EE] via-[#FFFFFF] to-[#FAF8F5] px-6 pb-8 pt-6">
+      {/* Top Bar */}
+      <div className="flex items-center justify-between">
+        <Link
+          to="/"
+          className="grid h-10 w-10 place-items-center rounded-full bg-white shadow-sm text-[#222] active:scale-95"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        <span className="text-xs font-bold uppercase tracking-wider text-[#FF5A1F]">Bhubaneswar</span>
+      </div>
+
+      {/* Center Hero Card */}
+      <div className="my-auto flex flex-col items-center text-center">
+        <div className="relative mb-6">
           <img
-            src={branding.loginHeroImage}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
+            src={brand.url}
+            alt="ThelaWala"
+            className="h-24 w-24 rounded-3xl object-cover shadow-[0_12px_28px_rgba(255,90,31,0.22)] border-2 border-white"
           />
-          <div className="auth-photo-fade absolute inset-0" />
-          <div className="relative z-10 flex justify-end">
-            <Link
-              to="/"
-              className="press liquid-glass rounded-full px-3 py-2 text-xs font-bold text-card-foreground"
-            >
-              Back
-            </Link>
-          </div>
-          <div className="relative z-10">
-            <img src={branding.logoUrl || brand.url} alt="ThelaWala" className="auth-brand-logo mb-3" />
-            <h1 className="text-3xl font-black text-foreground">{branding.brandTitle}</h1>
-            <p className="mt-1 text-sm font-medium text-muted-foreground">
-              Local favourites, delivered with care.
-            </p>
-            <Button
-              type="button"
-              onClick={() =>
-                document
-                  .getElementById("auth-options")
-                  ?.scrollIntoView({ behavior: "smooth", block: "center" })
-              }
-              className="mt-5 h-12 w-full rounded-full text-sm font-extrabold"
-            >
-              Get Started <ArrowDown className="h-4 w-4" />
-            </Button>
-          </div>
+          <span className="absolute -bottom-2 -right-2 grid h-8 w-8 place-items-center rounded-full bg-[#FF5A1F] text-white shadow-md">
+            <Sparkles className="h-4 w-4" />
+          </span>
         </div>
 
-        <div id="auth-options" className="w-full bg-card px-6 pb-6 pt-5">
-          <div className="flex items-center gap-3"><span className="h-px flex-1 bg-border" /><p className="text-xs font-semibold">Sign in with</p><span className="h-px flex-1 bg-border" /></div>
-          <div className="mt-5 flex flex-col items-center gap-2">
-            <GoogleButton className="h-12" onSuccess={goAfterLogin} />
-          </div>
-          <p className="mt-4 text-center text-[11px] leading-relaxed text-muted-foreground">By continuing, you agree to our <Link to="/terms" className="text-primary">Terms & Privacy Policy</Link>.</p>
+        <h1 className="text-3xl font-black tracking-tight text-[#1E1E1E]">
+          Welcome to <span className="text-[#FF5A1F]">ThelaWala</span>
+        </h1>
+        <p className="mt-2.5 max-w-[280px] text-sm text-[#666666] leading-relaxed">
+          15-minute hyper-local street food delivery straight from your favorite local thelas.
+        </p>
 
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <Link
-              to="/vendor"
-              className="rounded-xl border border-border py-2.5 text-center text-[11px] font-black text-primary"
-            >
-              Stall partner portal
-            </Link>
-            <Link
-              to="/rider"
-              className="rounded-xl border border-border py-2.5 text-center text-[11px] font-black text-primary"
-            >
-              Delivery partner portal
-            </Link>
+        {/* Feature Highlights */}
+        <div className="mt-8 flex items-center justify-center gap-4 rounded-2xl bg-white px-5 py-3 shadow-[0_4px_16px_rgba(0,0,0,0.04)] border border-[#F2E8DC]">
+          <div className="text-center">
+            <p className="text-xs font-black text-[#FF5A1F]">15 MIN</p>
+            <p className="text-[10px] text-[#777]">Fast Delivery</p>
           </div>
-          <div className="mt-2 text-center">
-            <Link
-              to="/admin"
-              className="text-[11px] font-bold text-muted-foreground underline-offset-2 hover:underline"
-            >
-              Admin portal
-            </Link>
+          <div className="h-6 w-px bg-[#E5E5E5]" />
+          <div className="text-center">
+            <p className="text-xs font-black text-[#16A34A]">100% LIVE</p>
+            <p className="text-[10px] text-[#777]">Local Stalls</p>
+          </div>
+          <div className="h-6 w-px bg-[#E5E5E5]" />
+          <div className="text-center">
+            <p className="text-xs font-black text-[#2563EB]">EASY</p>
+            <p className="text-[10px] text-[#777]">Care Support</p>
           </div>
         </div>
-        <p className="mt-auto px-4 pb-6 text-center text-[11px] text-muted-foreground">
-          Need help? Call our care team on{" "}
-          <a href="tel:9078492360" className="font-bold text-primary">
-            9078492360
-          </a>
+      </div>
+
+      {/* Bottom Auth Section */}
+      <div className="w-full max-w-sm mx-auto space-y-4">
+        <div className="rounded-2xl bg-white p-4 shadow-[0_6px_20px_rgba(0,0,0,0.05)] border border-[#F0E6DA]">
+          <p className="text-center text-xs font-bold text-[#444] mb-3">
+            Sign in with one tap to continue
+          </p>
+          <GoogleButton
+            className="w-full h-13 rounded-xl bg-white border border-[#E5E5E5] text-sm font-bold text-[#222] shadow-sm hover:bg-neutral-50 active:scale-[0.99]"
+            onSuccess={() => navigate({ to: "/" })}
+          />
+        </div>
+
+        <p className="flex items-center justify-center gap-1.5 text-center text-[11px] text-[#888]">
+          <ShieldCheck className="h-3.5 w-3.5 text-[#16A34A]" />
+          Secure authentication · No passwords needed
         </p>
       </div>
-    </div>
+    </main>
   );
 }
