@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 
 const onboardingData = [
   {
@@ -19,7 +19,7 @@ const onboardingData = [
   },
 ];
 
-export default function Onboarding() {
+export default function OnboardingScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const navigate = useNavigate();
 
@@ -27,14 +27,14 @@ export default function Onboarding() {
     if (currentIndex < onboardingData.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      navigate('/home');
+      navigate({ to: '/home' });
     }
   };
 
   return (
     <div className="flex flex-col justify-between items-center min-h-screen bg-white p-6 max-w-md mx-auto">
       <div className="w-full flex justify-end pt-4">
-        <button onClick={() => navigate('/home')} className="text-gray-400 text-sm font-medium">
+        <button onClick={() => navigate({ to: '/home' })} className="text-gray-400 text-sm font-medium">
           Skip
         </button>
       </div>
