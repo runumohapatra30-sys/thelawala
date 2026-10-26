@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
 
 const onboardingData = [
   {
@@ -21,20 +20,19 @@ const onboardingData = [
 
 export default function OnboardingScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const navigate = useNavigate();
 
   const handleNext = () => {
     if (currentIndex < onboardingData.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      navigate({ to: '/home' });
+      window.location.href = '/home';
     }
   };
 
   return (
     <div className="flex flex-col justify-between items-center min-h-screen bg-white p-6 max-w-md mx-auto">
       <div className="w-full flex justify-end pt-4">
-        <button onClick={() => navigate({ to: '/home' })} className="text-gray-400 text-sm font-medium">
+        <button onClick={() => { window.location.href = '/home'; }} className="text-gray-400 text-sm font-medium">
           Skip
         </button>
       </div>
@@ -48,7 +46,7 @@ export default function OnboardingScreen() {
           />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          {onboardingData[currentIndex].title}
+          {onboardingData.title}
         </h2>
         <p className="text-gray-500 text-sm px-4">
           {onboardingData[currentIndex].description}
