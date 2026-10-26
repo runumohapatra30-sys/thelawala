@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import logo from '@/assets/thelawala-brand.jpeg.asset.json';
-import video from '@/assets/thelawala-opening-4k.mp4.asset.json';
+import { AnimatePresence, motion } from 'framer-motion';
+import brandPhoto from '@/assets/thelawala-launch-photo.png.asset.json';
 
 const IMAGES = [
-  logo.url,
+  brandPhoto.url,
   '/food/food-biryani.jpg',
   '/food/food-chaat.jpg',
   '/food/food-dahibara.jpg',
@@ -16,56 +15,43 @@ const IMAGES = [
 
 export function SplashScreen() {
   const [visible, setVisible] = useState(true);
-  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
-    // Preload critical food images during video playback
+    // Background ରେ food photos preload କରିବା
     for (const src of IMAGES) {
-      const image = new Image();
-      image.src = src;
-      void image.decode().catch(() => {});
+      const img = new Image();
+      img.src = src;
+      void img.decode().catch(() => {});
     }
 
+    // ୨.୮ ସେକେଣ୍ଡ ପରେ ସ୍ମୁଥ୍‌ଲି ବନ୍ଦ ହେବ
     const timer = setTimeout(() => {
       setVisible(false);
-    }, reducedMotion ? 2800 : 15000);
+    }, 2800);
 
     return () => clearTimeout(timer);
-  }, [reducedMotion]);
+  }, []);
 
   return (
     <AnimatePresence>
       {visible && (
         <motion.div
           role="status"
-          aria-label="Opening ThelaWala"
+          aria-label="Welcome to ThelaWala"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: reducedMotion ? 0 : 0.55 }}
-          className="fixed inset-0 z-[1000] grid place-items-center overflow-hidden bg-launch cursor-pointer"
+          transition={{ duration: 0.5 }}
+          className="fixed inset-0 z-[1000] flex items-center justify-center overflow-hidden bg-[#ff6600] cursor-pointer"
           onClick={() => setVisible(false)}
         >
-          {!reducedMotion ? (
-            <video
-              src={video.url}
-              autoPlay
-              muted
-              playsInline
-              preload="auto"
-              onEnded={() => setVisible(false)}
-              onError={() => setVisible(false)}
-              className="absolute inset-0 h-full w-full object-contain"
-            />
-          ) : (
-            <motion.img
-              src={logo.url}
-              alt="ThelaWala"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6 }}
-              className="relative w-64 max-w-[70vw] object-contain drop-shadow-md"
-            />
-          )}
+          <motion.img
+            src={brandPhoto.url}
+            alt="ThelaWala"
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="h-full w-full object-cover sm:object-contain"
+          />
         </motion.div>
       )}
     </AnimatePresence>
