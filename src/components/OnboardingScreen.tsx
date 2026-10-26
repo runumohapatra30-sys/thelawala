@@ -29,7 +29,8 @@ const slides = [
 
 export function OnboardingScreen({ onComplete }: Props) {
   const [index, setIndex] = useState(0);
-  const slide = slides[index];
+  const slide = slides[index]!;
+
 
   function next() {
     if (index < slides.length - 1) {
