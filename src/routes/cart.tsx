@@ -1240,15 +1240,22 @@ function Cart() {
       {placementStage === "success" && placedSummary && <div role="dialog" aria-label="Order successful" className="fixed inset-0 z-[180] overflow-y-auto bg-background text-foreground">
         <div className="mx-auto flex min-h-svh max-w-[520px] flex-col px-5 py-5">
           <Button variant="ghost" className="self-start px-0" onClick={() => void navigate({ to: "/" })}><ArrowLeft />Order details</Button>
-          <div className="flex flex-col items-center py-7"><div className="grid h-16 w-16 place-items-center rounded-full border-4 border-confirmation text-confirmation"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="m5 12 4 4 10-10" /></svg></div><h2 className="mt-5 text-2xl font-extrabold">Order Successful</h2><p className="mt-3 text-xs font-bold text-confirmation">order ID: #{placedSummary.id.slice(-7)}</p></div>
-          <div className="flex items-center justify-between"><h3 className="text-lg font-bold">Order summary</h3><Button asChild className="rounded-full bg-track text-track-foreground hover:bg-track/90"><Link to="/orders/$id" params={{ id: placedSummary.id }}>Track Order</Link></Button></div>
-          <div className="mt-4 space-y-4 border-b border-border pb-5">{placedSummary.items.map(item => <div key={item.itemId} className="grid grid-cols-[40px_minmax(0,1fr)_auto_auto] items-center gap-3 text-xs"><img src={item.photo ?? "/food/food-tiffin.jpg"} alt={item.name} className="h-10 w-10 rounded-lg object-cover" /><span className="font-bold">{item.name}</span><span className="text-muted-foreground">{item.qty} Qty</span><span className="font-bold">{inr(item.price * item.qty)}</span></div>)}</div>
-          <dl className="space-y-3 py-5 text-sm">{placedSummary.rows.filter(row => row.amount !== 0).map(row => <div key={row.label} className="flex justify-between"><dt className="text-muted-foreground">{row.label}</dt><dd>{inr(row.amount)}</dd></div>)}<div className="flex justify-between border-t border-border pt-4 font-bold"><dt>Grand Total</dt><dd>{inr(placedSummary.total)}</dd></div><div className="flex justify-between text-xs"><dt>Payment mode</dt><dd className="font-bold">{placedSummary.mode}</dd></div></dl>
-          <Button className="mt-auto h-12 w-full rounded-full bg-confirmation text-confirmation-foreground hover:bg-confirmation/90" onClick={() => void navigate({ to: "/" })}>Continue to shop</Button>
-        </div>
-      </div>}
-    </Shell>
-  );
+          <div className="flex flex-col items-center py-8">
+            <div className="grid h-20 w-20 place-items-center rounded-full border-4 border-[#FF5A1F] text-[#FF5A1F] bg-[#FFF5EE]">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="m5 12 4 4 10-10" /></svg>
+            </div>
+            <h2 className="mt-4 text-2xl font-black text-[#1E1E1E]">Order Successful</h2>
+            <p className="mt-2 text-xs font-extrabold text-[#FF5A1F] bg-[#FFF5EE] px-3 py-1 rounded-full border border-[#FFD8C2]">
+              Order ID: #{placedSummary.id.slice(-7).toUpperCase()}
+            </p>
+          </div>
+          <div className="flex items-center justify-between mt-2">
+            <h3 className="text-base font-extrabold text-[#1E1E1E]">Order summary</h3>
+            <Button asChild className="h-9 rounded-full bg-[#FF5A1F] text-white hover:bg-[#E04E18] text-xs font-bold px-4 shadow-sm">
+              <Link to="/orders/$id" params={{ id: placedSummary.id }}>Track Order</Link>
+            </Button>
+          </div>
+
 }
 
 function PayBtn({
