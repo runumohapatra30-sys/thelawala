@@ -340,10 +340,11 @@ export function HomeChat({ userId, cartVisible = false }: { userId?: string | nu
                   <div 
                     className={`rounded-2xl p-3.5 text-sm leading-relaxed shadow-xs ${
                       message.role === "user" 
-                        ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium rounded-tr-xs" 
+                        ? "bg-[#FFF9D2] text-[#2E2800] border border-[#F6EAA2] font-semibold rounded-tr-xs self-end ml-auto" 
                         : "bg-white text-stone-800 border border-stone-200/80 rounded-tl-xs"
                     }`}
                   >
+
                     <p className="whitespace-pre-wrap break-words">{message.content}</p>
                   </div>
 
