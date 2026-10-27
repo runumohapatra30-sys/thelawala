@@ -1,4 +1,7 @@
 # Roadmap
+- [ ] Apply latest supplied opening → delivery intro → login → unchanged home sequence
+- [ ] Match latest compact chat, large-map scooter tracking and white/orange order-confirmation references
+- [ ] Verify real order notifications and background push registration/delivery
 - [ ] Replace launch video with uploaded full-screen photo and sequential delivery onboarding
 - [ ] Match concierge chat reference while preserving grounded products, cart, ticket receipts and tracking
 - [ ] Add order-linked refund requests in care chat and automatic refunds under confirmed eligibility terms
