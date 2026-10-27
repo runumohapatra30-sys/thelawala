@@ -1255,6 +1255,7 @@ function Cart() {
               <Link to="/orders/$id" params={{ id: placedSummary.id }}>Track Order</Link>
             </Button>
           </div>
+          )
 
 }
 
