@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Bike, ChevronRight } from "lucide-react";
 import { STATUS_LABEL } from "@/lib/fees";
+import { requestAndShowNotification } from "@/utils/notifications";
 
 type ActiveOrder = {
   id: string;
@@ -36,6 +37,23 @@ export function ActiveOrderTracker({ userId }: { userId?: string }) {
         return;
       }
       setLatestOrder((activeResult.data?.[0] ?? null) as unknown as ActiveOrder | null);
+            const order = activeResult.data?.[0];
+      if (order && order.status) {
+        const labels: Record<string, string> = {
+          PREPARING: "Stall is preparing your food!",
+          READY_FOR_PICKUP: "Your order is ready for pickup!",
+          RIDER_ASSIGNED: "Delivery partner assigned to your order!",
+          OUT_FOR_DELIVERY: "Order is out for delivery! Rider on the way.",
+          DELIVERED: "Your order has been delivered! Enjoy your meal.",
+        };
+        if (labels[order.status]) {
+          void requestAndShowNotification(
+            `ThelaWala Order #${order.code || ""}`,
+            labels[order.status]
+          );
+        }
+      }
+
       setActiveCount(totalResult.count ?? 0);
     };
 
