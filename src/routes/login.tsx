@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AuthPage } from "./auth";
+import { CustomerAuthScreen } from "@/components/CustomerAuthScreen";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -8,5 +8,5 @@ export const Route = createFileRoute("/login")({
       { name: "description", content: "Log in to ThelaWala to order street food and manage your account." },
     ],
   }),
-  component: AuthPage,
+  component: CustomerAuthScreen,
 });
