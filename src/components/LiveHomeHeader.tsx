@@ -11,9 +11,6 @@ import { useTopBarTheme } from "@/lib/appTheme";
 import { useVisualEngineSettings } from "@/lib/visualEngine";
 import { RainIndicator } from "@/components/RainIndicator";
 
-/** Per-category circle accents (ring + label pill) like quick-commerce apps. */
-const CATEGORY_THEMES = ["#E8590C", "#2F6FDB", "#0F9D58", "#C2255C", "#7048E8", "#D9480F", "#0C8599", "#B08900"];
-
 /** Ultra-subtle pastel header tint per category, Swiggy Instamart style. */
 function categoryTint(name: string | null): { bg: string; text: string } {
   if (!name) return { bg: "#FFF7ED", text: "#EA580C" }; // All food — warm orange
@@ -88,30 +85,24 @@ export function LiveHomeHeader({ address, avatarUrl, query, onQueryChange, onSea
           <div className="no-scrollbar flex gap-2 overflow-x-auto">
             <button type="button" onClick={() => onCategoryChange(null)} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${activeCategoryId === null ? "border-primary bg-primary text-white" : "border-border bg-white text-foreground"}`}>All food</button>
             {categories.map((category) => (
-              <button key={category.id} type="button" onClick={() => onCategoryChange(category.id)} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${activeCategoryId === category.id ? "border-primary bg-primary text-white" : "border-border bg-white text-foreground"}`}>{category.emoji ? `${category.emoji} ` : ""}{category.name}</button>
+              <button key={category.id} type="button" onClick={() => onCategoryChange(category.id)} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${activeCategoryId === category.id ? "border-primary bg-primary text-white" : "border-border bg-white text-foreground"}`}>{category.name}</button>
             ))}
           </div>
         </div>
       ) : null}
       {!collapsed && (
         <section className="mt-2.5">
-          <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
-            <button type="button" aria-pressed={activeCategoryId === null} onClick={() => onCategoryChange(null)} className="w-[68px] shrink-0 text-center">
-              <span className={`mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full border-2 bg-white shadow-sm transition-all duration-300 ${activeCategoryId === null ? "scale-105 border-primary ring-2 ring-primary/30" : "border-white"}`}>
-                <img src="/food/food-thali.jpg" alt="" className="h-full w-full object-cover" />
-              </span>
-              <span className={`mt-1 block truncate rounded-full px-1 py-0.5 text-[10px] font-bold transition-colors duration-300 ${activeCategoryId === null ? "bg-primary text-primary-foreground" : "text-foreground"}`}>All food</span>
+          <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+            <button type="button" aria-pressed={activeCategoryId === null} onClick={() => onCategoryChange(null)} className={`flex h-10 shrink-0 items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-xs font-bold transition-colors ${activeCategoryId === null ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground"}`}>
+              <img src="/food/food-thali.jpg" alt="" className="h-7 w-7 rounded-full object-cover" />
+              All food
             </button>
-            {categories.map((category, index) => {
+            {categories.map((category) => {
               const selected = activeCategoryId === category.id;
-              const color = CATEGORY_THEMES[index % CATEGORY_THEMES.length];
               return (
-                <button key={category.id} type="button" aria-pressed={selected} onClick={() => onCategoryChange(selected ? null : category.id)} className="w-[68px] shrink-0 text-center">
-                  <span style={selected ? { borderColor: color, boxShadow: `0 0 0 3px color-mix(in oklab, ${color} 35%, transparent)` } : undefined} className={`relative mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full border-2 bg-white shadow-sm transition-all duration-300 ${selected ? "scale-110" : "border-white"}`}>
-                    <img src={foodImage(category.name)} alt="" className="h-full w-full object-cover" />
-                    {category.emoji ? <span className="absolute bottom-0 right-0 grid h-5 w-5 place-items-center rounded-full bg-white text-[10px]">{category.emoji}</span> : null}
-                  </span>
-                  <span style={selected ? { backgroundColor: color } : undefined} className={`mt-1 block truncate rounded-full px-1 py-0.5 text-[10px] font-bold transition-colors duration-300 ${selected ? "text-white" : "text-foreground"}`}>{category.name}</span>
+                <button key={category.id} type="button" aria-pressed={selected} onClick={() => onCategoryChange(selected ? null : category.id)} className={`flex h-10 shrink-0 items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-xs font-bold transition-colors ${selected ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground"}`}>
+                  <img src={foodImage(category.name)} alt="" className="h-7 w-7 rounded-full object-cover" />
+                  {category.name}
                 </button>
               );
             })}

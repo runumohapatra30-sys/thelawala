@@ -58,15 +58,6 @@ type Item = StreetFoodItem;
 type Category = StreetFoodCategory;
 type Vendor = StreetFoodVendor;
 
-const TINTS = [
-  "bg-[color-mix(in_oklab,var(--color-brand)_28%,white)]",
-  "bg-[color-mix(in_oklab,var(--color-primary)_14%,white)]",
-  "bg-[color-mix(in_oklab,var(--color-destructive)_12%,white)]",
-  "bg-[color-mix(in_oklab,var(--color-chart-2)_16%,white)]",
-  "bg-[color-mix(in_oklab,var(--color-chart-5)_18%,white)]",
-  "bg-[color-mix(in_oklab,var(--color-chart-3)_12%,white)]",
-];
-
 const PRODUCT_TINTS = ["bg-[#E5F0E6]", "bg-[#F7F0E2]", "bg-[#FFF5C9]", "bg-[#E8EEF2]"];
 
 const routeSlug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -351,65 +342,7 @@ function Home() {
         qtyOf={(id) => lines.find((l) => l.itemId === id)?.qty ?? 0}
       />
     ),
-    quick_bites: (cfg) => (
-      <section className="px-5 pt-6">
-        <h2 className="text-[17px] font-extrabold">{cfg.title ?? "Quick bites"}</h2>
-        <p className="mt-0.5 text-xs font-medium text-muted-foreground">Pick a craving, we do the running</p>
-        <div className="mt-3 flex snap-x gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <button
-            onClick={() => setActive(null)}
-            style={{ animationDelay: "0ms" }}
-            className="press rise-in w-[74px] shrink-0 snap-start text-center"
-          >
-            <span
-              className={`relative block aspect-square overflow-hidden rounded-[1.5rem] ${TINTS[0]} shadow-[0_12px_24px_-16px_rgba(15,23,42,0.75)] ring-offset-2 transition-all ${!active ? "ring-2 ring-primary" : ""}`}
-            >
-              <img src="/food/food-thali.jpg" alt="All street food" loading="lazy" className="h-full w-full object-cover" />
-              <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/45 to-transparent" />
-            </span>
-            <span className="mt-1.5 block text-[10.5px] font-extrabold leading-tight">All</span>
-          </button>
-          {campaign?.top_tab_label ? (
-            <button
-              onClick={() => { setQ(campaign.top_tab_label ?? ""); setActive(null); setVendorFilter(null); }}
-              className="press rise-in w-[74px] shrink-0 snap-start text-center"
-            >
-              <span className="relative block aspect-square overflow-hidden rounded-[1.5rem] shadow-[0_12px_24px_-16px_rgba(15,23,42,0.75)] ring-2 ring-primary">
-                <img
-                  src={campaign.top_tab_icon_url || "/food/food-sweets.jpg"}
-                  alt={campaign.top_tab_label}
-                  loading="lazy"
-                  className="h-full w-full object-cover"
-                />
-                <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/45 to-transparent" />
-              </span>
-              <span className="mt-1.5 block truncate text-[10.5px] font-extrabold leading-tight">{campaign.top_tab_label}</span>
-            </button>
-          ) : null}
-          {cats.map((c, idx) => (
-            <button
-              key={c.id}
-              onClick={() => setActive(c.id)}
-              style={{ animationDelay: `${(idx + 1) * 50}ms` }}
-              className="press rise-in w-[74px] shrink-0 snap-start text-center"
-            >
-              <span
-                className={`relative block aspect-square overflow-hidden rounded-[1.5rem] ${TINTS[(idx + 1) % TINTS.length]} shadow-[0_12px_24px_-16px_rgba(15,23,42,0.75)] transition-all ${active === c.id ? "ring-2 ring-primary" : ""}`}
-              >
-                <img src={foodImage(c.name)} alt={c.name} loading="lazy" className="h-full w-full object-cover" />
-                <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/45 to-transparent" />
-                {c.emoji ? (
-                  <span className="absolute left-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-card/85 text-[11px] shadow-sm">
-                    {c.emoji}
-                  </span>
-                ) : null}
-              </span>
-              <span className="mt-1.5 block truncate text-[10.5px] font-extrabold leading-tight">{c.name}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-    ),
+    quick_bites: () => null,
     trending_stalls: (cfg) => (
       <>
         <section className="flex items-center gap-2 px-5 pt-7">
